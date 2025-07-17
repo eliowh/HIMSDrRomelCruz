@@ -70,14 +70,14 @@
                     <h2 class="rem">must be atleast 8 characters</h2>
                     <button type="submit">Log In</button><br>
                     <a href="{{ url('/forpass') }}">Forgot Password</a> 
-                    <div class="social-login">
-                        <p>Or</p>
-                        <button class="google-btn">Sign in with Google</button>
-                        <button class="facebook-btn">Sign in with Facebook</button>
-                        <p>Does not have an account?</p>
-                        <a href="{{ url('/register') }}">Register</a>
-                    </div>
                 </form>
+                <div class="social-login">
+                    <p>Or</p>
+                    <button class="google-btn">Sign in with Google</button>
+                    <button class="facebook-btn">Sign in with Facebook</button>
+                    <p>Does not have an account?</p>
+                    <a href="{{ url('/register') }}">Register</a>
+                </div>
            </div>
         </div>
         <div class="right">
