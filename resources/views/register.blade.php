@@ -22,6 +22,27 @@
         }
         .popup-content ul { margin: 0; padding: 0 0 0 20px; }
         .popup-content button { margin-top: 15px; }
+        .formbox {
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            background: #fff;
+            padding: 40px 36px;
+        }
+        .formbox button[type="submit"] {
+            background: #367F2B;
+            color: #fff;
+            border: none;
+            padding: 10px 32px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px 0 rgba(45, 108, 223, 0.10);
+        }
+        .formbox button[type="submit"]:hover {
+            background: #1a4931;
+        }
     </style>
 </head>
 <body>
@@ -55,19 +76,12 @@
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
-    @auth
-        <h6>This is Home page you logged in!!!!</h6> 
-        <form action="/logout" method="POST">
-            @csrf
-            <button>Log Out</button>
-        </form>
-    @else
-        <div class="container">
+    <div class="container">
         <div class="left">
             <div class="formbox">
                 <form action="/register" method="POST">
                     @csrf
-                    <h3>Dr.Romel Cruz Hospital</h3>
+                    <h3>Dr. Romel Cruz Hospital</h3>
                     <h4>Create an account</h4>
                     <h3 class="welcome2">Welcome! Please enter your details.</h3>
                     <h2 class="name">Name*</h2>
@@ -76,14 +90,11 @@
                     <input type="text" placeholder = "Enter your Email" name = "email" value="{{ old('email') }}">
                     <h2 class="pass">Password*</h2>
                     <input type="password" placeholder = "Enter your Password" name = "password"><br>
-                    <h2 class="rem">must be atleast 8 characters</h2>
-                    <button>Register</button> 
+                    <h2 class="rem">Must be atleast 8 characters</h2>
+                    <button type="submit">Register</button> 
                     <div class="social-login">
-                        <p>Or</p>
-                        <button class="google-btn">Sign in with Google</button>
-                        <button class="facebook-btn">Sign in with Facebook</button>
                         <p>Already have an account?</p>
-                        <a href="{{ url('/login') }}">Login</a>
+                        <a href="{{ url('/login') }}" style="color: #000; font-weight: bold;">Login</a>
                     </div>
                 </form>
            </div>
@@ -92,6 +103,5 @@
             <img src="{{ asset('img/logPic.png')}}" alt="">
         </div>
     </div>
-    @endauth
 </body>
 </html>

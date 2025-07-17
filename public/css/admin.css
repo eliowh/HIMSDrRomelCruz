@@ -1,0 +1,201 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #f5f7fa;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.admin-header {
+    width: 100%;
+    background: #367F2B;
+    box-shadow: 0 2px 8px 0 rgba(31,38,135,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    height: 80px;
+    position: fixed;
+    border-bottom-right-radius: 12px;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.hospital-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+.admin-name {
+    font-size: 1.1rem;
+    color: #fff;
+    font-weight: 600;
+    margin-left: auto;
+    margin-right: 100px;
+}
+.admin-layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    margin-top: 100px;
+}
+.sidebar {
+    width: 260px;
+    background: #fff;
+    border-radius: 12px;
+    border-right: 1.5px solid #e0e0e0;
+    box-shadow: 2px 0 8px rgba(31,38,135,0.07);
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 24px 0;
+    margin-left: 20px;
+    flex-grow: 0;
+    z-index: 10;
+    max-height: 98vh;
+}
+.sidebar .logo {
+    font-weight: bold;
+    font-size: 1.3rem;
+    padding: 32px 0 16px 32px;
+    color: #1a4931;
+}
+.sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+}
+.sidebar nav ul li {
+    width: 100%;
+}
+.sidebar-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #222;
+    font-weight: 500;
+    padding: 16px 32px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    font-size: 1rem;
+    box-sizing: border-box;
+    text-decoration: none;
+    flex-grow: 1;
+    flex-basis: 0;
+}
+.sidebar-btn.active,
+.sidebar-btn:hover {
+    background: #e3e8f7;
+    color: #1a4931;
+    border-left: 4px solid #1a4931;
+    text-decoration: none;
+}
+.icon {
+    margin-right: 12px;
+    font-size: 1.2em;
+}
+.logout-form {
+    margin: 0;
+    padding: 0 0;
+}
+.main-content {
+    flex: 1;
+    padding: 48px 64px;
+    background: #f5f7fa;
+    min-height: calc(100vh - 64px);
+}
+.main-content h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 18px;
+}
+.main-content p {
+    color: #333;
+    font-size: 1.1rem;
+}
+.admin-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    padding: 48px 56px;
+    max-width: 900px;
+    width: 100%;
+}
+.admin-card h2 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+}
+.admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 12px;
+    margin-bottom: 24px;
+}
+.admin-table th, .admin-table td {
+    padding: 16px 20px;
+    background: #f9fafb;
+    color: #222;
+    font-size: 1.05rem;
+}
+.admin-table th {
+    background: #e3e8f7;
+    font-weight: 600;
+    border-bottom: 2px solid #b6c3e6;
+    color: #1a237e;
+}
+.admin-table tr {
+    border-radius: 12px;
+}
+.admin-table tr td:first-child {
+    border-radius: 12px 0 0 12px;
+}
+.admin-table tr td:last-child {
+    border-radius: 0 12px 12px 0;
+}
+.role-select {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #b6c3e6;
+    background: #f4f7fd;
+    font-size: 1rem;
+    color: #1a237e;
+}
+.assign-btn {
+    background: #367F2B;
+    color: #fff;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
+}
+.assign-btn:hover {
+    background: #1a4931;
+}
+.alert-success {
+    background: #e6f7e6;
+    color: #1a7f37;
+    border-radius: 6px;
+    padding: 12px 20px;
+    margin-top: 18px;
+    font-weight: 500;
+}

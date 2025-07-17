@@ -4,25 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="{{url('css/app.css')}}">
-    <style>
-        .popup {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            left: 0; top: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.3);
-            justify-content: center; align-items: center;
-        }
-        .popup-content {
-            background: #fff;
-            padding: 30px 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            min-width: 300px;
-        }
-        .popup-content ul { margin: 0; padding: 0 0 0 20px; }
-        .popup-content button { margin-top: 15px; }
-    </style>
 </head>
 <body>
     <div id="errorPopup" class="popup">
@@ -60,23 +41,20 @@
             <div class="formbox">
                 <form action="/login" method="POST">
                     @csrf
-                    <h3>Dr.Romel Cruz Hospital</h3>
+                    <h3>Dr. Romel Cruz Hospital</h3>
                     <h4>Sign in to your account</h4>
                     <h3 class="welcome">Welcome back! Please enter your details.</h3>
                     <h2 class="mail">Email*</h2>
                     <input type="text" placeholder = "Enter your Email" name = "loginemail" value="{{ old('loginemail') }}">
                     <h2 class="pass">Password*</h2>
                     <input type="password" placeholder = "Enter your Password" name = "loginpassword"><br>
-                    <h2 class="rem">must be atleast 8 characters</h2>
+                    <h2 class="rem">Must be atleast 8 characters</h2>
                     <button type="submit">Log In</button><br>
-                    <a href="{{ url('/forpass') }}">Forgot Password</a> 
+                    <a href="{{ url('/forpass') }}" style="color: #000; font-weight: bold;">Forgot Password</a> 
                 </form>
                 <div class="social-login">
-                    <p>Or</p>
-                    <button class="google-btn">Sign in with Google</button>
-                    <button class="facebook-btn">Sign in with Facebook</button>
-                    <p>Does not have an account?</p>
-                    <a href="{{ url('/register') }}">Register</a>
+                    <p>Don't have an account?</p>
+                    <a href="{{ url('/register') }}" style="color: #000; font-weight: bold;">Register</a>
                 </div>
            </div>
         </div>
