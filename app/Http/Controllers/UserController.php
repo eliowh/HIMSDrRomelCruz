@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordMail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -72,6 +74,8 @@ class UserController extends Controller
             return redirect('/pending');
         } elseif ($user->role === 'admin') {
             return redirect('/admin/home');
+        } elseif ($user->role === 'doctor') {
+            return redirect('/doctor/home');
         } else {
             return redirect('/');
         }
@@ -84,8 +88,76 @@ class UserController extends Controller
     }
 }
 
+    public function forgotPassword(Request $request)
+    {
+        if ($request->isMethod('post')) {
+            $email = $request->input('email');
+            $user = User::where('email', $email)->first();
+            if ($user) {
+                $token = Str::random(60);
+                $user->password_reset_token = $token;
+                $user->save();
+                $user->notify(new ResetPasswordMail($user, $token));
+                return view('reset_password_email_sent'); // Return the new view
+            } else {
+                return redirect('/login')->with('error', 'This email is invalid.');
+            }
+        }
+        return view('forgotPassword');
+    }
+
+    public function resendEmail(Request $request)
+    {
+        // Get the user's email address from the session or database
+        $email = $request->session()->get('email');
+
+        // Get the user's password reset token from the database
+        $user = User::where('email', $email)->first();
+        $token = $user->password_reset_token;
+
+        // Resend the password reset email
+        $user->notify(new ResetPasswordMail($user, $token));
+
+        // Return a success message
+        return back()->with('success', 'Email resent successfully!');
+    }
+
+    public function resetPassword(Request $request, $token)
+    {
+        // Get the user's email address from the token
+        $user = User::where('password_reset_token', $token)->first();
+
+        // If the user exists, show the password reset form
+        if ($user) {
+            return view('reset_password', ['user' => $user, 'token' => $token]);
+        } else {
+            // If the user doesn't exist, show an error message
+            return redirect('/login')->with('error', 'Invalid password reset token.');
+        }
+    }
+
+    public function updatePassword(Request $request, $token)
+    {
+        // Get the user's email address from the token
+        $user = User::where('password_reset_token', $token)->first();
+
+        // If the user exists, update their password
+        if ($user) {
+            $user->password = bcrypt($request->input('password'));
+            $user->password_reset_token = null;
+            $user->save();
+
+            // Return a success message
+            return redirect('/login')->with('success', 'Password reset successfully!');
+        } else {
+            // If the user doesn't exist, show an error message
+            return redirect('/login')->with('error', 'Invalid password reset token.');
+        }
+    }
+
     public function logout(){
         auth()->logout();
         return redirect('/login');
     }
+
 }

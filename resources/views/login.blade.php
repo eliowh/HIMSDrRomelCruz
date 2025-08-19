@@ -50,7 +50,7 @@
                     <input type="password" placeholder = "Enter your Password" name = "loginpassword"><br>
                     <h2 class="rem">Must be atleast 8 characters</h2>
                     <button type="submit">Log In</button><br>
-                    <a href="{{ url('/forpass') }}" style="color: #000; font-weight: bold;">Forgot Password</a> 
+                    <a href="{{ url('/forgot-password') }}" style="color: #000; font-weight: bold;">Forgot Password</a> 
                 </form>
                 <div class="social-login">
                     <p>Don't have an account?</p>
