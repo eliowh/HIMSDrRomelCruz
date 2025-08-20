@@ -29,6 +29,7 @@ Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
 Route::get('/reset_password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
 Route::post('/update-password/{token}', [UserController::class, 'resetPassword'])->name('update-password');
 
+
 Route::get('/pending', function () {
     return view('pending');
 });
