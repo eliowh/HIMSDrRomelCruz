@@ -42,8 +42,6 @@
                 <form action="/login" method="POST">
                     @csrf
                     <h3>Dr. Romel Cruz Hospital</h3>
-                    <h3>COLLAB TEST</h3>
-                     <h3>COLLAB TEST 222222</h3>
                     <h4>Sign in to your account</h4>
                     <h3 class="welcome">Welcome back! Please enter your details.</h3>
                     <h2 class="mail">Email*</h2>
