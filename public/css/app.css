@@ -1,146 +1,158 @@
-body{
+body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
-
+    background: linear-gradient(120deg, #fcfdfd -10%, #06561e 60%);
+    min-height: 100vh;
+    width: 100vw;
 }
-.container{
+
+.container {
     display: flex;
-    width: 70%;
-    height: 800px;
-    margin: 100px auto;
-    background: #fff;
+    flex-direction: row;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+    align-items: stretch;
+    justify-content: stretch;
     text-align: center;
-    border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-.container .left{
-    float: left;
-    width: 200%;
-    height: 100%;
-    
 }
 
-.container .right img {
-    width: fit-content;
-    height: 800px;
-    padding: 5px;
-    border-radius: 20px;
-    background-size: cover;
-    box-sizing: border-box;
-    object-fit: cover;
-    
+.left, .right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 0;
 }
 
-.formbox{
+.formbox {
+    background: rgba(255,255,255,0.92); /* card-like box */
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    border-radius: 24px;
     width: 100%;
-    padding: 40px 40px;
-    box-sizing: border-box;
-    text-align: center;
-    height: 800px;
+    max-width: 500px;
+    padding: 60px 48px;
+    height: auto;
+    margin: 40px 0;
 }
 
-.formbox h3{
-    
-    color: #55546b;
+.formbox h3 {
+    color: #1a4931;
+    font-size: 2.5rem;
+    font-weight: bold;
 }
 
-.formbox h4{
-    
-    font-size: 30;
+.formbox h4 {
+    font-size: 30px;
     margin-top: 50px;
 }
 
-.formbox h2{
+.formbox h2 {
     margin-top: 20px;
-    font-size: 15;
+    font-size: 15px;
+    text-align: left;
+    width: 100%;
+    padding-left: 0;
 }
+
 h2.pass,
 h2.name,
-h2.mail {
-    display: inline-block;
-    margin-right: 0;
-    margin-left: 0;
+h2.mail,
+h2.rem {
+    display: block;
     width: 100%;
     text-align: left;
     font-size: 15px;
-    /* Adjust padding-left as needed for alignment */
-    padding-left: 20%;
+    padding-left: 0;
+    margin-top: 20px;
 }
-h2.rem{
-    display: inline-block;
-    margin-right: 0;
-    margin-left: 0;
-    width: 100%;
-    text-align: left;
-    font-size: 15px;
-    /* Adjust padding-left as needed for alignment */
-    padding-left: 20%;
+
+h2.rem {
     margin-top: -1px;
-    font-size: 12;
-    color: #666579;
+    font-size: 12px;
+    color: #1a4931;
 }
-h3.welcome{
+
+h3.welcome,
+h3.welcome2 {
     margin-top: -25px;
-    font-size: 16;
+    font-size: 16px;
     margin-bottom: 70px;
+    color: #1a4931;
 }
-h3.welcome2{
-    margin-top: -30px;
-    font-size: 16;
+
+input[type="text"], input[type="password"] {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 18px auto;
+    display: block;
+    height: 48px;
+    padding: 12px;
+    font-size: 18px;
+    border: 1px solid #b0bec5;
+    border-radius: 8px;
+    background: #f7fafc;
+    transition: border 0.2s;
+    box-sizing: border-box;
 }
-input{
-    width: 60%;        
-    height: 40px;        
-    padding: 10px;       
-    font-size: 16px;     
-    box-sizing: border-box; 
+
+input[type="text"]:focus, input[type="password"]:focus {
+    border: 1.5px solid #1976d2;
+    outline: none;
 }
-button{
-    margin-top: 20px;
-    margin-bottom: 20px;
-    width: 60%;        
-    height: 40px;        
-    padding: 10px;       
-    font-size: 16px;     
-    background-color: #1a4931; 
+
+button, .formbox button[type="submit"] {
+    width: 100%;
+    max-width: 400px;
+    height: 48px;
+    padding: 12px;
+    font-size: 18px;
+    background-color: #1a4931;
     color: #fff;
+    border: none;
+    border-radius: 8px;
+    margin: 20px auto 20px auto;
+    display: block;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 2px 8px 0 rgba(45, 108, 223, 0.10);
 }
+
+button:hover, .formbox button[type="submit"]:hover {
+    background: #367F2B;
+}
+
+a {
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: bold;
+}
+
 .social-login {
-    margin-top: 20px;
+    margin-top: 32px;
     text-align: center;
 }
 
 .social-login p {
     margin-bottom: 10px;
-    color: #555;
+    color: #1a4931;
     font-size: 14px;
 }
 
-.google-btn, .facebook-btn {
-    width: 80%;
-    max-width: 250px;
-    height: 40px;
-    margin: 5px auto;
-    display: block;
-    font-size: 14px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-.google-btn {
-    background-color: #db4437;
-    color: white;
-}
-
-.facebook-btn {
-    background-color: #4267B2;
-    color: white;
-}
-a {
-    color: #5a5c5b; 
-    text-decoration: none; 
+.right img {
+    width: 100%;
+    height: 100vh;
+    object-fit: cover;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    background-size: cover;
 }
 
 .popup {
@@ -154,7 +166,6 @@ a {
 .popup-content {
     background: #fff;
     padding: 30px 40px;
-    padding-right: 45px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     min-width: 300px;
@@ -176,26 +187,5 @@ a {
     margin: 15px auto;
 }
 .popup-content button:hover {
-    background: #1a4931;
-}
-.formbox {
-    border-radius: 18px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-    background: #fff;
-    padding: 40px 36px;
-}
-.formbox button[type="submit"] {
-    background: #367F2B;
-    color: #fff;
-    border: none;
-    padding: 10px 32px;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    box-shadow: 0 2px 8px 0 rgba(45, 108, 223, 0.10);
-}
-.formbox button[type="submit"]:hover {
     background: #1a4931;
 }

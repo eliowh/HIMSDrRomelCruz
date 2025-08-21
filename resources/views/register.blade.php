@@ -1,49 +1,10 @@
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="{{url('css/app.css')}}">
-    <style>
-        .popup {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            left: 0; top: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.3);
-            justify-content: center; align-items: center;
-        }
-        .popup-content {
-            background: #fff;
-            padding: 30px 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            min-width: 300px;
-        }
-        .popup-content ul { margin: 0; padding: 0 0 0 20px; }
-        .popup-content button { margin-top: 15px; }
-        .formbox {
-            border-radius: 18px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-            background: #fff;
-            padding: 40px 36px;
-        }
-        .formbox button[type="submit"] {
-            background: #367F2B;
-            color: #fff;
-            border: none;
-            padding: 10px 32px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            box-shadow: 0 2px 8px 0 rgba(45, 108, 223, 0.10);
-        }
-        .formbox button[type="submit"]:hover {
-            background: #1a4931;
-        }
-    </style>
 </head>
 <body>
     <div id="errorPopup" class="popup">
