@@ -18,17 +18,17 @@ Route::get('/register', function () {
     return view('register');
 });
 
-Route::get('/forgot-password', [UserController::class, 'forgotPassword']);
-Route::get('/reset-password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/logout', [UserController::class, 'logout']);
 
+Route::get('/forgot-password', [UserController::class, 'forgotPassword']);
 Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
-Route::get('/reset_password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
-Route::post('/update-password/{token}', [UserController::class, 'resetPassword'])->name('update-password');
-
+Route::get('/reset-password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
+Route::post('/reset-password/{token}', [UserController::class, 'updatePassword'])->name('update-password');
+Route::post('/resend-email', [UserController::class, 'resendEmail'])->name('resend-email');
+Route::get('/password-reset-success', [UserController::class, 'passwordResetSuccess'])->name('password-reset-success');
 
 Route::get('/pending', function () {
     return view('pending');
