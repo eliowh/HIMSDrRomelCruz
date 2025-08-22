@@ -91,7 +91,16 @@ class UserController extends Controller
     public function forgotPassword(Request $request)
     {
         if ($request->isMethod('post')) {
+            $incomingFields = $request->validate([
+                'email' => ['required', 'email'],
+            ], [
+                'email.required' => 'Please enter your email address.',
+                'email.email' => 'Please enter a valid email address.',
+            ]);
+
             $email = $request->input('email');
+            $request->session()->put('email', $email);
+
             $user = User::where('email', $email)->first();
             if ($user) {
                 $token = Str::random(60);
@@ -100,7 +109,7 @@ class UserController extends Controller
                 $user->notify(new ResetPasswordMail($user, $token));
                 return view('reset_password_email_sent'); // Return the new view
             } else {
-                return redirect('/login')->with('error', 'This email is invalid.');
+                return redirect()->back()->withInput()->withErrors(['email' => 'Sorry, we couldn\'t find an account with that email address. Please try again!']);
             }
         }
         return view('forgotPassword');
@@ -108,18 +117,26 @@ class UserController extends Controller
 
     public function resendEmail(Request $request)
     {
-        // Get the user's email address from the session or database
         $email = $request->session()->get('email');
-
-        // Get the user's password reset token from the database
         $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return back()->withErrors(['email' => 'This email is not registered.']);
+        }
+
         $token = $user->password_reset_token;
 
         // Resend the password reset email
         $user->notify(new ResetPasswordMail($user, $token));
 
-        // Return a success message
-        return back()->with('success', 'Email resent successfully!');
+        // Set a session variable to track the last resend time
+        $request->session()->put('last_resend_time', time());
+
+        // Set a session variable to display a success message
+        $request->session()->put('success', 'Email resent successfully!');
+
+        // Return the email sent view
+        return view('reset_password_email_sent');
     }
 
     public function resetPassword(Request $request, $token)
@@ -138,21 +155,42 @@ class UserController extends Controller
 
     public function updatePassword(Request $request, $token)
     {
-        // Get the user's email address from the token
+        $incomingFields = $request->validate([
+            'password' => [
+                'required',
+                'min:8',
+                'max:20',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/', // At least 1 uppercase, 1 lowercase, 1 number, 1 special char
+            ],
+            'password_confirmation' => [
+                'required',
+                'same:password', // Must match the password field
+            ],
+        ], [
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Password must be 8-20 characters and strong.',
+            'password.max' => 'Password must be 8-20 characters and strong.',
+            'password.regex' => 'Password must have uppercase, lowercase, number, and special character.',
+            'password_confirmation.required' => 'Please confirm your new password.',
+            'password_confirmation.same' => 'Passwords do not match.',
+        ]);
+
         $user = User::where('password_reset_token', $token)->first();
 
-        // If the user exists, update their password
-        if ($user) {
-            $user->password = bcrypt($request->input('password'));
-            $user->password_reset_token = null;
-            $user->save();
-
-            // Return a success message
-            return redirect('/login')->with('success', 'Password reset successfully!');
-        } else {
-            // If the user doesn't exist, show an error message
-            return redirect('/login')->with('error', 'Invalid password reset token.');
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Invalid password reset token');
         }
+
+        $user->password = bcrypt($incomingFields['password']);
+        $user->password_reset_token = null;
+        $user->save();
+
+        return redirect()->route('password-reset-success')->with('success', 'Password updated successfully!');
+    }
+
+    public function passwordResetSuccess()
+    {
+        return view('password_reset_success');
     }
 
     public function logout(){

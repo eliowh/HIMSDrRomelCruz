@@ -61,7 +61,7 @@
            </div>
         </div>
         <div class="right">
-            <img src="{{ asset('img/logPic.png')}}" alt="">
+            <img src="{{ asset('img/romelcruz1.jpg')}}" alt="">
         </div>
     </div>
 </body>
