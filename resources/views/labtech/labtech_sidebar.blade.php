@@ -1,46 +1,40 @@
 @php
-    $doctorName = auth()->user()->name ?? 'Doctor';
+    $labtechName = auth()->user()->name ?? 'Lab Technician';
 @endphp
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/doctor.css')}}">
+    <title>Lab Technician Dashboard</title>
+    <link rel="stylesheet" href="{{url('css/labtech.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
-        <span>Doctor Panel</span>
+        <span>Lab Tech Panel</span>
     </div>
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/doctor/home') }}"
-                   class="sidebar-btn{{ request()->is('doctor/home') ? ' active' : '' }}">
+                <a href="{{ url('/labtech/home') }}"
+                   class="sidebar-btn{{ request()->is('labtech/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/appointments') }}"
-                   class="sidebar-btn{{ request()->is('doctor/appointments') ? ' active' : '' }}">
-                    <span class="icon">📅</span> <span class="text">Appointments</span>
+                <a href="{{ url('/labtech/orders') }}"
+                   class="sidebar-btn{{ request()->is('labtech/orders') ? ' active' : '' }}">
+                    <span class="icon">🧪</span> <span class="text">Orders</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/patients') }}"
-                   class="sidebar-btn{{ request()->is('doctor/patients') ? ' active' : '' }}">
-                    <span class="icon">👥</span> <span class="text">Patients</span>
+                <a href="{{ url('/labtech/patients') }}"
+                   class="sidebar-btn{{ request()->is('labtech/patients') ? ' active' : '' }}">
+                    <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/schedule') }}"
-                   class="sidebar-btn{{ request()->is('doctor/schedule') ? ' active' : '' }}">
-                    <span class="icon">⏰</span> <span class="text">Schedule</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/doctor/account') }}"
-                   class="sidebar-btn{{ request()->is('doctor/account') ? ' active' : '' }}">
+                <a href="{{ url('/labtech/account') }}"
+                   class="sidebar-btn{{ request()->is('labtech/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>
             </li>
@@ -48,7 +42,7 @@
         <form action="{{ url('/logout') }}" method="POST" class="logout-form" onsubmit="localStorage.clear();">
             @csrf
             <button type="submit" class="sidebar-btn">
-                <span class="icon">🚪</span> <span class="text">Log Out</span>
+                <span class="icon">🚪</span> <span class="text">Logout</span>
             </button>
         </form>
     </nav>
@@ -59,7 +53,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.querySelector('.main-content');
-        const isCollapsed = localStorage.getItem('doctorSidebarCollapsed') === 'true';
+        const isCollapsed = localStorage.getItem('labtechSidebarCollapsed') === 'true';
         
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
@@ -75,7 +69,7 @@
         sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('expanded');
         
-        // Save state to localStorage with unique key for doctor
-        localStorage.setItem('doctorSidebarCollapsed', sidebar.classList.contains('collapsed'));
+        // Save state to localStorage with unique key for lab technician
+        localStorage.setItem('labtechSidebarCollapsed', sidebar.classList.contains('collapsed'));
     });
 </script>

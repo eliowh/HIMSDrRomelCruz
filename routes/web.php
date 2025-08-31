@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
+use App\Http\Controllers\LabtechController;
 
 // Home
 Route::get('/', function () {
@@ -45,15 +46,80 @@ Route::middleware(['auth'])->group(function () {
     });
     
     Route::get('/doctor/appointments', function () {
-        return view('doctor.appointments');
+        return view('doctor.doctor_appointments');
     });
-    
+
     Route::get('/doctor/patients', function () {
-        return view('doctor.patients');
+        return view('doctor.doctor_patients');
+    });
+
+    Route::get('/doctor/schedule', function () {
+        return view('doctor.doctor_schedule');
+    });
+
+    Route::get('/doctor/account', function () {
+        return view('doctor.doctor_account');
+    });
+});
+
+// Nurse Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/nurse/home', function () {
+        return view('nurse.nurse_home');
     });
     
-    Route::get('/doctor/schedule', function () {
-        return view('doctor.schedule');
+    Route::get('/nurse/appointments', function () {
+        return view('nurse.nurse_appointments');
+    });
+    
+    Route::get('/nurse/patients', function () {
+        return view('nurse.nurse_patients');
+    });
+    
+    Route::get('/nurse/schedule', function () {
+        return view('nurse.nurse_schedule');
+    });
+    
+    Route::get('/nurse/account', function () {
+        return view('nurse.nurse_account');
+    });
+});
+
+// Lab Technician Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/labtech/home', function () {
+        return view('labtech.labtech_home');
+    });
+    
+    Route::get('/labtech/orders', function () {
+        return view('labtech.labtech_orders');
+    });
+    
+    Route::get('/labtech/patients', function () {
+        return view('labtech.labtech_patients');
+    });
+    
+    Route::get('/labtech/account', function () {
+        return view('labtech.labtech_account');
+    });
+});
+
+// Cashier Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/cashier/home', function () {
+        return view('cashier.cashier_home');
+    });
+    
+    Route::get('/cashier/billing', function () {
+        return view('cashier.cashier_billing');
+    });
+    
+    Route::get('/cashier/transactions', function () {
+        return view('cashier.cashier_transactions');
+    });
+    
+    Route::get('/cashier/account', function () {
+        return view('cashier.cashier_account');
     });
 });
 
@@ -86,6 +152,8 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.admin_account');
     });
 });
+
+
 
 
 

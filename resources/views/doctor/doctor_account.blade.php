@@ -2,33 +2,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Account Settings</title>
-    <link rel="stylesheet" href="{{ url('css/admin.css') }}">
+    <title>Doctor Account Settings</title>
+    <link rel="stylesheet" href="{{ url('css/doctor.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     @php
-        $adminName = auth()->user()->name ?? 'Admin';
+        $doctorName = auth()->user()->name ?? 'Doctor';
     @endphp
-    @include('admin.admin_header')
-    <div class="admin-layout">
-        @include('admin.admin_sidebar')
+    @include('doctor.doctor_header')
+    <div class="doctor-layout">
+        @include('doctor.doctor_sidebar')
         <main class="main-content">
-            <div class="admin-card">
+            <div class="doctor-card">
                 <h2>Account Settings</h2>
                 <p>Manage your account information and preferences.</p>
             </div>
             
-            <div class="admin-card">
+            <div class="doctor-card">
                 <h3>Profile Information</h3>
                 <div class="profile-info">
                     <p><strong>Name:</strong> {{ Auth::user()->name }}</p>
                     <p><strong>Email:</strong> {{ Auth::user()->email }}</p>
-                    <p><strong>Role:</strong> Administrator</p>
+                    <p><strong>Role:</strong> Doctor</p>
                 </div>
             </div>
 
-            <div class="admin-card">
+            <div class="doctor-card">
                 <h3>Change Password</h3>
                 <!-- Placeholder for password change form -->
                 <div class="placeholder-content">

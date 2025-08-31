@@ -1,46 +1,46 @@
 @php
-    $doctorName = auth()->user()->name ?? 'Doctor';
+    $nurseName = auth()->user()->name ?? 'Nurse';
 @endphp
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/doctor.css')}}">
+    <title>Nurse Dashboard</title>
+    <link rel="stylesheet" href="{{url('css/nurse.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
-        <span>Doctor Panel</span>
+        <span>Nurse Panel</span>
     </div>
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/doctor/home') }}"
-                   class="sidebar-btn{{ request()->is('doctor/home') ? ' active' : '' }}">
+                <a href="{{ url('/nurse/home') }}"
+                   class="sidebar-btn{{ request()->is('nurse/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/appointments') }}"
-                   class="sidebar-btn{{ request()->is('doctor/appointments') ? ' active' : '' }}">
-                    <span class="icon">📅</span> <span class="text">Appointments</span>
+                <a href="{{ url('/nurse/appointments') }}"
+                   class="sidebar-btn{{ request()->is('nurse/appointments') ? ' active' : '' }}">
+                    <span class="icon">📅</span> <span class="text">Your Appointments</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/patients') }}"
-                   class="sidebar-btn{{ request()->is('doctor/patients') ? ' active' : '' }}">
-                    <span class="icon">👥</span> <span class="text">Patients</span>
+                <a href="{{ url('/nurse/patients') }}"
+                   class="sidebar-btn{{ request()->is('nurse/patients') ? ' active' : '' }}">
+                    <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/schedule') }}"
-                   class="sidebar-btn{{ request()->is('doctor/schedule') ? ' active' : '' }}">
+                <a href="{{ url('/nurse/schedule') }}"
+                   class="sidebar-btn{{ request()->is('nurse/schedule') ? ' active' : '' }}">
                     <span class="icon">⏰</span> <span class="text">Schedule</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/account') }}"
-                   class="sidebar-btn{{ request()->is('doctor/account') ? ' active' : '' }}">
+                <a href="{{ url('/nurse/account') }}"
+                   class="sidebar-btn{{ request()->is('nurse/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>
             </li>
@@ -59,7 +59,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.querySelector('.main-content');
-        const isCollapsed = localStorage.getItem('doctorSidebarCollapsed') === 'true';
+        const isCollapsed = localStorage.getItem('nurseSidebarCollapsed') === 'true';
         
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
@@ -75,7 +75,7 @@
         sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('expanded');
         
-        // Save state to localStorage with unique key for doctor
-        localStorage.setItem('doctorSidebarCollapsed', sidebar.classList.contains('collapsed'));
+        // Save state to localStorage with unique key for nurse
+        localStorage.setItem('nurseSidebarCollapsed', sidebar.classList.contains('collapsed'));
     });
 </script>
