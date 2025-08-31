@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{url('css/app.css')}}">
 </head>
 <body>
+    <a href="{{ url('/') }}" class="home-btn">Home</a>
     <div id="errorPopup" class="popup">
         <div class="popup-content">
             <h4>Error</h4>

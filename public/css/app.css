@@ -203,3 +203,20 @@ a {
     border-radius: 5px;
     margin-top: 10px;
 }
+
+.home-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: #1a4931;
+    color: #fff;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.home-btn:hover {
+    background: #1a692f;
+}
