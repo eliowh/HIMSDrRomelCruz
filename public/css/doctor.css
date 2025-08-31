@@ -7,7 +7,7 @@ body {
     display: flex;
     flex-direction: column;
 }
-.admin-header {
+.doctor-header {
     width: 100%;
     background: #367F2B;
     box-shadow: 0 2px 8px 0 rgba(31,38,135,0.08);
@@ -34,14 +34,14 @@ body {
     font-weight: 700;
     color: #fff;
 }
-.admin-name {
+.doctor-name {
     font-size: 1.1rem;
     color: #fff;
     font-weight: 600;
     margin-left: auto;
     margin-right: 100px;
 }
-.admin-layout {
+.doctor-layout {
     display: flex;
     width: 100%;
     min-height: 100vh;
@@ -119,10 +119,12 @@ body {
     align-items: center;
     cursor: pointer;
     border-left: 4px solid transparent;
-    transition: all 0.3s ease;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
     font-size: 1rem;
     box-sizing: border-box;
     text-decoration: none;
+    flex-grow: 1;
+    flex-basis: 0;
 }
 .sidebar.collapsed .sidebar-btn {
     justify-content: center;
@@ -136,7 +138,6 @@ body {
     background: #e3e8f7;
     color: #1a4931;
     border-left: 4px solid #1a4931;
-    text-decoration: none;
 }
 .icon {
     margin-right: 12px;
@@ -149,10 +150,6 @@ body {
 .sidebar.collapsed .icon {
     margin-right: 0;
 }
-.logout-form {
-    margin: 0;
-    padding: 0 0;
-}
 .main-content {
     flex: 1;
     padding: 48px 64px;
@@ -163,86 +160,15 @@ body {
 .main-content.expanded {
     margin-left: 60px;
 }
-.main-content h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #1a237e;
-    margin-bottom: 18px;
-}
-.main-content p {
-    color: #333;
-    font-size: 1.1rem;
-}
-.admin-card {
+.doctor-card {
     background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-    padding: 48px 56px;
-    max-width: 900px;
-    width: 100%;
-}
-.admin-card h2 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #1a237e;
-    margin-bottom: 32px;
-    letter-spacing: 1px;
-}
-.admin-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(31, 38, 135, 0.15);
+    padding: 32px;
     margin-bottom: 24px;
 }
-.admin-table th, .admin-table td {
-    padding: 16px 20px;
-    background: #f9fafb;
-    color: #222;
-    font-size: 1.05rem;
-}
-.admin-table th {
-    background: #e3e8f7;
-    font-weight: 600;
-    border-bottom: 2px solid #b6c3e6;
-    color: #1a237e;
-}
-.admin-table tr {
-    border-radius: 12px;
-}
-.admin-table tr td:first-child {
-    border-radius: 12px 0 0 12px;
-}
-.admin-table tr td:last-child {
-    border-radius: 0 12px 12px 0;
-}
-.role-select {
-    padding: 8px 14px;
-    border-radius: 6px;
-    border: 1px solid #b6c3e6;
-    background: #f4f7fd;
-    font-size: 1rem;
-    color: #1a237e;
-}
-.assign-btn {
-    background: #367F2B;
-    color: #fff;
-    border: none;
-    padding: 8px 24px;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
-}
-.assign-btn:hover {
-    background: #1a4931;
-}
-.alert-success {
-    background: #e6f7e6;
-    color: #1a7f37;
-    border-radius: 6px;
-    padding: 12px 20px;
-    margin-top: 18px;
-    font-weight: 500;
+.doctor-card h2 {
+    color: #1a4931;
+    margin: 0 0 24px 0;
+    font-size: 1.5rem;
 }
