@@ -47,8 +47,17 @@ class AdminController extends Controller
 
     public function createUser(Request $request)
     {
+        // Log request data for debugging
+        \Log::info('Create user request', [
+            'email' => $request->email,
+            'content_type' => $request->header('Content-Type'),
+            'is_json' => $request->isJson(),
+            'wants_json' => $request->wantsJson(),
+            'ajax' => $request->ajax()
+        ]);
+        
         // Validate inputs
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => [
                 'required',
                 'min:3',
@@ -74,22 +83,68 @@ class AdminController extends Controller
             'role.required' => 'Please select a role.',
             'role.in' => 'Invalid role selected.'
         ]);
-
-        // Generate a secure temporary password
-        $tempPassword = str_replace(['+', '/', '='], ['@', '$', '#'], base64_encode(random_bytes(8)));
-
-        // Create user
+        
+        if ($validator->fails()) {
+            \Log::info('Validation failed', ['errors' => $validator->errors()]);
+            
+            if ($request->ajax() || $request->wantsJson() || $request->header('Content-Type') == 'application/json') {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
+            return back()->withErrors($validator)->withInput();
+        }
+        
+        // Double-check if email exists (extra validation)
+        if (User::where('email', $request->email)->exists()) {
+            \Log::info('Email already exists', ['email' => $request->email]);
+            
+            if ($request->ajax() || $request->wantsJson() || $request->header('Content-Type') == 'application/json') {
+                return response()->json([
+                    'success' => false,
+                    'errors' => [
+                        'email' => ['This email is already registered.']
+                    ]
+                ], 422);
+            }
+            
+            return back()->withErrors(['email' => 'This email is already registered.'])->withInput();
+        }
+        
+        // Generate password reset token
+        $token = \Illuminate\Support\Str::random(60);
+        
+        // Log token for debugging
+        \Log::info('Generated token for new user', [
+            'email' => $request->email,
+            'token' => $token
+        ]);
+        
+        // Create user with a temporary password
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($tempPassword),
+            'password' => Hash::make(\Illuminate\Support\Str::random(16)), // Random temporary password
             'role' => $request->role
+        ]);
+        
+        // Set the password reset token
+        $user->password_reset_token = $token;
+        $user->save();
+        
+        // Double check the token was saved
+        $savedUser = User::find($user->id);
+        \Log::info('Saved user token check', [
+            'email' => $savedUser->email,
+            'token_saved' => $savedUser->password_reset_token
         ]);
 
         try {
             // Send notification with credentials
             try {
-                $user->notify(new NewUserCredentials($tempPassword, $request->role));
+                $user->notify(new NewUserCredentials($token, $request->role));
                 $notificationSent = true;
             } catch (\Exception $e) {
                 \Log::error('Email notification failed: ' . $e->getMessage());

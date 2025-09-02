@@ -147,7 +147,9 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
                 name: nameField.value,
@@ -155,29 +157,45 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
                 role: roleField.value
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showSuccessMessage(data.message || 'User created successfully!');
-                resetForm(form);
-            } else {
-                Object.entries(data.errors || {}).forEach(([field, messages]) => {
-                    const input = form.querySelector(`[name="${field}"]`);
-                    if (input) {
-                        showError(input, messages[0]);
+        .then(response => {
+            if (!response.ok) {
+                // Server validation error
+                return response.json().then(data => {
+                    if (data.errors) {
+                        // Handle validation errors
+                        Object.entries(data.errors).forEach(([field, messages]) => {
+                            const input = form.querySelector(`[name="${field}"]`);
+                            if (input) {
+                                showError(input, messages[0]);
+                            }
+                        });
+                        throw new Error('Validation failed');
+                    } else {
+                        throw new Error(data.message || 'Server error');
                     }
                 });
             }
-        })
-        .then(response => response.json())
-        .catch(() => {
-            // If JSON parsing fails, it means the user was created successfully
-            // but we got a redirect response instead of JSON
-            return { success: true, message: 'User created successfully!' };
+            
+            // Try to parse as JSON, but handle if it's not valid JSON (e.g. HTML response)
+            return response.text().then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If not valid JSON, user was likely created but we got a redirect
+                    return { success: true, message: 'User created successfully!' };
+                }
+            });
         })
         .then(data => {
             showSuccessMessage(data.message || 'User created successfully!');
             resetForm(form);
+        })
+        .catch(error => {
+            if (error.message !== 'Validation failed') {
+                showErrorMessage(error.message || 'An error occurred');
+            }
+        })
+        .finally(() => {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Create User';
         });
