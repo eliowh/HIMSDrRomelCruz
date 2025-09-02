@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Welcome | Dr. Romel Cruz Hospital</title>
+    <!-- Add Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             background: #f8f9fa;
@@ -13,6 +17,7 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
+            font-family: 'Poppins', sans-serif;
         }
         .welcome-box {
             background: #fff;
@@ -41,7 +46,7 @@
             transition: background 0.2s;
         }
         .welcome-box a:hover {
-            background: #145024;
+            background: #1d7033;
         }
     </style>
 </head>
@@ -54,3 +59,4 @@
         <a href="{{ url('/register') }}">Create an Account</a>
     </div>
 </body>
+</html>
