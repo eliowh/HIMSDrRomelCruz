@@ -6,16 +6,16 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class NewUserCredentials extends Notification
+class NewUserCredentials extends Notification // NewUserSetPassword
 {
     use Queueable;
 
-    protected $password;
+    protected $token;
     protected $role;
 
-    public function __construct($password, $role)
+    public function __construct($token, $role)
     {
-        $this->password = $password;
+        $this->token = $token;
         $this->role = $role;
     }
 
@@ -39,15 +39,16 @@ class NewUserCredentials extends Notification
 
     public function toMail($notifiable)
     {
+        // Use just the token in the URL
+        $resetUrl = url('/reset-password/'.$this->token);
+
         return (new MailMessage)
             ->subject('Welcome to Dr. Romel Cruz Hospital')
             ->greeting('Hello ' . $notifiable->name . ',')
-            ->line('Your account has been created with the following credentials:')
-            ->line('Email: ' . $notifiable->email)
-            ->line('Temporary Password: ' . $this->password)
-            ->line('Role: ' . $this->formatRole($this->role))
-            ->line('Please change your password after logging in for the first time.')
-            ->action('Login Now', url('/login'))
+            ->line('An account has been created for you with the role of ' . $this->formatRole($this->role) . '.')
+            ->line('Before you can access your account, please set your password by clicking the button below.')
+            ->line('This link will expire in 24 hours.')
+            ->action('Set Your Password', $resetUrl)
             ->line('Thank you for joining us!')
             ->line('Best regards,')
             ->line('Dr. Romel Cruz Hospital');

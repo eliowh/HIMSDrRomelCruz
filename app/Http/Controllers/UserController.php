@@ -147,15 +147,28 @@ class UserController extends Controller
 
     public function resetPassword(Request $request, $token)
     {
-        // Get the user's email address from the token
+        \Log::info('Password reset attempt', ['token' => $token]);
+        
+        // Get the user by token
         $user = User::where('password_reset_token', $token)->first();
+        
+        // Debug log
+        if ($user) {
+            \Log::info('User found for password reset', ['email' => $user->email, 'token' => $token]);
+        } else {
+            \Log::warning('No user found for password reset token', ['token' => $token]);
+            
+            // Check if any users have tokens for debugging
+            $usersWithTokens = User::whereNotNull('password_reset_token')->get(['id', 'email', 'password_reset_token']);
+            \Log::info('Users with tokens', ['users' => $usersWithTokens]);
+        }
 
         // If the user exists, show the password reset form
         if ($user) {
             return view('reset_password', ['user' => $user, 'token' => $token]);
         } else {
             // If the user doesn't exist, show an error message
-            return redirect('/login')->with('error', 'Invalid password reset token.');
+            return redirect('/login')->with('error', 'Invalid or expired password reset link. Please contact support.');
         }
     }
 
