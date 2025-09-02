@@ -3,60 +3,62 @@ body {
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     min-height: 100vh;
-    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
 }
 
 .container {
     display: flex;
-    flex-direction: row;
-    height: 100vh;
-    width: 100vw;
-    background: none;
-    border-radius: 0;
-    box-shadow: none;
-    align-items: stretch;
-    justify-content: stretch;
+    flex-wrap: wrap;
+    max-width: 1500px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    overflow: hidden;
+    background: #fff;
     text-align: center;
 }
 
-.left{
+/* left and right panels should stretch equally */
+.left, .right {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: right;
-    height: 100vh;
-    padding: 0;
-}
-.right{
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: left;
-    height: 100vh;
-    padding: 0;
+    align-items: stretch;  /* make children fill full height */
+    justify-content: center;
 }
 
 .formbox {
-    background: rgba(255,255,255,0.92); /* card-like box */
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    border-bottom-left-radius: 24px;
-    border-top-left-radius: 24px;
-    width: 100%;
-    max-width: 500px;
-    padding: 60px 48px;
-    height: auto;
-    
+    flex: 1;               /* take available height */
+    background: rgba(255,255,255,0.92);
+    width: 100vh;
+    max-width: 700px;
+    padding: 40px 30px;
+    border-radius: 0;      /* container handles rounded corners */
+    display: flex;
+    flex-direction: column; /* keep content stacked */
+    justify-content: center; /* center vertically */
+}
+
+.right img {
+    width: 100vh;
+    height: 100%; 
+    max-width: 700px;         /* ✅ match form height */
+    object-fit: cover;     /* crop without distortion */
+    border-radius: 0;      /* container already rounded */
 }
 
 .formbox h3 {
     color: #1a4931;
     font-size: 2.5rem;
     font-weight: bold;
+    
 }
 
 .formbox h4 {
     font-size: 30px;
     margin-top: 50px;
+    
 }
 
 .formbox h2 {
@@ -73,10 +75,10 @@ h2.mail,
 h2.rem {
     display: block;
     width: 100%;
-    text-align: left;
     font-size: 15px;
     padding-left: 50px;
     margin-top: 20px;
+    margin-left: 100px;
 }
 
 h3.welcome,
@@ -146,17 +148,6 @@ a {
     font-size: 14px;
 }
 
-.right img {
-    width: 100%;
-    height: 82vh;
-    max-width: 600px;
-    object-fit: cover;
-    border-bottom-right-radius: 24px;
-    border-top-right-radius: 24px;
-    box-shadow: none;
-    background-size: cover;
-    box-shadow: 8px 0 32px rgba(0,0,0,0.18);
-}
 
 .popup {
     display: none;

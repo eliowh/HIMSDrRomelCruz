@@ -1,133 +1,79 @@
-.container {
-    display: flex;
-    width: 70%;
-    height: 800px;
-    margin: 100px auto;
-    background: #fff;
-    border: 0 solid #0e0d0d;
-    box-shadow: 0 5px 40px rgba(0, 0, 0, 0.5);
-}
-
-/* Image container on the left */
-.container .left {
-    width: 50%;
-    height: 100%;
-}
-
-.container .left img {
-    width: 100%;
-    height: 100%;
-    padding: 5px;
-    border-radius: 20px;
-    object-fit: cover;
-    box-sizing: border-box;
-}
-
-/* Form container on the right */
-.container .right {
-    width: 50%;
-    height: 100%;
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
     display: flex;
     align-items: center;
+    justify-content: center;
+    background: #ffffff;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 1500px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    height: 70vh;
+    text-align: center;
+    overflow: hidden;
+    background: #fff;
+    text-align: center;
+}
+
+
+.left, .right {
+    flex: 1;
+    display: flex;
+    align-items: stretch;  /* make children fill full height */
     justify-content: center;
 }
 
 .formbox {
-    width: 100%;
-    padding: 40px;
+    flex: 1;               /* take available height */
+    background: rgba(255,255,255,0.92);
+    width: 100vh;
+    max-width: 700px;
+    padding: 40px 30px;
+    border-radius: 0;      /* container handles rounded corners */
+    display: flex;
+    flex-direction: column; /* keep content stacked */
+    justify-content: center; /* center vertically */
+}
+
+.left img {
+    width: 100vh;
+    height: 100%; 
+    max-width: 700px;         /* ✅ match form height */
+    object-fit: cover;     /* crop without distortion */
+    border-radius: 0;      /* container already rounded */
+}
+.formbox h3 {
+    color: #1a4931;
+    font-size: 3rem;
+    font-weight: bold;
+    
+}
+.formbox .mb-3 .eField {
+    width: 70%;
+    height: 30%;
+    border: 1px solid #525253;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 1.5rem;
+    color: #020202;
+    background: #f8f8f8;
     box-sizing: border-box;
+    margin-bottom: 30px;
     text-align: center;
 }
-.formbox h3{
-    
-    color: #55546b;
-}
-
-.formbox h4{
-    
-    font-size: 30;
-    margin-top: 50px;
-}
-
-.formbox h2{
-    margin-top: 20px;
-    font-size: 15;
-}
-h2.pass{
-    margin-right: 48%;
-}
-
-h2.name{
-    margin-right: 52%;
-}
-h2.mail{
-    margin-right: 52%;
-}
-h2.rem{
-    margin-top: -1px;
-    margin-right: 36%;
-    font-size: 12;
-    color: #666579;
-}
-h3.title{
-    margin-top: -20%;
-    font-size: 26;
-    margin-bottom: 200px;
-}
-h3.welcome2{
-    margin-top: -30px;
-    font-size: 16;
-}
-input{
-    width: 60%;        
-    height: 40px;        
-    padding: 10px;       
-    font-size: 16px;     
-    box-sizing: border-box; 
-}
-button{
-    margin-top: 20px;
-    margin-bottom: 20px;
-    width: 60%;        
-    height: 40px;        
-    padding: 10px;       
-    font-size: 16px;     
-    background-color: #1a4931; 
+.formbox .submitBtn {
+    background: #367F2B;
     color: #fff;
-}
-.social-login {
-    margin-top: 20px;
-    text-align: center;
-}
-
-.social-login p {
-    margin-bottom: 10px;
-    color: #555;
-    font-size: 14px;
-}
-
-.google-btn, .facebook-btn {
-    width: 80%;
-    max-width: 250px;
-    height: 40px;
-    margin: 5px auto;
-    display: block;
-    font-size: 14px;
     border: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-size: 1.5rem;
     cursor: pointer;
-    border-radius: 5px;
-}
-
-.google-btn {
-    background-color: #db4437;
-    color: white;
-}
-
-.facebook-btn {
-    background-color: #4267B2;
-    color: white;
-}
-a{
-    color: #5a5c5b; 
-    text-decoration: none; 
 }
