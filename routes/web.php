@@ -124,7 +124,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Admin Routes
-Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth');
+Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth')->name('admin.home');
 Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('admin.createUser');
 
 Route::get('/admin/userapproval', function () {
