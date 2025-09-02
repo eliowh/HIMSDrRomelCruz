@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Notifications\RoleAssigned;
+use App\Notifications\NewUserCredentials;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -46,34 +47,81 @@ class AdminController extends Controller
 
     public function createUser(Request $request)
     {
-        // validate inputs
+        // Validate inputs
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
+            'name' => [
+                'required',
+                'min:3',
+                'max:20',
+                'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
+            ],
+            'email' => [
+                'required',
+                'email',
+                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/', // Only .com domains allowed
+                'unique:users,email'
+            ],
+            'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin']
+        ], [
+            'name.required' => 'Please enter a name.',
+            'name.min' => 'Name must be 3-20 letters.',
+            'name.max' => 'Name must be 3-20 letters.',
+            'name.regex' => 'Name can only contain letters and spaces.',
+            'email.required' => 'Please enter an email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'email.regex' => 'Email must end with .com and be valid.',
+            'email.unique' => 'This email is already registered.',
+            'role.required' => 'Please select a role.',
+            'role.in' => 'Invalid role selected.'
         ]);
 
-        // create user with a dummy password (user will reset it)
+        // Generate a secure temporary password
+        $tempPassword = str_replace(['+', '/', '='], ['@', '$', '#'], base64_encode(random_bytes(8)));
+
+        // Create user
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make('temporary123'), // user won't use this
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($tempPassword),
+            'role' => $request->role
         ]);
 
-        // generate password reset token
-        $token = Password::createToken($user);
+        try {
+            // Send notification with credentials
+            try {
+                $user->notify(new NewUserCredentials($tempPassword, $request->role));
+                $notificationSent = true;
+            } catch (\Exception $e) {
+                \Log::error('Email notification failed: ' . $e->getMessage());
+                $notificationSent = false;
+            }
 
-        // build reset link
-        $resetLink = url("/password/reset/$token?email=" . urlencode($user->email));
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $notificationSent 
+                        ? 'User created and notified successfully!'
+                        : 'User created successfully but email notification failed. Please note their email and temporary password: ' . $tempPassword
+                ]);
+            }
 
-        // send email to user
-        Mail::send('emails.new_user', [
-            'resetLink' => $resetLink,
-            'userName'  => $user->name,
-        ], function ($message) use ($user) {
-            $message->to($user->email);
-            $message->subject('Your account has been created');
-        });
+            $message = $notificationSent 
+                ? 'User created and notified successfully!'
+                : 'User created successfully but email notification failed. Please note their email and temporary password: ' . $tempPassword;
 
-        return redirect('/admin/userapproval')->with('success', 'User created and notified successfully!');
+            return redirect()->route('admin.home')->with('success', $message);
+        } catch (\Exception $e) {
+            \Log::error('User creation error: ' . $e->getMessage());
+            
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+        }
+        return redirect('/admin/users')->with('success', 'User created and notified successfully!');
     }
 }
