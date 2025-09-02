@@ -125,6 +125,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Admin Routes
 Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth');
+Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('admin.createUser');
 
 Route::get('/admin/userapproval', function () {
     $pendingUsers = User::where('role', 'pending')->get();

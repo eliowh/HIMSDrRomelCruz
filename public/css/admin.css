@@ -188,6 +188,19 @@ body {
     margin-bottom: 32px;
     letter-spacing: 1px;
 }
+.admin-card .add-user-btn {
+    background: #367F2B;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
+    float: right;
+    margin-top: -70px;
+}
 .admin-table {
     width: 100%;
     border-collapse: separate;
@@ -245,4 +258,86 @@ body {
     padding: 12px 20px;
     margin-top: 18px;
     font-weight: 500;
+}
+/* Modal Styles */
+
+
+.addUserModal {
+position: fixed;
+top: 0;
+left: 0;
+align-items: center;
+justify-content: center;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.5);
+z-index: 1000;
+display: none;
+flex-direction: column; /* stack vertically */
+align-items: center;    /* horizontal center */
+text-align: center;     /* text center */
+}
+
+.addUserModalContent {
+background: #fff;
+margin: 10% auto;
+padding: 20px;
+width: 100vh;
+position: center;
+border-radius: 8px;
+box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+
+}
+.addUserModalContent .createUserBtn{
+color: #1a4931;
+font-size: 2.5rem;
+font-weight: bold;
+}
+.addUserModalContent .sign{
+font-size: 60px;
+margin-bottom: 20px;
+color: #1a4931;
+}
+.addUserModalContent .mb-3 .fName, .eMail{
+font-size: 1.2rem;
+font-weight: 600;
+margin-bottom: 8px;
+display: flex;
+margin-left: 15vh;
+color: #333;
+
+}
+.addUserModalContent .mb-3 .nField, .eField{
+width: 70%;
+border: 1px solid #525253;
+border-radius: 6px;
+padding: 10px 14px;
+font-size: 1rem;
+color: #020202;
+background: #f8f8f8;
+box-sizing: border-box;
+margin-bottom: 15px;
+}
+.addUserModalContent .createClassBtn{
+background: #367F2B;
+color: #fff;
+border: none;
+padding: 12px 28px;
+border-radius: 6px;
+font-size: 1rem;
+font-weight: 600;
+cursor: pointer;
+align-items: center;
+justify-content: center;
+box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
+margin-top: 50px;
+}
+
+.addUserModalClose {
+margin-left: 90vh;
+margin-top: 30px;
+background: none;
+border: none;
+font-size: 1.5rem;
+cursor: pointer;
 }
