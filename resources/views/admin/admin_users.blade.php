@@ -15,10 +15,20 @@
         <div class="main-content">
             <div class="admin-card">
                 <h2>Users Management</h2>
-                <p>Manage user accounts, edit details, and handle account deletions.</p>
-                <!-- Add your users management content here -->
+                <button class="add-user-btn" onclick="openAddUserModal()">Add New User</button>
             </div>
         </div>
     </div>
+
+    @include('admin.modal.admin_createUser')
+
+    <script>
+    function openAddUserModal() {
+        document.getElementById('addUserModal').style.display = 'block';
+    }
+    function closeAddUserModal() {
+        document.getElementById('addUserModal').style.display = 'none';
+    }
+    </script>
 </body>
 </html>

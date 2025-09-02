@@ -21,12 +21,6 @@
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/userapproval') }}"
-                   class="sidebar-btn{{ request()->is('admin/userapproval') ? ' active' : '' }}">
-                    <span class="icon">👥</span> <span class="text">User Approval</span>
-                </a>
-            </li>
-            <li>
                 <a href="{{ url('/admin/users') }}"
                    class="sidebar-btn{{ request()->is('admin/users') ? ' active' : '' }}">
                     <span class="icon">👤</span> <span class="text">Users Management</span>
