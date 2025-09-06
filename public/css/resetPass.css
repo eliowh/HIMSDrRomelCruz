@@ -1,0 +1,84 @@
+body {
+    min-height: 100vh;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+}
+
+.reset-container {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 40px 32px 32px 32px;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.reset-container h3 {
+    color: #1a4931;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+}
+
+.reset-container input[type="password"] {
+    width: 100%;
+    border: 1px solid #525253;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 1rem;
+    color: #020202;
+    background: #f8f8f8;
+    box-sizing: border-box;
+    margin-bottom: 18px;
+    outline: none;
+    transition: border 0.2s;
+}
+
+.reset-container input[type="password"]:focus {
+    border: 1.5px solid #1a4931;
+}
+
+.reset-container button[type="submit"] {
+    background: #367F2B;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
+    transition: background 0.2s;
+}
+
+.reset-container button[type="submit"]:hover {
+    background: #1a4931;
+}
+
+.alert {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.alert-danger {
+    background: #ffeaea;
+    color: #b30000;
+    border: 1px solid #ffb3b3;
+}
+
+.alert-success {
+    background: #eaffea;
+    color: #1a4931;
+    border: 1px solid #b3ffb3;
+}
