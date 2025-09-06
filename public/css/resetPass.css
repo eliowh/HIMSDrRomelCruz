@@ -8,7 +8,7 @@ body {
     margin: 0;
 }
 
-.reset-container {
+.container {
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
@@ -18,34 +18,29 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.reset-container h3 {
-    color: #1a4931;
-    font-size: 2rem;
-    font-weight: bold;
     margin-bottom: 24px;
 }
 
-.reset-container input[type="password"] {
-    width: 100%;
-    border: 1px solid #525253;
-    border-radius: 6px;
-    padding: 12px 14px;
-    font-size: 1rem;
-    color: #020202;
-    background: #f8f8f8;
-    box-sizing: border-box;
+.container h1 {
+    color: #1a4931;
+    font-size: 2rem;
+    font-weight: bold;
     margin-bottom: 18px;
-    outline: none;
-    transition: border 0.2s;
 }
 
-.reset-container input[type="password"]:focus {
-    border: 1.5px solid #1a4931;
+.container p {
+    color: #333;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
 }
 
-.reset-container button[type="submit"] {
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#resend-button {
     background: #367F2B;
     color: #fff;
     border: none;
@@ -59,26 +54,28 @@ body {
     transition: background 0.2s;
 }
 
-.reset-container button[type="submit"]:hover {
-    background: #1a4931;
+#resend-button:disabled {
+    background: #b3b3b3;
+    cursor: not-allowed;
 }
 
 .alert {
     width: 100%;
-    margin: 10px 0;
+    margin: 16px 0 0 0;
     padding: 10px;
     border-radius: 6px;
     font-size: 0.95rem;
-}
-
-.alert-danger {
-    background: #ffeaea;
-    color: #b30000;
-    border: 1px solid #ffb3b3;
+    text-align: center;
 }
 
 .alert-success {
     background: #eaffea;
     color: #1a4931;
     border: 1px solid #b3ffb3;
+}
+
+#countdown-message {
+    color: #b30000;
+    font-size: 1rem;
+    margin-top: 10px;
 }
