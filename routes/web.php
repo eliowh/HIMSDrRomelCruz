@@ -133,7 +133,8 @@ Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class,
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/users', function () {
-        return view('admin.admin_users');
+        $users = \App\Models\User::all();
+        return view('admin.admin_users', compact('users'));
     });
     
     Route::get('/admin/reports', function () {

@@ -1,10 +1,11 @@
+<link rel="stylesheet" href="{{url('css/admin.css')}}">
 <div id="addUserModal" class="addUserModal">
     <div class="addUserModalContent">
         <button onclick="closeAddUserModal()" class="addUserModalClose">&times;</button>
         <h2 class="sign">Create New User</h2>
 
         @if(session('success'))
-            <div class="success-message">
+            <div class="alert-success">
                 {{ session('success') }}
             </div>
         @endif
@@ -21,11 +22,11 @@
 
         <form id="createUserForm">
             @csrf
-            <div class="mb-3">
-                <label class="fName">Full Name</label>
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
                 <input type="text" 
                        name="name" 
-                       class="nField" 
+                       class="form-input" 
                        required 
                        pattern="[a-zA-Z\s]+"
                        title="Name can only contain letters and spaces"
@@ -34,20 +35,20 @@
                 <div class="error-text" style="display: none;"></div>
             </div>
 
-            <div class="mb-3">
-                <label class="eMail">Email Address</label>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
                 <input type="email" 
                        name="email" 
-                       class="eField"
+                       class="form-input"
                        required 
                        pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$"
                        title="Please enter a valid email address ending with .com">
                 <div class="error-text" style="display: none;"></div>
             </div>
 
-            <div class="mb-3">
-                <label class="eMail">Assign Role</label>
-                <select name="role" class="eField" required>
+            <div class="form-group">
+                <label class="form-label">Assign Role</label>
+                <select name="role" class="role-select" required>
                     <option value="" selected disabled>Select a role</option>
                     <option value="doctor">Doctor</option>
                     <option value="nurse">Nurse</option>
@@ -58,47 +59,12 @@
                 <div class="error-text" style="display: none;"></div>
             </div>
 
-            <button type="submit" class="CreateUserBtn">
+            <button type="submit" class="assign-btn">
                 Create User
             </button>
         </form>
     </div>
 </div>
-
-<style>
-.error {
-    border-color: #dc3545 !important;
-}
-
-.error-text {
-    color: #dc3545;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-}
-
-.success-message {
-    background-color: #d4edda;
-    color: #155724;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #c3e6cb;
-}
-
-.error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #f5c6cb;
-}
-
-.error-message ul {
-    margin: 0;
-    padding-left: 1.25rem;
-}
-</style>
 
 <script>
 document.getElementById('createUserForm').addEventListener('submit', function(e) {
@@ -108,7 +74,7 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     const nameField = form.querySelector('input[name="name"]');
     const emailField = form.querySelector('input[name="email"]');
     const roleField = form.querySelector('select[name="role"]');
-    const submitBtn = form.querySelector('.CreateUserBtn');
+    const submitBtn = form.querySelector('.assign-btn');
     
     // Clear previous error messages
     form.querySelectorAll('.error-text').forEach(error => {
@@ -220,12 +186,12 @@ function showError(field, message) {
 
 function showSuccessMessage(message) {
     // Remove any existing messages
-    const existingMessages = document.querySelectorAll('.success-message, .error-message');
+    const existingMessages = document.querySelectorAll('.alert-success, .error-message');
     existingMessages.forEach(msg => msg.remove());
     
     // Create new success message
     const successDiv = document.createElement('div');
-    successDiv.className = 'success-message';
+    successDiv.className = 'alert-success';
     successDiv.textContent = message;
     
     // Insert at the top of the form
@@ -235,7 +201,7 @@ function showSuccessMessage(message) {
 
 function showErrorMessage(message) {
     // Remove any existing messages
-    const existingMessages = document.querySelectorAll('.success-message, .error-message');
+    const existingMessages = document.querySelectorAll('.alert-success, .error-message');
     existingMessages.forEach(msg => msg.remove());
     
     // Create new error message

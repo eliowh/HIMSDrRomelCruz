@@ -178,17 +178,17 @@ body {
     border-radius: 18px;
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
     padding: 48px 56px;
-    max-width: 900px;
+    max-width: 93%;
     width: 100%;
 }
-.admin-card h2 {
+.main-content h2 {
     font-size: 2.2rem;
     font-weight: 700;
-    color: #1a237e;
+    color: #333;
     margin-bottom: 32px;
     letter-spacing: 1px;
 }
-.admin-card .add-user-btn {
+.main-content .add-user-btn {
     background: #367F2B;
     color: #fff;
     border: none;
@@ -199,7 +199,6 @@ body {
     cursor: pointer;
     box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
     float: right;
-    margin-top: -70px;
 }
 .admin-table {
     width: 100%;
@@ -212,6 +211,7 @@ body {
     background: #f9fafb;
     color: #222;
     font-size: 1.05rem;
+    text-align: left;
 }
 .admin-table th {
     background: #e3e8f7;
@@ -232,9 +232,9 @@ body {
     padding: 8px 14px;
     border-radius: 6px;
     border: 1px solid #b6c3e6;
-    background: #f4f7fd;
+    background: #f8f8f8;
     font-size: 1rem;
-    color: #1a237e;
+    color: #666;
 }
 .assign-btn {
     background: #367F2B;
@@ -260,84 +260,247 @@ body {
     font-weight: 500;
 }
 /* Modal Styles */
-
-
 .addUserModal {
-position: fixed;
-top: 0;
-left: 0;
-align-items: center;
-justify-content: center;
-width: 100%;
-height: 100%;
-background: rgba(0,0,0,0.5);
-z-index: 1000;
-display: none;
-flex-direction: column; /* stack vertically */
-align-items: center;    /* horizontal center */
-text-align: center;     /* text center */
+    position: fixed;
+    top: 0;
+    left: 0;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
 }
 
 .addUserModalContent {
-background: #fff;
-margin: 10% auto;
-padding: 20px;
-width: 100vh;
-position: center;
-border-radius: 8px;
-box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    padding: 48px 56px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+}
 
-}
-.addUserModalContent .createUserBtn{
-color: #1a4931;
-font-size: 2.5rem;
-font-weight: bold;
-}
-.addUserModalContent .sign{
-font-size: 60px;
-margin-bottom: 20px;
-color: #1a4931;
-}
-.addUserModalContent .mb-3 .fName, .eMail{
-font-size: 1.2rem;
-font-weight: 600;
-margin-bottom: 8px;
-display: flex;
-margin-left: 15vh;
-color: #333;
-
-}
-.addUserModalContent .mb-3 .nField, .eField{
-width: 70%;
-border: 1px solid #525253;
-border-radius: 6px;
-padding: 10px 14px;
-font-size: 1rem;
-color: #020202;
-background: #f8f8f8;
-box-sizing: border-box;
-margin-bottom: 15px;
-}
-.addUserModalContent .createClassBtn{
-background: #367F2B;
-color: #fff;
-border: none;
-padding: 12px 28px;
-border-radius: 6px;
-font-size: 1rem;
-font-weight: 600;
-cursor: pointer;
-align-items: center;
-justify-content: center;
-box-shadow: 0 2px 8px 0 rgba(26, 73, 49, 0.10);
-margin-top: 50px;
+.addUserModalContent .sign {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+    text-align: center;
 }
 
 .addUserModalClose {
-margin-left: 90vh;
-margin-top: 30px;
-background: none;
-border: none;
-font-size: 1.5rem;
-cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+}
+
+.addUserModalClose:hover {
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-input {
+    width: 100%;
+    border: 1px solid #b6c3e6;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    color: #333;
+    background: #f8f8f8;
+    box-sizing: border-box;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #1a237e;
+    background: #fff;
+}
+
+.error {
+    border-color: #dc3545 !important;
+    background: #fff5f5 !important;
+}
+
+.error-text {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px 20px;
+    margin-bottom: 24px;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
+}
+
+.error-message ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+/* Controls Row Styles */
+.controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    gap: 20px;
+}
+
+.filter-search-controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.search-input {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #b6c3e6;
+    background: #f4f7fd;
+    font-size: 1rem;
+    color: #333;
+    min-width: 250px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #1a237e;
+    background: #fff;
+}
+
+/* No results row for tables */
+.admin-table tbody tr.no-results td {
+    background: transparent;
+    font-style: italic;
+    color: #6b7280;
+    padding: 28px 20px;
+}
+
+.search-input::placeholder {
+    color: #999;
+}
+
+/* Role Badge Styles */
+.role-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.role-admin {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.role-doctor {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.role-nurse {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.role-lab_technician {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.role-cashier {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+/* Action Dropdown Styles */
+.action-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: #666;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #fff;
+    min-width: 120px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    border-radius: 6px;
+    z-index: 1000;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-content a.delete-action {
+    color: #dc3545;
+}
+
+.dropdown-content a.delete-action:hover {
+    background-color: #ffeaea;
 }
