@@ -11,18 +11,22 @@ Route::get('/', function () {
     return view('home');
 });
 
-// Login
+// Login - clear transient success messages to avoid showing stale flash notices
 Route::get('/login', function () {
+    // Remove any transient resend or generic success messages so they don't show up unexpectedly
+    session()->forget('resend_success');
+    session()->forget('success');
     return view('login');
 })->name('login');
 
-// Register
-Route::get('/register', function () {
-    return view('register');
-});
+// A simple helper route to clear transient messages and go to login
+Route::get('/back-to-login', function () {
+    session()->forget('resend_success');
+    session()->forget('success');
+    return redirect('/login');
+})->name('back-to-login');
 
 // Authentication
-Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/logout', [UserController::class, 'logout']);
 
@@ -32,12 +36,10 @@ Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
 Route::get('/reset-password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
 Route::post('/reset-password/{token}', [UserController::class, 'updatePassword'])->name('update-password');
 Route::post('/resend-email', [UserController::class, 'resendEmail'])->name('resend-email');
+Route::get('/password-reset-email-sent', function() { return view('reset_password_email_sent'); })->name('password-reset-email-sent');
 Route::get('/password-reset-success', [UserController::class, 'passwordResetSuccess'])->name('password-reset-success');
 
-// Pending Role
-Route::get('/pending', function () {
-    return view('pending');
-});
+// No more pending role route needed
 
 // Doctor Routes
 Route::middleware(['auth'])->group(function () {
@@ -127,18 +129,7 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth')->name('admin.home');
 Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('admin.createUser');
 
-Route::get('/admin/userapproval', function () {
-    $pendingUsers = User::where('role', 'pending')->get();
-    return view('admin.admin_userapproval', compact('pendingUsers'));
-})->middleware('auth');
-
-Route::post('/admin/assign-role/{user}', function ($userId) {
-    $user = User::findOrFail($userId);
-    $role = request('role');
-    $user->role = $role;
-    $user->save();
-    return redirect('/admin/userapproval')->with('success', 'Role assigned successfully!');
-})->middleware('auth');
+// User approval route removed - users are now assigned roles at creation
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/users', function () {

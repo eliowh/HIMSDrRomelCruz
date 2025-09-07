@@ -48,10 +48,10 @@ class UserController extends Controller
         ]);
 
         $incomingFields['password'] = bcrypt($incomingFields['password']);
-        $incomingFields['role'] = 'pending';
-        User::create($incomingFields);
-
-        return redirect('/login')->with('popup', 'Registration successful! Please login.');
+        // This method is now deprecated since users can't register themselves
+        // Only admins can create accounts
+        
+        return redirect('/login')->with('error', 'Self-registration is disabled. Please contact the administrator for an account.');
     }
 
     public function login(Request $request){
@@ -70,8 +70,9 @@ class UserController extends Controller
     if ($user && \Hash::check($request->input('loginpassword'), $user->password)) {
         $request->session()->regenerate();
         \Auth::login($user);
-        if ($user->role === 'pending') {
-            return redirect('/pending');
+        if (!$user->role) {
+            auth()->logout();
+            return redirect('/login')->with('error', 'Your account has not yet been assigned a role. Please contact an administrator.');
         } elseif ($user->role === 'admin') {
             return redirect('/admin/home');
         } elseif ($user->role === 'doctor') {
@@ -135,14 +136,14 @@ class UserController extends Controller
         // Resend the password reset email
         $user->notify(new ResetPasswordMail($user, $token));
 
-        // Set a session variable to track the last resend time
-        $request->session()->put('last_resend_time', time());
+    // Set a session variable to track the last resend time (persistent for countdown init)
+    $request->session()->put('last_resend_time', time());
 
-        // Set a session variable to display a success message
-        $request->session()->put('success', 'Email resent successfully!');
+    // Flash a transient success message under a specific key so it won't appear as a generic success elsewhere
+    $request->session()->flash('resend_success', 'Email resent successfully!');
 
-        // Return the email sent view
-        return view('reset_password_email_sent');
+    // Redirect (Post-Redirect-Get) back to the email sent page to avoid duplicate form submit and persistent session keys
+    return redirect()->route('password-reset-email-sent');
     }
 
     public function resetPassword(Request $request, $token)

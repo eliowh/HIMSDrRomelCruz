@@ -23,22 +23,8 @@ class AdminController extends Controller
         $adminName = auth()->user()->name ?? 'Admin';
         return $adminName;
     }
-    public function userApproval()
-    {
-        $pendingUsers = User::where('role', 'pending')->get();
-        return view('admin.admin_userapproval', compact('pendingUsers'));
-    }
-
-    public function assignRole(Request $request, $userId)
-    {
-        $user = User::findOrFail($userId);
-        $role = $request->input('role');
-        $user->role = $role;
-        $user->save();
-        // Send notification
-        $user->notify(new RoleAssigned($role));
-        return redirect('/admin/userapproval')->with('success', 'Role assigned and user notified successfully!');
-    }
+    // Removed pending user approval methods as they are no longer needed
+    // Roles are now assigned directly at user creation
     
     public function showCreateUserForm()
     {
