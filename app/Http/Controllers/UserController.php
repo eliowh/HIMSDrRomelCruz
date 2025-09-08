@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Report;
 use App\Notifications\ResetPasswordMail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -70,6 +71,24 @@ class UserController extends Controller
     if ($user && \Hash::check($request->input('loginpassword'), $user->password)) {
         $request->session()->regenerate();
         \Auth::login($user);
+        
+        // Log successful login
+        Report::log(
+            'User Login',
+            Report::TYPE_LOGIN_REPORT,
+            "User {$user->name} ({$user->role}) logged in successfully",
+            [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'login_time' => now()->toISOString(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ],
+            $user->id
+        );
+        
         if (!$user->role) {
             auth()->logout();
             return redirect('/login')->with('error', 'Your account has not yet been assigned a role. Please contact an administrator.');
@@ -87,6 +106,21 @@ class UserController extends Controller
             return redirect('/');
         }
     } else {
+        // Log failed login attempt
+        $failedEmail = $incomingFields['loginemail'];
+        Report::log(
+            'Failed Login Attempt',
+            Report::TYPE_LOGIN_REPORT,
+            "Failed login attempt for email: {$failedEmail}",
+            [
+                'attempted_email' => $failedEmail,
+                'failure_reason' => !$user ? 'Email not found' : 'Invalid password',
+                'attempt_time' => now()->toISOString(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]
+        );
+        
         if (!$user) {
             return back()->withErrors(['loginemail' => 'This email is invalid.'])->onlyInput('loginemail');
         } else {

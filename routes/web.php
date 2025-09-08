@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
@@ -129,6 +130,13 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth')->name('admin.home');
 Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('admin.createUser');
 
+// Admin User Management Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/users/{id}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('admin.users.edit');
+    Route::put('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('admin.users.update');
+    Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
+});
+
 // User approval route removed - users are now assigned roles at creation
 
 Route::middleware(['auth'])->group(function () {
@@ -137,9 +145,12 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.admin_users', compact('users'));
     });
     
-    Route::get('/admin/reports', function () {
-        return view('admin.admin_reports');
-    });
+    // Report Routes
+    Route::get('/admin/reports', [ReportController::class, 'index'])->name('admin.reports');
+    Route::post('/admin/reports/generate', [ReportController::class, 'generate'])->name('admin.reports.generate');
+    Route::get('/admin/reports/{report}', [ReportController::class, 'show'])->name('admin.reports.show');
+    Route::delete('/admin/reports/{report}', [ReportController::class, 'destroy'])->name('admin.reports.destroy');
+    Route::get('/admin/reports/{report}/export', [ReportController::class, 'export'])->name('admin.reports.export');
     
     Route::get('/admin/account', function () {
         return view('admin.admin_account');
