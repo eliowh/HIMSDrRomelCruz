@@ -10,7 +10,7 @@
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
-        <span>Nurse Panel</span>
+        <span>Emergency Room</span>
     </div>
     <nav>
         <ul>
@@ -30,6 +30,11 @@
                 <a href="{{ url('/nurse/patients') }}"
                    class="sidebar-btn{{ request()->is('nurse/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients List</span>
+                </a>
+            </li>
+                <a href="{{ url('/nurse/addPatients') }}" 
+                    class="sidebar-btn add-patient" title="Add Patient">
+                    <span class="icon">➕</span> <span class="text">Add Patient</span>
                 </a>
             </li>
             <li>
