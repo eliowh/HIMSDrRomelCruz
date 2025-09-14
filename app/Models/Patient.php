@@ -20,6 +20,12 @@ class Patient extends Model
         'city',
         'barangay',
         'nationality',
+        'room_no',
+        'admission_type',
+        'service',
+        'doctor_name',
+        'doctor_type',
+        'admission_diagnosis',
     ];
 
     protected $casts = [
@@ -30,11 +36,9 @@ class Patient extends Model
     {
         static::creating(function ($patient) {
             if (empty($patient->patient_no)) {
-                // get current max patient_no and increment, start at 250001
                 $max = (int) DB::table('patients')->max('patient_no');
                 $patient->patient_no = ($max >= 250001) ? ($max + 1) : 250001;
             }
         });
     }
 }
-?>

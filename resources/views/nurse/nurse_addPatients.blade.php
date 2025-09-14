@@ -72,6 +72,55 @@
         <label>Nationality</label>
         <input type="text" name="nationality" value="{{ old('nationality','Filipino') }}">
 
+        <!-- START: Admission fields -->
+        <hr style="margin:14px 0;border:none;border-top:1px solid #eee;">
+
+        <label>Room No.</label>
+        <input type="text" name="room_no" value="{{ old('room_no') }}">
+
+        <label>Admission Diagnosis (Adm. Diag)</label>
+        <textarea name="admission_diagnosis" rows="2">{{ old('admission_diagnosis') }}</textarea>
+
+        <div class="form-row" style="gap:10px;">
+            <div class="form-col">
+                <label>Admission Type (Adm. Type)</label>
+                <select name="admission_type">
+                    <option value="" {{ old('admission_type')=='' ? 'selected':'' }}>-- Select --</option>
+                    <option value="Emergency" {{ old('admission_type')=='Emergency' ? 'selected':'' }}>Emergency</option>
+                    <option value="Elective" {{ old('admission_type')=='Elective' ? 'selected':'' }}>Elective</option>
+                    <option value="Transfer" {{ old('admission_type')=='Transfer' ? 'selected':'' }}>Transfer</option>
+                </select>
+            </div>
+
+            <div class="form-col">
+                <label>Service</label>
+                <select name="service">
+                    <option value="" {{ old('service')=='' ? 'selected':'' }}>-- Select Service --</option>
+                    <option value="Inpatient" {{ old('service')=='Inpatient' ? 'selected':'' }}>Inpatient</option>
+                    <option value="Outpatient" {{ old('service')=='Outpatient' ? 'selected':'' }}>Outpatient</option>
+                    <option value="Surgery" {{ old('service')=='Surgery' ? 'selected':'' }}>Surgery</option>
+                    <option value="Emergency" {{ old('service')=='Emergency' ? 'selected':'' }}>Emergency</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row" style="gap:10px;margin-top:8px;">
+            <div class="form-col">
+                <label>Doctor</label>
+                <input type="text" name="doctor_name" value="{{ old('doctor_name') }}">
+            </div>
+            <div class="form-col">
+                <label>Doctor Type</label>
+                <select name="doctor_type">
+                    <option value="" {{ old('doctor_type')=='' ? 'selected':'' }}>-- Select --</option>
+                    <option value="Consultant" {{ old('doctor_type')=='Consultant' ? 'selected':'' }}>Consultant</option>
+                    <option value="Resident" {{ old('doctor_type')=='Resident' ? 'selected':'' }}>Resident</option>
+                    <option value="Intern" {{ old('doctor_type')=='Intern' ? 'selected':'' }}>Intern</option>
+                </select>
+            </div>
+        </div>
+        <!-- END: Admission fields -->
+
         <p style="font-size:0.9em;color:#666">Patient No will be assigned automatically (starts at 250001).</p>
 
         <button type="submit">Create Patient</button>
