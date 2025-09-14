@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
@@ -12,18 +13,22 @@ Route::get('/', function () {
     return view('home');
 });
 
-// Login
+// Login - clear transient success messages to avoid showing stale flash notices
 Route::get('/login', function () {
+    // Remove any transient resend or generic success messages so they don't show up unexpectedly
+    session()->forget('resend_success');
+    session()->forget('success');
     return view('login');
 })->name('login');
 
-// Register
-Route::get('/register', function () {
-    return view('register');
-});
+// A simple helper route to clear transient messages and go to login
+Route::get('/back-to-login', function () {
+    session()->forget('resend_success');
+    session()->forget('success');
+    return redirect('/login');
+})->name('back-to-login');
 
 // Authentication
-Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/logout', [UserController::class, 'logout']);
 
@@ -33,12 +38,10 @@ Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
 Route::get('/reset-password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
 Route::post('/reset-password/{token}', [UserController::class, 'updatePassword'])->name('update-password');
 Route::post('/resend-email', [UserController::class, 'resendEmail'])->name('resend-email');
+Route::get('/password-reset-email-sent', function() { return view('reset_password_email_sent'); })->name('password-reset-email-sent');
 Route::get('/password-reset-success', [UserController::class, 'passwordResetSuccess'])->name('password-reset-success');
 
-// Pending Role
-Route::get('/pending', function () {
-    return view('pending');
-});
+// No more pending role route needed
 
 // Doctor Routes
 Route::middleware(['auth'])->group(function () {
@@ -128,30 +131,30 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Admin Routes
-Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth');
+Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth')->name('admin.home');
 Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('admin.createUser');
 
-Route::get('/admin/userapproval', function () {
-    $pendingUsers = User::where('role', 'pending')->get();
-    return view('admin.admin_userapproval', compact('pendingUsers'));
-})->middleware('auth');
+// Admin User Management Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/users/{id}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('admin.users.edit');
+    Route::put('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('admin.users.update');
+    Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
+});
 
-Route::post('/admin/assign-role/{user}', function ($userId) {
-    $user = User::findOrFail($userId);
-    $role = request('role');
-    $user->role = $role;
-    $user->save();
-    return redirect('/admin/userapproval')->with('success', 'Role assigned successfully!');
-})->middleware('auth');
+// User approval route removed - users are now assigned roles at creation
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/users', function () {
-        return view('admin.admin_users');
+        $users = \App\Models\User::all();
+        return view('admin.admin_users', compact('users'));
     });
     
-    Route::get('/admin/reports', function () {
-        return view('admin.admin_reports');
-    });
+    // Report Routes
+    Route::get('/admin/reports', [ReportController::class, 'index'])->name('admin.reports');
+    Route::post('/admin/reports/generate', [ReportController::class, 'generate'])->name('admin.reports.generate');
+    Route::get('/admin/reports/{report}', [ReportController::class, 'show'])->name('admin.reports.show');
+    Route::delete('/admin/reports/{report}', [ReportController::class, 'destroy'])->name('admin.reports.destroy');
+    Route::get('/admin/reports/{report}/export', [ReportController::class, 'export'])->name('admin.reports.export');
     
     Route::get('/admin/account', function () {
         return view('admin.admin_account');

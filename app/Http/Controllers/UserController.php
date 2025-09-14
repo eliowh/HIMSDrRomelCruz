@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Report;
 use App\Notifications\ResetPasswordMail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -48,10 +49,10 @@ class UserController extends Controller
         ]);
 
         $incomingFields['password'] = bcrypt($incomingFields['password']);
-        $incomingFields['role'] = 'pending';
-        User::create($incomingFields);
-
-        return redirect('/login')->with('popup', 'Registration successful! Please login.');
+        // This method is now deprecated since users can't register themselves
+        // Only admins can create accounts
+        
+        return redirect('/login')->with('error', 'Self-registration is disabled. Please contact the administrator for an account.');
     }
 
     public function login(Request $request){
@@ -70,8 +71,27 @@ class UserController extends Controller
     if ($user && \Hash::check($request->input('loginpassword'), $user->password)) {
         $request->session()->regenerate();
         \Auth::login($user);
-        if ($user->role === 'pending') {
-            return redirect('/pending');
+        
+        // Log successful login
+        Report::log(
+            'User Login',
+            Report::TYPE_LOGIN_REPORT,
+            "User {$user->name} ({$user->role}) logged in successfully",
+            [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'login_time' => now()->toISOString(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ],
+            $user->id
+        );
+        
+        if (!$user->role) {
+            auth()->logout();
+            return redirect('/login')->with('error', 'Your account has not yet been assigned a role. Please contact an administrator.');
         } elseif ($user->role === 'admin') {
             return redirect('/admin/home');
         } elseif ($user->role === 'doctor') {
@@ -86,6 +106,21 @@ class UserController extends Controller
             return redirect('/');
         }
     } else {
+        // Log failed login attempt
+        $failedEmail = $incomingFields['loginemail'];
+        Report::log(
+            'Failed Login Attempt',
+            Report::TYPE_LOGIN_REPORT,
+            "Failed login attempt for email: {$failedEmail}",
+            [
+                'attempted_email' => $failedEmail,
+                'failure_reason' => !$user ? 'Email not found' : 'Invalid password',
+                'attempt_time' => now()->toISOString(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]
+        );
+        
         if (!$user) {
             return back()->withErrors(['loginemail' => 'This email is invalid.'])->onlyInput('loginemail');
         } else {
@@ -135,27 +170,40 @@ class UserController extends Controller
         // Resend the password reset email
         $user->notify(new ResetPasswordMail($user, $token));
 
-        // Set a session variable to track the last resend time
-        $request->session()->put('last_resend_time', time());
+    // Set a session variable to track the last resend time (persistent for countdown init)
+    $request->session()->put('last_resend_time', time());
 
-        // Set a session variable to display a success message
-        $request->session()->put('success', 'Email resent successfully!');
+    // Flash a transient success message under a specific key so it won't appear as a generic success elsewhere
+    $request->session()->flash('resend_success', 'Email resent successfully!');
 
-        // Return the email sent view
-        return view('reset_password_email_sent');
+    // Redirect (Post-Redirect-Get) back to the email sent page to avoid duplicate form submit and persistent session keys
+    return redirect()->route('password-reset-email-sent');
     }
 
     public function resetPassword(Request $request, $token)
     {
-        // Get the user's email address from the token
+        \Log::info('Password reset attempt', ['token' => $token]);
+        
+        // Get the user by token
         $user = User::where('password_reset_token', $token)->first();
+        
+        // Debug log
+        if ($user) {
+            \Log::info('User found for password reset', ['email' => $user->email, 'token' => $token]);
+        } else {
+            \Log::warning('No user found for password reset token', ['token' => $token]);
+            
+            // Check if any users have tokens for debugging
+            $usersWithTokens = User::whereNotNull('password_reset_token')->get(['id', 'email', 'password_reset_token']);
+            \Log::info('Users with tokens', ['users' => $usersWithTokens]);
+        }
 
         // If the user exists, show the password reset form
         if ($user) {
             return view('reset_password', ['user' => $user, 'token' => $token]);
         } else {
             // If the user doesn't exist, show an error message
-            return redirect('/login')->with('error', 'Invalid password reset token.');
+            return redirect('/login')->with('error', 'Invalid or expired password reset link. Please contact support.');
         }
     }
 

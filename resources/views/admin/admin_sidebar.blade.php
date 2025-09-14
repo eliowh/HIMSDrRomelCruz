@@ -39,13 +39,22 @@
                 </a>
             </li>
             <li>
-                <form action="{{ url('/logout') }}" method="POST" class="logout-form" onsubmit="localStorage.clear();">
+                <form action="{{ url('/logout') }}" method="POST" id="logout-form" class="logout-form">
                     @csrf
-                    <button type="submit" class="sidebar-btn">
+                    <button type="button" class="sidebar-btn" onclick="confirmLogout()">
                         <span class="icon">🚪</span> <span class="text">Log Out</span>
                     </button>
                 </form>
             </li>
+
+            <script>
+                function confirmLogout() {
+                    if (confirm('Are you sure you want to logout?')) {
+                        localStorage.clear();
+                        document.getElementById('logout-form').submit();
+                    }
+                }
+            </script>
         </ul>
     </nav>
 </div>
