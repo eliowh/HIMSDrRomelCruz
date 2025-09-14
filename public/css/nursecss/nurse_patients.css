@@ -1,0 +1,193 @@
+/* Nurse patients list styles (matches nurse theme) */
+
+body {
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f4f7fb;
+    color: #0f1724;
+    margin: 0;
+}
+
+.nurse-card {
+    background: #fff;
+    border: 1px solid rgba(20,20,20,0.06);
+    box-shadow: 0 6px 20px rgba(16,24,40,0.04);
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 1100px;
+    margin: 24px auto;
+}
+
+.nurse-card h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #0b1220;
+}
+
+/* Search input */
+.nurse-card form input[type="search"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e6e9ef;
+    background:#fff;
+    box-sizing: border-box;
+}
+
+/* Table */
+.nurse-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 0.95rem;
+}
+.nurse-card thead th {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+    color:#374151;
+}
+.nurse-card tbody td {
+    padding: 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #fbfbfb;
+    color: #0b1220;
+}
+
+/* Buttons / links */
+.btn {
+    display:inline-block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
+    box-shadow: 0 8px 20px rgba(29,78,216,0.12);
+}
+
+.btn.secondary {
+    background: #f3f4f6;
+    color: #111827;
+    box-shadow: none;
+}
+
+/* Alerts */
+.alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }
+.alert-success { background: #ecfdf5; color: #064e3b; }
+.alert-info { background: #eef2ff; color: #3730a3; }
+
+/* Responsive */
+@media (max-width: 820px) {
+    .nurse-card { padding: 14px; margin: 12px; }
+    .nurse-card table, .nurse-card thead, .nurse-card tbody, .nurse-card th, .nurse-card td, .nurse-card tr {
+        display: block;
+    }
+    .nurse-card thead { display: none; }
+    .nurse-card tbody tr { margin-bottom: 12px; border: 1px solid #eef2f7; border-radius: 8px; padding: 10px; }
+    .nurse-card tbody td { display: flex; justify-content: space-between; padding: 6px 8px; }
+    .nurse-card tbody td::before { font-weight:600; color:#6b7280; margin-right:8px; }
+}
+.patients-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.patients-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #0b1220;
+}
+
+.patients-search {
+    margin-bottom: 12px;
+}
+.search-input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #e6e9ef;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+/* Table container */
+.table-wrap {
+    overflow: auto;
+}
+
+/* Table */
+.patients-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+.patients-table thead th {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+    color: #374151;
+}
+.patients-table tbody td {
+    padding: 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #fbfbfb;
+    color: #0b1220;
+}
+
+/* Column helpers (optional) */
+.col-no { width: 120px; }
+.col-actions { width: 120px; }
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+}
+.view-btn {
+    background: #f3f4f6;
+    color: #111827;
+    border: none;
+    box-shadow: none;
+}
+
+/* Alerts */
+.alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }
+.alert-success { background: #ecfdf5; color: #064e3b; }
+.alert-info { background: #eef2ff; color: #3730a3; }
+
+/* Pagination wrapper spacing */
+.pagination-wrap { margin-top: 12px; }
+
+/* Responsive: stack table rows on small screens */
+@media (max-width: 820px) {
+    .table-wrap { overflow: visible; }
+    .patients-table, .patients-table thead, .patients-table tbody, .patients-table th, .patients-table td, .patients-table tr {
+        display: block;
+    }
+    .patients-table thead { display: none; }
+    .patients-table tbody tr {
+        margin-bottom: 12px;
+        border: 1px solid #eef2f7;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    .patients-table tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 8px;
+    }
+    .patients-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6b7280;
+        margin-right: 8px;
+    }
+}

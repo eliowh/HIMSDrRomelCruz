@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<link rel="stylesheet" href="{{ url('css/nurse_addPatients.css') }}">
+<link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
 <div class="nurse-card">
     <h3>Add Patient</h3>
 
