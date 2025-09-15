@@ -2,54 +2,46 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Patient extends Model
 {
-    use HasFactory;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'patient_id',
+        'patient_no',
         'first_name',
+        'middle_name',
         'last_name',
         'date_of_birth',
-        'gender',
-        'phone',
-        'email',
-        'address',
-        'emergency_contact_name',
-        'emergency_contact_phone',
-        'blood_type',
-        'allergies',
-        'medical_history',
-        'current_medications',
-        'insurance_provider',
-        'insurance_number',
-        'primary_diagnosis',
-        'admission_date',
-        'room_number',
-        'status',
-        'notes'
+        'age_years',
+        'age_months',
+        'age_days',
+        'province',
+        'city',
+        'barangay',
+        'nationality',
+        'room_no',
+        'admission_type',
+        'service',
+        'doctor_name',
+        'doctor_type',
+        'admission_diagnosis',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'date_of_birth' => 'date',
-        'admission_date' => 'datetime',
-        'allergies' => 'array',
-        'current_medications' => 'array'
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($patient) {
+            if (empty($patient->patient_no)) {
+                $max = (int) DB::table('patients')->max('patient_no');
+                $patient->patient_no = ($max >= 250001) ? ($max + 1) : 250001;
+            }
+        });
+    }
 
     /**
      * Get the patient's full name.
@@ -92,3 +84,4 @@ class Patient extends Model
         return $query->where('status', $status);
     }
 }
+

@@ -8,7 +8,7 @@
 <body>
 <div class="container">
     <div class="left">
-        <img src="{{ asset('img/romelcruz1.jpg')}}" alt="">
+        <img src="{{ asset('img/hospital_logo.png')}}" alt="">
     </div>
     <div class="right">
         <div class="formbox">

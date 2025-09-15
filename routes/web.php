@@ -6,6 +6,8 @@ use App\Http\Controllers\ReportController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\AdminController;
 
 // Home
 Route::get('/', function () {
@@ -73,10 +75,9 @@ Route::middleware(['auth'])->group(function () {
         return view('nurse.nurse_appointments');
     });
     
-    Route::get('/nurse/patients', function () {
-        return view('nurse.nurse_patients');
-    });
-    
+    // show patients list
+    Route::get('/nurse/patients', [PatientController::class, 'index'])->name('nurse.patients.index')->middleware('auth');
+
     Route::get('/nurse/schedule', function () {
         return view('nurse.nurse_schedule');
     });
@@ -84,6 +85,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/nurse/account', function () {
         return view('nurse.nurse_account');
     });
+
+    // ensure add/store routes exist (if not already present)
+    Route::get('/nurse/addPatients', [PatientController::class, 'create'])->name('nurse.addPatients.create')->middleware('auth');
+    Route::post('/nurse/addPatients', [PatientController::class, 'store'])->name('nurse.addPatients.store')->middleware('auth');
 });
 
 // Lab Technician Routes
@@ -154,6 +159,9 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.admin_account');
     });
 });
+
+// ICD-10 Import Route
+Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->name('admin.icd10.import');
 
 
 

@@ -10,6 +10,8 @@ use App\Notifications\NewUserCredentials;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\Icd10Import;
 
 class AdminController extends Controller
 {
@@ -374,5 +376,16 @@ class AdminController extends Controller
                 'message' => 'Error deleting user: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function importIcd10(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv'
+        ]);
+
+        Excel::import(new Icd10Import, $request->file('file'));
+
+        return back()->with('success', 'ICD-10 data imported.');
     }
 }
