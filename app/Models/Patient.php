@@ -27,10 +27,25 @@ class Patient extends Model
         'doctor_name',
         'doctor_type',
         'admission_diagnosis',
+        'status',
+        'room_number',
+        'primary_diagnosis',
+        'blood_type',
+        'phone',
+        'email',
+        'emergency_contact',
+        'allergies',
+        'medications',
+        'medical_history',
+        'admission_date',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'admission_date' => 'datetime',
+        'allergies' => 'array',
+        'medications' => 'array',
+        'medical_history' => 'array',
     ];
 
     protected static function booted()
@@ -49,6 +64,14 @@ class Patient extends Model
     public function getFullNameAttribute(): string
     {
         return $this->first_name . ' ' . $this->last_name;
+    }
+
+    /**
+     * Get the patient's formatted patient number.
+     */
+    public function getPatientIdAttribute(): string
+    {
+        return 'P' . str_pad($this->patient_no, 6, '0', STR_PAD_LEFT);
     }
 
     /**

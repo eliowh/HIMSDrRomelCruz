@@ -34,20 +34,18 @@ class DoctorController extends Controller
             $patientsQuery->where(function($q) use ($query) {
                 $q->where('first_name', 'LIKE', "%{$query}%")
                   ->orWhere('last_name', 'LIKE', "%{$query}%")
-                  ->orWhere('patient_id', 'LIKE', "%{$query}%")
+                  ->orWhere('patient_no', 'LIKE', "%{$query}%")
                   ->orWhere('room_number', 'LIKE', "%{$query}%")
                   ->orWhere('primary_diagnosis', 'LIKE', "%{$query}%")
                   ->orWhere('medical_history', 'LIKE', "%{$query}%")
                   ->orWhere('email', 'LIKE', "%{$query}%")
                   ->orWhere('phone', 'LIKE', "%{$query}%")
-                  ->orWhere('emergency_contact_name', 'LIKE', "%{$query}%")
+                  ->orWhere('emergency_contact', 'LIKE', "%{$query}%")
                   ->orWhere('blood_type', 'LIKE', "%{$query}%")
-                  ->orWhere('insurance_provider', 'LIKE', "%{$query}%")
-                  ->orWhere('insurance_number', 'LIKE', "%{$query}%")
                   // Search in allergies JSON field
                   ->orWhereRaw('JSON_SEARCH(allergies, "one", ?) IS NOT NULL', ["%{$query}%"])
-                  // Search in current_medications JSON field
-                  ->orWhereRaw('JSON_SEARCH(current_medications, "one", ?) IS NOT NULL', ["%{$query}%"]);
+                  // Search in medications JSON field
+                  ->orWhereRaw('JSON_SEARCH(medications, "one", ?) IS NOT NULL', ["%{$query}%"]);
             });
         }
         
