@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\AdminController;
 
 // Home
 Route::get('/', function () {
@@ -160,6 +161,9 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.admin_account');
     });
 });
+
+// ICD-10 Import Route
+Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->name('admin.icd10.import');
 
 
 
