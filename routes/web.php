@@ -46,17 +46,15 @@ Route::get('/password-reset-success', [UserController::class, 'passwordResetSucc
 
 // Doctor Routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/doctor/home', function () {
-        return view('doctor.doctor_home');
-    });
+    Route::get('/doctor/home', [App\Http\Controllers\DoctorController::class, 'dashboard'])->name('doctor.dashboard');
     
     Route::get('/doctor/appointments', function () {
         return view('doctor.doctor_appointments');
     });
 
-    Route::get('/doctor/patients', function () {
-        return view('doctor.doctor_patients');
-    });
+    // Patient Management Routes
+    Route::get('/doctor/patients', [App\Http\Controllers\DoctorController::class, 'patients'])->name('doctor.patients');
+    Route::get('/doctor/patients/{id}', [App\Http\Controllers\DoctorController::class, 'showPatient'])->name('doctor.patients.show');
 
     Route::get('/doctor/schedule', function () {
         return view('doctor.doctor_schedule');
