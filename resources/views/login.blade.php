@@ -41,22 +41,19 @@
             <div class="formbox">
                 <form action="/login" method="POST">
                     @csrf
-                    <h3>Dr. Romel Cruz Hospital</h3>
-
+                    <h3 class="hp">Dr. Romel Cruz Hospital</h3>
                     <h4>Sign in to your account</h4>
-                    <h3 class="welcome">Welcome back! Please enter your details.</h3>
-                    <h2 class="mail">Email*</h2>
-                    <input type="text" placeholder = "Enter your Email" name = "loginemail" value="{{ old('loginemail') }}">
-                    <h2 class="pass">Password*</h2>
-                    <input type="password" placeholder = "Enter your Password" name = "loginpassword"><br>
-                    <h2 class="rem">Must be atleast 8 characters</h2>
+                    <p class="welcome">Please enter your details</p>
+                    <h2 class="mail">Email</h2>
+                    <input type="text" placeholder = "Enter your email address" name = "loginemail" value="{{ old('loginemail') }}">
+                    <h2 class="pass">Password</h2>
+                    <input type="password" placeholder = "Enter your password" name = "loginpassword"><br>
                     <button type="submit">Log In</button><br>
-                    <a href="{{ url('/forgot-password') }}" style="color: #000; font-weight: bold;">Forgot Password</a> 
+                    <a href="{{ url('/forgot-password') }}" style="color: #1a4931; font-weight: bold;">Forgot Password</a>
+                    <p style="margin-top: 15px; font-size: 0.9em; color: #555; font-style: italic;">
+                        Need an account? Please contact the hospital administrator
+                    </p>
                 </form>
-                <div class="social-login">
-                    <p>Don't have an account?</p>
-                    <a href="{{ url('/register') }}" style="color: #000; font-weight: bold;">Register</a>
-                </div>
            </div>
         </div>
         <div class="right">

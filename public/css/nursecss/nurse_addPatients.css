@@ -1,0 +1,135 @@
+/* Styles matched to the nurse.css look & feel for the Add Patient page */
+
+/* Basic page layout */
+body {
+    font-family: "Segoe UI", Roboto, -apple-system, "Helvetica Neue", Arial;
+    background: #f4f7fb;
+    color: #333;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Card container used across nurse views */
+.nurse-card {
+    background: #ffffff;
+    border: 1px solid rgba(20,20,20,0.06);
+    box-shadow: 0 6px 20px rgba(16,24,40,0.04);
+    border-radius: 10px;
+    padding: 22px;
+    max-width: 920px;
+    margin: 28px auto;
+}
+
+/* Heading */
+.nurse-card h3 {
+    margin: 0 0 14px;
+    font-weight: 600;
+    color: #0f1724;
+    font-size: 1.25rem;
+}
+
+/* Alerts */
+.alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; }
+.alert-success { background: #ecfdf5; color: #064e3b; border: 1px solid rgba(6,78,59,0.08); }
+.alert-danger { background: #fff1f2; color: #7f1d1d; border: 1px solid rgba(127,29,29,0.06); }
+
+/* Form layout */
+form label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #0b1220; }
+.form-row { display:flex; gap:12px; margin-bottom:14px; }
+.form-col { flex:1; min-width: 0; }
+
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e6e9ef;
+    background: #fff;
+    font-size: 0.95rem;
+    color: #0b1220;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #6aa3ff;
+    box-shadow: 0 4px 14px rgba(106,163,255,0.12);
+}
+
+/* Compact rows for age fields */
+.age-row { display:flex; gap:10px; align-items:flex-end; }
+.age-row .form-col { flex: 0 0 33%; }
+
+/* Small helper text */
+.form-help { font-size: 0.85rem; color: #6b7280; margin-top:6px; }
+
+/* Buttons */
+button[type="submit"], .btn {
+    background: linear-gradient(180deg,#2563eb 0%,#1d4ed8 100%);
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(29,78,216,0.12);
+    transition: transform .08s ease, box-shadow .12s ease, opacity .12s ease;
+    font-size: 0.95rem;
+}
+
+button[type="submit"]:hover { transform: translateY(-1px); }
+button[type="submit"]:active { transform: translateY(0); }
+button[type="button"] { background:#f3f4f6; color:#111827; }
+
+/* Responsive */
+@media (max-width: 720px) {
+    .form-row, .age-row { flex-direction: column; }
+    .nurse-card { margin: 16px; padding:16px; }
+}
+
+/* Small visual Patient No badge (if shown) */
+.patient-no {
+    display:inline-block;
+    background:#eef2ff;
+    color:#3730a3;
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:700;
+    font-size:0.95rem;
+    margin-bottom:10px;
+}
+
+/* Minor utility */
+.text-muted { color: #6b7280; font-size:0.9rem; }
+
+.age-inputs {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.age-item { flex: 1; min-width: 0; }
+
+.age-item .small-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    color: #374151;
+    font-weight: 600;
+}
+
+/* ensure inputs fill column */
+.age-item input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* responsive: stack vertically on narrow screens */
+@media (max-width: 720px) {
+    .age-inputs { flex-direction: column; }
+}
