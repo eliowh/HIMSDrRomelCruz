@@ -54,9 +54,8 @@
     <div class="welcome-box">
         <h1>Welcome!</h1>
         <p>Welcome to Dr. Romel Cruz Hospital's portal.<br>
-        Please log in or create an account to continue.</p>
+        Please log in to continue.</p>
         <a href="{{ url('/login') }}">Log In</a>
-        <a href="{{ url('/register') }}">Create an Account</a>
     </div>
 </body>
 </html>

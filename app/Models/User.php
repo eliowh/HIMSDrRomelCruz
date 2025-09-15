@@ -46,4 +46,36 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * The patients that belong to the doctor.
+     */
+    public function patients()
+    {
+        return $this->belongsToMany(Patient::class, 'doctor_patient', 'doctor_id', 'patient_id');
+    }
+
+    /**
+     * Check if user is a doctor.
+     */
+    public function isDoctor(): bool
+    {
+        return $this->role === 'doctor';
+    }
+
+    /**
+     * Check if user is a nurse.
+     */
+    public function isNurse(): bool
+    {
+        return $this->role === 'nurse';
+    }
+
+    /**
+     * Check if user is an admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 }
