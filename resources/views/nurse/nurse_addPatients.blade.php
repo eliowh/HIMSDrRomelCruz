@@ -75,11 +75,23 @@
         <!-- START: Admission fields -->
         <hr style="margin:14px 0;border:none;border-top:1px solid #eee;">
 
-        <label>Room No.</label>
-        <input type="text" name="room_no" value="{{ old('room_no') }}">
+        <label>Room</label>
+        <div style="position:relative;">
+            <input id="room-input" type="text" name="room_no" autocomplete="off" value="{{ old('room_no') }}" placeholder="Type room name or price">
+            <div id="room-suggestions" class="icd-suggestions" style="position:absolute; left:0; right:0; z-index:2000; display:none;"></div>
+        </div>
+
+    <!-- Room price removed per request; only store the room name -->
 
         <label>Admission Diagnosis (Adm. Diag)</label>
-        <textarea name="admission_diagnosis" rows="2">{{ old('admission_diagnosis') }}</textarea>
+        <div style="position:relative;">
+            <input id="admission-diagnosis" name="admission_diagnosis" type="text" autocomplete="off" placeholder="Type ICD-10 code or disease name" value="{{ old('admission_diagnosis') }}" />
+            <div id="icd10-suggestions" class="icd-suggestions" style="position:absolute; left:0; right:0; z-index:2000; display:none;"></div>
+            <div id="icd10-debug" style="position:relative; margin-top:6px; font-size:0.9rem; color:#666;"></div>
+        </div>
+
+        <label>Admission Diagnosis Description</label>
+        <input id="admission-diagnosis-desc" name="admission_diagnosis_description" type="text" placeholder="Description will appear here" readonly value="{{ old('admission_diagnosis_description') }}" />
 
         <div class="form-row" style="gap:10px;">
             <div class="form-col">
@@ -127,3 +139,112 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<style>
+.icd-suggestions { background:#fff; border:1px solid #ddd; max-height:240px; overflow:auto; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+.icd-suggestion { padding:10px 12px; cursor:pointer; border-bottom:1px solid #f1f1f1; }
+.icd-suggestion:last-child{ border-bottom: none; }
+.icd-suggestion:hover, .icd-suggestion.active { background:#f0f7f1; }
+.icd-suggestion .code { font-weight:700; color:#1a4931; margin-right:8px; }
+.icd-suggestion .desc { color:#333; font-size:0.95rem; }
+</style>
+
+<script>
+(function(){
+    const input = document.getElementById('admission-diagnosis');
+    const descField = document.getElementById('admission-diagnosis-desc');
+    const container = document.getElementById('icd10-suggestions');
+    if (!input || !container) return;
+    let timer = null; let activeIndex = -1; let lastItems = [];
+    function clearSuggestions(){ container.innerHTML=''; container.style.display='none'; activeIndex=-1; lastItems=[]; }
+    function renderSuggestions(items){ lastItems=items; if(!items||!items.length){ clearSuggestions(); return;} container.innerHTML=''; items.forEach((it,idx)=>{ const el=document.createElement('div'); el.className='icd-suggestion'; el.dataset.index=idx; el.innerHTML = '<span class="code">'+escapeHtml(it.code)+'</span> <span class="desc">'+escapeHtml(it.description)+'</span>'; el.addEventListener('click',()=>selectItem(idx)); container.appendChild(el); }); container.style.display='block'; activeIndex=-1; }
+    function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
+    function selectItem(idx){ const item=lastItems[idx]; if(!item) return; input.value = item.code || item.description || ''; descField.value = item.description || ''; clearSuggestions(); }
+    function highlightActive(){ const nodes = container.querySelectorAll('.icd-suggestion'); nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); }
+    input.addEventListener('input', ()=>{ const q = input.value.trim(); if(timer) clearTimeout(timer); if(q.length<1){ clearSuggestions(); return; } // changed min chars to 1 for testing
+        // show debug
+        const dbg = document.getElementById('icd10-debug'); if(dbg) dbg.textContent = 'Searching for: ' + q;
+        timer = setTimeout(()=>{ const url = '{{ route("icd10.search") }}?q='+encodeURIComponent(q); console.log('ICD10 fetch', url);
+            fetch(url)
+            .then(async r=>{
+                console.log('ICD10 response', r.status);
+                const dbg = document.getElementById('icd10-debug');
+                const ct = (r.headers.get('content-type') || '').toLowerCase();
+                const text = await r.text();
+                // If server returns JSON, parse and render. Otherwise show helpful debug with a snippet of the HTML/error
+                if (ct.includes('application/json')) {
+                    try {
+                        const data = JSON.parse(text);
+                        console.log('ICD10 data', data);
+                        renderSuggestions(Array.isArray(data)?data:[]);
+                        if(dbg) dbg.textContent = 'Found ' + (Array.isArray(data)?data.length:0) + ' results';
+                    } catch(parseErr){
+                        console.error('Failed to parse JSON', parseErr, text);
+                        if(dbg) dbg.textContent = 'Invalid JSON response';
+                        clearSuggestions();
+                    }
+                } else {
+                    console.warn('Non-JSON response for ICD10 search', r.status, ct, text);
+                    if(dbg){
+                        const snippet = escapeHtml(text.slice(0,1500));
+                        dbg.innerHTML = 'Server returned non-JSON response (status ' + r.status + '). Showing first 1500 chars:<br><details><summary>Show snippet</summary><pre style="white-space:pre-wrap;">' + snippet + '</pre></details>';
+                    }
+                    clearSuggestions();
+                }
+            })
+            .catch(e=>{ console.error('ICD10 fetch error', e); const dbg = document.getElementById('icd10-debug'); if(dbg) dbg.textContent = 'Fetch error: ' + (e.message||e); clearSuggestions(); }); }, 250); });
+    input.addEventListener('keydown',(e)=>{ const nodes = container.querySelectorAll('.icd-suggestion'); if(!nodes.length) return; if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex = Math.min(activeIndex+1, nodes.length-1); highlightActive(); nodes[activeIndex].scrollIntoView({block:'nearest'});
+    } else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex = Math.max(activeIndex-1,0); highlightActive(); nodes[activeIndex].scrollIntoView({block:'nearest'});
+    } else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); } else if(e.key==='Escape'){ clearSuggestions(); } });
+    document.addEventListener('click',(e)=>{ if(!container.contains(e.target) && e.target !== input) clearSuggestions(); });
+})();
+</script>
+<script>
+(function(){
+    // Room autocomplete (lightweight, suggests only room name)
+    const input = document.getElementById('room-input');
+    const container = document.getElementById('room-suggestions');
+    if (!input || !container) return;
+    let timer = null;
+    let activeIndex = -1;
+    let lastItems = [];
+
+    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function clearSuggestions(){ container.innerHTML=''; container.style.display='none'; activeIndex=-1; lastItems=[]; }
+    function renderSuggestions(items){ lastItems = items || []; if(!lastItems.length){ clearSuggestions(); return; } container.innerHTML = ''; lastItems.forEach((it, idx)=>{ const el = document.createElement('div'); el.className = 'icd-suggestion'; el.dataset.index = idx; el.innerHTML = '<span class="code">'+escapeHtml(it.name)+'</span>'; el.addEventListener('click', ()=> selectItem(idx)); container.appendChild(el); }); container.style.display = 'block'; activeIndex = -1; }
+    function selectItem(idx){ const item = lastItems[idx]; if(!item) return; input.value = item.name || ''; clearSuggestions(); }
+    function highlightActive(){ const nodes = container.querySelectorAll('.icd-suggestion'); nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); }
+
+    input.addEventListener('input', ()=>{
+        const q = input.value.trim(); if(timer) clearTimeout(timer); if(q.length < 1){ clearSuggestions(); return; }
+        timer = setTimeout(()=>{
+            const url = '{{ route("rooms.search") }}?q=' + encodeURIComponent(q);
+            fetch(url).then(async r => {
+                const ct = (r.headers.get('content-type') || '').toLowerCase();
+                const text = await r.text();
+                if(ct.includes('application/json')){
+                    try{
+                        const data = JSON.parse(text);
+                        renderSuggestions(Array.isArray(data)?data:[]);
+                    }catch(e){ console.error('Room parse error', e); clearSuggestions(); }
+                } else {
+                    console.warn('Non-JSON response for rooms search', r.status);
+                    clearSuggestions();
+                }
+            }).catch(e=>{ console.error('Rooms fetch error', e); clearSuggestions(); });
+        }, 200);
+    });
+
+    input.addEventListener('keydown', (e)=>{
+        const nodes = container.querySelectorAll('.icd-suggestion'); if(!nodes.length) return;
+        if(e.key === 'ArrowDown'){ e.preventDefault(); activeIndex = Math.min(activeIndex+1, nodes.length-1); highlightActive(); nodes[activeIndex].scrollIntoView({block:'nearest'}); }
+        else if(e.key === 'ArrowUp'){ e.preventDefault(); activeIndex = Math.max(activeIndex-1, 0); highlightActive(); nodes[activeIndex].scrollIntoView({block:'nearest'}); }
+        else if(e.key === 'Enter'){ e.preventDefault(); if(activeIndex >= 0) selectItem(activeIndex); }
+        else if(e.key === 'Escape'){ clearSuggestions(); }
+    });
+
+    document.addEventListener('click', (e)=>{ if(!container.contains(e.target) && e.target !== input) clearSuggestions(); });
+})();
+</script>
+@endpush
