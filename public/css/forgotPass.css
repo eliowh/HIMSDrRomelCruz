@@ -2,7 +2,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    min-height: 100vh;
+    min-height: 80vh;
     min-width: 100vw;
     position: relative;
     overflow-x: hidden;
@@ -29,7 +29,8 @@ body::after {
     display: flex;
     flex-wrap: wrap;
     max-width: 1000px;
-    margin: 40px auto;
+    margin: 30%;
+    margin-top: 200px;
     border-radius: 24px;
     box-shadow: 0 12px 40px rgba(30,60,60,0.12);
     overflow: hidden;

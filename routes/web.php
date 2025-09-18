@@ -163,6 +163,20 @@ Route::middleware(['auth'])->group(function () {
 // ICD-10 Import Route
 Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->name('admin.icd10.import');
 
+// ICD-10 live search endpoint (AJAX)
+Route::get('/icd10/search', [App\Http\Controllers\Icd10Controller::class, 'search'])->name('icd10.search');
+
+// Temporary test JSON route for debugging the autocomplete (remove after debugging)
+Route::get('/icd10/test-json', function () {
+    return response()->json([
+        ['code' => 'A00', 'description' => 'Cholera'],
+        ['code' => 'B01', 'description' => 'Varicella']
+    ]);
+})->name('icd10.testJson');
+
+// Room live search endpoint (AJAX) - returns [{name,price}]
+Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search'])->name('rooms.search');
+
 
 
 
