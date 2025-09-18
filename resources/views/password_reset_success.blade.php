@@ -13,14 +13,14 @@
     <div class="right">
         <div class="formbox">
             <h3 class="header">Password Reset Successful</h3>
-            <p style="margin-bottom: 30px; color: #155724; background-color: #d4edda; padding: 10px; border-radius: 5px; margin: auto; text-align: center; width: 54%">
+            <p style="margin-bottom: 30px; color: #155724; background-color: #d4edda; padding: 10px; border-radius: 5px; margin: auto; text-align: center; width: 84%">
                 Your password has been successfully updated. 
             </p>
             <p style="margin-bottom: 5px; margin-top: 15px; color: #666; text-align: center; font-size: 0.9em;">
                 You can now login with your new password.
             </p>
-            <a href="{{ route('login') }}" class="submitBtn">
-                Login Now
+            <a href="{{ route('login') }}" class="back-link">
+                ← Login Now
             </a>
         </div>
     </div>  

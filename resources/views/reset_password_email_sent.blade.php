@@ -24,13 +24,13 @@
                 @csrf
                 <button type="submit" class="submitBtn" id="resend-button">Resend Email</button>
                 @if (session('resend_success'))
-                    <div style="color: #155724; background-color: #d4edda; padding: 10px; border-radius: 5px; margin: auto; text-align: center; width: 54%">
+                    <div style="color: #155724; background-color: #d4edda; padding: 10px; border-radius: 5px; margin: auto; margin-top: 10px; text-align: center; width: 54%">
                         {{ session('resend_success') }}
                     </div>
                 @endif
             </form>
             <br><br>
-            <a href="{{ url('/login') }}" style="color: #1a4931; font-weight: bold; text-decoration: none; display: inline-block; margin-top: 10px;">
+            <a href="{{ url('/login') }}" class="back-link">
                 ← Back to Login
             </a>
         </div>
