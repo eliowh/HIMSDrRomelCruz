@@ -47,6 +47,7 @@
                                 <td class="col-natl">{{ $p->nationality }}</td>
                                 <td class="col-actions">
                                     <button type="button" class="btn view-btn js-open-patient">View</button>
+                                    <button type="button" class="request-btn btn">Request</button>
                                 </td>
                             </tr>
                         @endforeach

@@ -42,14 +42,7 @@
                         <label class="small-label">(years)</label>
                         <input type="number" name="age_years" min="0" value="{{ old('age_years') }}">
                     </div>
-                    <div class="age-item">
-                        <label class="small-label">(months)</label>
-                        <input type="number" name="age_months" min="0" value="{{ old('age_months') }}">
-                    </div>
-                    <div class="age-item">
-                        <label class="small-label">(days)</label>
-                        <input type="number" name="age_days" min="0" value="{{ old('age_days') }}">
-                    </div>
+                    
                 </div>
             </div>
         </div>
