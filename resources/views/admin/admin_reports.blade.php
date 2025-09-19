@@ -153,12 +153,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                        
-                        @if($reports->hasPages())
-                        <div class="pagination-wrapper">
-                            {{ $reports->links() }}
-                        </div>
-                        @endif
                     @else
                         <div class="no-reports">
                             <div class="no-reports-icon">📊</div>
@@ -166,8 +160,13 @@
                             <p>Generate your first report using the form above to get started with analytics.</p>
                         </div>
                     @endif
-                </div>
+                </div>                
             </div>
+            @if($reports->hasPages())
+                <div class="pagination-wrapper">
+                    @include('components.custom-pagination', ['paginator' => $reports])
+                </div>
+            @endif
         </div>
     </div>
 

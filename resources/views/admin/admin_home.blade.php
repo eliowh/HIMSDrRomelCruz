@@ -102,7 +102,7 @@
                                     @endswitch
                                 </div>
                                 <div class="activity-content">
-                                    <p class="activity-title">New {{ ucfirst($user->role) }} registered</p>
+                                    <p class="activity-title">New {{ ucwords(str_replace('_', ' ', $user->role)) }} registered</p>
                                     <p class="activity-detail">{{ $user->name }} - {{ $user->email }}</p>
                                     <p class="activity-time">{{ $user->created_at->diffForHumans() }}</p>
                                 </div>

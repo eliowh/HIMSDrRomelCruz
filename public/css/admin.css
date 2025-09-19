@@ -45,6 +45,7 @@ body {
     display: flex;
     width: 100%;
     min-height: 100vh;
+    max-height: none; /* Remove height restrictions */
     margin-top: 100px;
 }
 .sidebar {
@@ -56,12 +57,21 @@ body {
     display: flex;
     flex-direction: column;
     padding: 0 0 24px 0;
+    margin-bottom: 20px;
     margin-left: 20px;
-    flex-grow: 0;
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    min-height: 100vh; /* Minimum full viewport height */
+    height: auto; /* Allow height to grow with content */
     z-index: 10;
-    max-height: 98vh;
     transition: width 0.3s ease;
 }
+
+/* Ensure sidebar nav takes remaining space */
+.sidebar nav {
+    flex: 1;
+    overflow-y: auto; /* Allow scrolling if sidebar content is too long */
+}
+
 .sidebar.collapsed {
     width: 60px;
 }
@@ -154,14 +164,14 @@ body {
     padding: 0 0;
 }
 .main-content {
-    flex: 1;
+    flex: 1; /* Takes all remaining horizontal space */
     padding: 48px 64px;
     background: #f5f7fa;
-    min-height: calc(100vh - 64px);
+    min-height: 100vh; /* Ensure full viewport height minimum */
     transition: margin-left 0.3s ease;
 }
 .main-content.expanded {
-    margin-left: 60px;
+    margin-left: 0; /* No margin adjustment needed with flexbox */
 }
 .main-content h1 {
     font-size: 2.2rem;
@@ -888,7 +898,245 @@ body {
 .pagination-wrapper {
     margin-top: 24px;
     display: flex;
+    justify-content: right;
+    align-items: center;
+}
+
+/* Pagination Styling - Override Tailwind for Horizontal Layout */
+.pagination-wrapper nav {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+/* Force horizontal layout for the main pagination container */
+.pagination-wrapper .hidden.sm\\:flex-1.sm\\:flex.sm\\:items-center.sm\\:justify-between {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+/* Results text - make it smaller and cleaner */
+.pagination-wrapper .text-sm.text-gray-700 {
+    font-size: 12px !important;
+    color: #666 !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+
+/* Main pagination buttons container - force horizontal */
+.pagination-wrapper .relative.z-0.inline-flex {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 2px !important;
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+/* Individual pagination buttons */
+.pagination-wrapper .relative.inline-flex.items-center {
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+    min-width: 40px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    border-right: 1px solid #e5e7eb !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #367F2B !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+}
+
+/* Remove border from last item */
+.pagination-wrapper .relative.inline-flex.items-center:last-child {
+    border-right: none !important;
+}
+
+/* First item rounded left */
+.pagination-wrapper .relative.inline-flex.items-center:first-child {
+    border-radius: 7px 0 0 7px !important;
+}
+
+/* Last item rounded right */
+.pagination-wrapper .relative.inline-flex.items-center:last-child {
+    border-radius: 0 7px 7px 0 !important;
+}
+
+/* Hover states */
+.pagination-wrapper .relative.inline-flex.items-center:hover {
+    background: #f8f9fa !important;
+    color: #2c5f23 !important;
+}
+
+/* Current page styling */
+.pagination-wrapper [aria-current="page"] span {
+    background: #367F2B !important;
+    color: white !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    min-width: 40px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    border-right: 1px solid #367F2B !important;
+}
+
+/* Disabled state */
+.pagination-wrapper [aria-disabled="true"] span {
+    background: #f8f9fa !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    min-width: 40px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    border-right: 1px solid #e5e7eb !important;
+}
+
+/* SVG icons in navigation buttons */
+.pagination-wrapper svg {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+/* Hide mobile pagination completely - all variations */
+.pagination-wrapper .flex.justify-between.flex-1.sm\\:hidden,
+.pagination-wrapper .sm\\:hidden,
+.pagination-wrapper div[class*="flex justify-between"],
+.pagination-wrapper div[class*="sm:hidden"] {
+    display: none !important;
+}
+
+/* Hide any text-based Previous/Next buttons */
+.pagination-wrapper *:contains("« Previous"),
+.pagination-wrapper *:contains("Next »"),
+.pagination-wrapper *:contains("Previous"),
+.pagination-wrapper *:contains("Next") {
+    display: none !important;
+}
+
+/* More aggressive hiding of mobile elements */
+.pagination-wrapper > nav > div:first-child {
+    display: none !important;
+}
+
+/* Force desktop pagination to show and ensure horizontal layout */
+.pagination-wrapper .hidden.sm\\:flex-1 {
+    display: block !important;
+}
+
+/* Custom Pagination Styles */
+.custom-pagination {
+    display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 10px;
+}
+
+.pagination-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    color: #1a4931;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.pagination-arrow:hover {
+    background: #1a4931;
+    color: #fff;
+    border-color: #1a4931;
+    transform: translateY(-1px);
+}
+
+.pagination-arrow.disabled {
+    background: #f5f5f5;
+    color: #ccc;
+    border-color: #e8e8e8;
+    cursor: not-allowed;
+}
+
+.pagination-arrow.disabled:hover {
+    transform: none;
+    background: #f5f5f5;
+    color: #ccc;
+}
+
+.page-input-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.page-text {
+    color: #1a4931;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.page-input {
+    width: 50px;
+    height: 32px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a4931;
+    background: #f9f9f9;
+    transition: all 0.2s ease;
+}
+
+.page-input:focus {
+    outline: none;
+    border-color: #1a4931;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 73, 49, 0.1);
+}
+
+.page-input::-webkit-outer-spin-button,
+.page-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.page-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 /* Report Modal */

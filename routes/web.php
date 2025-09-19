@@ -144,7 +144,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/users', function () {
-        $users = \App\Models\User::all();
+        $users = \App\Models\User::orderBy('created_at', 'desc')->paginate(10);
         return view('admin.admin_users', compact('users'));
     });
     

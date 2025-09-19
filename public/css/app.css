@@ -358,7 +358,6 @@ a:hover, a:focus {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-fill-color: transparent;
     text-shadow: 0 4px 18px rgba(54,127,43,0.13), 0 1px 0 #fff;
     margin-bottom: 18px;
     animation: popIn 1s cubic-bezier(.23,1.02,.58,.99);

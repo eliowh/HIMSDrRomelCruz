@@ -74,6 +74,11 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination Links -->
+            <div class="pagination-wrapper">
+                @include('components.custom-pagination', ['paginator' => $users])
+            </div>
         </div>
     </div>
 
@@ -115,8 +120,13 @@
     const searchInput = document.getElementById('searchInput');
     const usersTable = document.getElementById('usersTable');
     const tableRows = usersTable.querySelectorAll('tbody tr');
+    
+    // Global flag to prevent sidebar height adjustment during filtering
+    window.isFiltering = false;
 
     function filterUsers() {
+        window.isFiltering = true; // Set global flag to prevent sidebar adjustments
+        
         const selectedRole = roleFilter.value.toLowerCase();
         const searchTerm = searchInput.value.toLowerCase();
 
@@ -141,6 +151,23 @@
         if (noResultsRow) {
             noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
         }
+
+        // Hide/show pagination when filtering - preserve flex styling
+        const paginationWrapper = document.querySelector('.pagination-wrapper');
+        if (paginationWrapper) {
+            // Hide pagination if any filters are active
+            if (selectedRole || searchTerm) {
+                paginationWrapper.style.display = 'none';
+            } else {
+                // Reset to original display value instead of 'block'
+                paginationWrapper.style.display = '';
+            }
+        }
+        
+        // Reset flag after a short delay to allow DOM changes to settle
+        setTimeout(() => {
+            window.isFiltering = false;
+        }, 200);
     }
 
     roleFilter.addEventListener('change', filterUsers);

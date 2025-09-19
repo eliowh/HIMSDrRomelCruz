@@ -9,6 +9,9 @@
 </head>
 <body>
     <div class="container">
+        <div class="right">
+            <img src="{{ asset('img/hospital_logo.png') }}" alt="Hospital Logo" class="hospital-logo">
+        </div>
         <div class="left">
             <div class="formbox">
                 <h3 class="forgot-title">Forgot Password</h3>
@@ -28,9 +31,7 @@
                 </form>
             </div>
         </div>
-        <div class="right">
-            <img src="{{ asset('img/hospital_logo.png') }}" alt="Hospital Logo" class="hospital-logo">
-        </div>
+        
     </div>
     @if ($errors->any())
         <div class="alert alert-danger" style="position: fixed; bottom: 0; width: 100%; text-align: center;">
