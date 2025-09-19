@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Approval</title>
+    <title>Admin Dashboard</title>
     <link rel="stylesheet" href="{{url('css/admin.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
-        <span>HIMS Admin</span>
+        <span>Admin Panel</span>
     </div>
     <nav>
         <ul>

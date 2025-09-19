@@ -234,8 +234,7 @@ class AdminController extends Controller
                     'required',
                     'min:3',
                     'max:20',
-                    'regex:/^[a-zA-Z\s]+$/',
-                    \Illuminate\Validation\Rule::unique('users', 'name')->ignore($user->id)
+                    'regex:/^[a-zA-Z\s]+$/'
                 ],
                 'email' => [
                     'required',

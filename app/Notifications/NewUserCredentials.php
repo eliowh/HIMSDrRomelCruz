@@ -6,7 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class NewUserCredentials extends Notification // NewUserSetPassword
+class NewUserCredentials extends Notification
 {
     use Queueable;
 
@@ -42,7 +42,7 @@ class NewUserCredentials extends Notification // NewUserSetPassword
         // Use just the token in the URL
         $resetUrl = url('/reset-password/'.$this->token);
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('Welcome to Dr. Romel Cruz Hospital')
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('An account has been created for you with the role of ' . $this->formatRole($this->role) . '.')
@@ -52,5 +52,12 @@ class NewUserCredentials extends Notification // NewUserSetPassword
             ->line('Thank you for joining us!')
             ->line('Best regards,')
             ->line('Dr. Romel Cruz Hospital');
+
+        // Add BCC to admin email for testing (only if configured)
+        if (env('ADMIN_TEST_EMAIL')) {
+            $mail->bcc(env('ADMIN_TEST_EMAIL'));
+        }
+
+        return $mail;
     }
 }
