@@ -13,7 +13,7 @@
             <div class="patients-header">
                 <h3>Patients</h3>
                 <form method="GET" class="patients-search" style="margin-left:auto;">
-                    <input type="search" name="q" value="{{ $q }}" placeholder="Search name or patient no" class="search-input">
+                    <input type="search" name="q" value="{{ $q }}" placeholder="Search..." class="search-input">
                 </form>
             </div>
 
@@ -89,8 +89,9 @@
                     <dt>Created At</dt><dd id="md-created_at">-</dd>
                 </dl>
 
-                <div style="margin-top:12px;text-align:right;">
-                    <a href="#" id="detailsViewFull" class="btn secondary">Open Full</a>
+                <div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+                    <button id="btnEditPatient" class="btn secondary">Edit</button>
+                    <button id="btnDeletePatient" class="btn" style="background:#ef4444;">Delete</button>
                 </div>
             </div>
         </div>
@@ -100,6 +101,9 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // helper to read CSRF token from meta tag or hidden input
+    const _csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        || document.querySelector('input[name="_token"]')?.value || '';
     const table = document.getElementById('patientsTable');
     const rows = table ? table.querySelectorAll('.patient-row') : [];
     const detailsCard = document.getElementById('detailsCard');
@@ -146,7 +150,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // update "Open Full" link to go to patient page if route exists
                 const btnFull = document.getElementById('detailsViewFull');
                 if (btnFull) {
-                    btnFull.href = `/nurse/patients/${encodeURIComponent(patient.patient_no)}`;
+                    // now handled via edit button/modal
+                    btnFull.href = `#`;
                 }
             } catch(e){
                 console.error('Invalid patient JSON', e);
@@ -158,6 +163,147 @@ document.addEventListener('DOMContentLoaded', function () {
     if (rows.length && !document.querySelector('.patient-row.active')) {
         rows[0].querySelector('.js-open-patient').click();
     }
+
+    // --- Edit / Delete modal wiring ---
+    const btnEdit = document.getElementById('btnEditPatient');
+    const btnDelete = document.getElementById('btnDeletePatient');
+    // create a simple modal for editing
+    const modal = document.createElement('div'); modal.className='modal'; modal.id='editModal';
+    modal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header"><strong>Edit Patient</strong><button class="modal-close">×</button></div>
+            <div class="modal-body">
+                <form id="editPatientForm">
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}" />
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <input name="first_name" placeholder="First name" required />
+                        <input name="last_name" placeholder="Last name" required />
+                        <input name="middle_name" placeholder="Middle name" />
+                        <input name="date_of_birth" type="date" />
+                        <input name="province" placeholder="Province" />
+                        <input name="city" placeholder="City" />
+                        <input name="barangay" placeholder="Barangay" />
+                        <input name="nationality" placeholder="Nationality" />
+                        <input name="room_no" placeholder="Room No" />
+                        <input name="admission_type" placeholder="Admission Type" />
+                        <input name="service" placeholder="Service" />
+                        <input name="doctor_name" placeholder="Doctor" />
+                        <input name="doctor_type" placeholder="Doctor Type" />
+                        <textarea name="admission_diagnosis" placeholder="Admission diagnosis" style="grid-column:1 / -1;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div></div>
+                <div>
+                    <button class="btn secondary modal-close">Cancel</button>
+                    <button id="savePatientBtn" class="btn">Save</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    function openEditModal(patient){
+        const form = document.getElementById('editPatientForm');
+        form.patient_no = patient.patient_no;
+        form.elements['first_name'].value = patient.first_name || '';
+        form.elements['last_name'].value = patient.last_name || '';
+        form.elements['middle_name'].value = patient.middle_name || '';
+        form.elements['date_of_birth'].value = patient.date_of_birth ? patient.date_of_birth.split(' ')[0] : '';
+        form.elements['province'].value = patient.province || '';
+        form.elements['city'].value = patient.city || '';
+        form.elements['barangay'].value = patient.barangay || '';
+        form.elements['nationality'].value = patient.nationality || '';
+        form.elements['room_no'].value = patient.room_no || '';
+        form.elements['admission_type'].value = patient.admission_type || '';
+        form.elements['service'].value = patient.service || '';
+        form.elements['doctor_name'].value = patient.doctor_name || '';
+        form.elements['doctor_type'].value = patient.doctor_type || '';
+        form.elements['admission_diagnosis'].value = patient.admission_diagnosis || '';
+        modal.classList.add('open');
+    }
+
+    function closeModal(){ modal.classList.remove('open'); }
+    modal.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeModal));
+
+    // Save button sends PUT to update
+    document.getElementById('savePatientBtn').addEventListener('click', function(e){
+        e.preventDefault(); const form = document.getElementById('editPatientForm');
+        const patient_no = form.patient_no;
+        if(!patient_no) return alert('No patient selected');
+        const data = new FormData(form);
+        const token = _csrf();
+        // PHP doesn't parse multipart/form-data for PUT; use POST with _method override so Laravel receives fields
+        data.set('_token', token);
+        data.set('_method', 'PUT');
+        fetch(`/nurse/patients/${encodeURIComponent(patient_no)}`, {
+            method: 'POST',
+            credentials: 'same-origin', // include session cookie so VerifyCsrfToken can validate
+            headers: {
+                'Accept': 'application/json'
+            },
+            body: data
+        }).then(async r=>{
+            const text = await r.text();
+            const ct = r.headers.get('content-type') || '';
+            if(!r.ok){
+                if(r.status === 419) throw new Error('Session expired (419). Please refresh and login again.');
+                // show server returned HTML or error
+                const snippet = text ? text.slice(0,300) : `HTTP ${r.status}`;
+                throw new Error('Update failed: ' + snippet);
+            }
+            if(ct.includes('application/json')){
+                const j = JSON.parse(text);
+                if(j.ok){ location.reload(); return; }
+                throw new Error('Update failed: ' + (j.message || JSON.stringify(j)));
+            }
+            // non-json but ok response
+            location.reload();
+        }).catch(e=>{ console.error(e); alert('Update failed: ' + e.message); });
+    });
+
+    // Delete button
+    btnDelete.addEventListener('click', function(){
+        const patientNo = document.getElementById('md-patient_no').textContent;
+        if(!patientNo || patientNo === '-') return alert('No patient selected');
+        if(!confirm('Delete patient ' + patientNo + '? This cannot be undone.')) return;
+        const token = _csrf();
+        // Use POST + _method=DELETE so PHP/Laravel receives proper parsed input
+        const delData = new URLSearchParams();
+        delData.set('_token', token);
+        delData.set('_method', 'DELETE');
+        fetch(`/nurse/patients/${encodeURIComponent(patientNo)}`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8', 'Accept': 'application/json'},
+            body: delData.toString()
+        }).then(async r=>{
+            const text = await r.text();
+            const ct = r.headers.get('content-type') || '';
+            if(!r.ok){
+                if(r.status === 419) return alert('Session expired. Please refresh and login.');
+                return alert('Delete failed: HTTP ' + r.status + '\n' + (text ? text.slice(0,300) : ''));
+            }
+            let j = null;
+            if(ct.includes('application/json')){
+                try{ j = JSON.parse(text); }catch(e){ /* ignore */ }
+            }
+            if(j && j.ok){ location.href = '/nurse/patients'; }
+            else { alert('Delete failed: ' + (j?.message || text || 'unknown')); }
+        }).catch(e=>{ console.error(e); alert('Delete failed: ' + e.message); });
+    });
+
+    // wire edit button to open modal with currently selected patient
+    btnEdit.addEventListener('click', function(){
+        const patientNo = document.getElementById('md-patient_no').textContent;
+        if(!patientNo || patientNo === '-') return alert('No patient selected');
+        // find the row with that patient_no
+        const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
+        if(!row) return alert('Patient not found');
+        try{ const patient = JSON.parse(row.getAttribute('data-patient')); openEditModal(patient); }catch(e){ console.error(e); alert('Failed to open edit modal'); }
+    });
 });
 </script>
 @endpush

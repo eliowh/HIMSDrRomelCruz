@@ -177,6 +177,10 @@ Route::get('/icd10/test-json', function () {
 // Room live search endpoint (AJAX) - returns [{name,price}]
 Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search'])->name('rooms.search');
 
+// Patient edit & delete (nurse) - update and destroy by patient_no
+Route::put('/nurse/patients/{patient_no}', [App\Http\Controllers\PatientController::class, 'update'])->name('nurse.patients.update')->middleware('auth');
+Route::delete('/nurse/patients/{patient_no}', [App\Http\Controllers\PatientController::class, 'destroy'])->name('nurse.patients.destroy')->middleware('auth');
+
 
 
 
