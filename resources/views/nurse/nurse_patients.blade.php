@@ -47,7 +47,7 @@
                                 <td class="col-natl">{{ $p->nationality }}</td>
                                 <td class="col-actions">
                                     <button type="button" class="btn view-btn js-open-patient">View</button>
-                                    <button type="button" class="request-btn btn">Request</button>
+                                    <button type="button" class="request-btn btn" onclick="openLabRequestModal({{ $p->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $p->patient_no }}')">Request</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -96,6 +96,76 @@
         </div>
     </div>
 </div>
+
+<!-- Lab Request Modal -->
+<div id="labRequestModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeLabRequestModal()">&times;</span>
+        <h3>Request Lab Test</h3>
+        <form id="labRequestForm">
+            <input type="hidden" id="requestPatientId" name="patient_id">
+            
+            <div class="form-group">
+                <label>Patient:</label>
+                <p id="requestPatientInfo" class="patient-info-display"></p>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="testCategory">Test Category: *</label>
+                    <select id="testCategory" name="test_category" required onchange="updateTestOptions()">
+                        <option value="">Select category</option>
+                        <option value="laboratory">Laboratory Tests</option>
+                        <option value="xray">X-Ray Procedures</option>
+                        <option value="ultrasound">Ultrasound</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="specificTest">Specific Test/Procedure: *</label>
+                    <select id="specificTest" name="specific_test" required disabled>
+                        <option value="">Select test first</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="additionalTests">Additional Tests/Notes:</label>
+                <textarea id="additionalTests" name="additional_tests" rows="3" 
+                          placeholder="e.g., Additional lab work, special instructions, or multiple tests"></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="priority">Priority: *</label>
+                    <select id="priority" name="priority" required>
+                        <option value="normal">Normal</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="stat">STAT</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scheduledDate">Preferred Date:</label>
+                    <input type="date" id="scheduledDate" name="scheduled_date" min="{{ date('Y-m-d') }}">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Clinical Notes:</label>
+                <textarea id="notes" name="notes" rows="2" 
+                          placeholder="Clinical indications, symptoms, or special instructions for the technician"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn cancel-btn" onclick="closeLabRequestModal()">Cancel</button>
+                <button type="submit" class="btn submit-btn">Submit Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 @push('scripts')
 <script>
@@ -159,6 +229,141 @@ document.addEventListener('DOMContentLoaded', function () {
         rows[0].querySelector('.js-open-patient').click();
     }
 });
+
+// Lab Request Modal Functions
+function openLabRequestModal(patientId, patientName, patientNo) {
+    // Set global flag to prevent sidebar height adjustments
+    window.isModalOpen = true;
+    
+    document.getElementById('requestPatientId').value = patientId;
+    document.getElementById('requestPatientInfo').textContent = `${patientName} (ID: ${patientNo})`;
+    const modal = document.getElementById('labRequestModal');
+    modal.classList.add('show');
+    // Reset form
+    document.getElementById('labRequestForm').reset();
+    document.getElementById('requestPatientId').value = patientId; // Reset this after form reset
+    updateTestOptions(); // Reset the specific test dropdown
+}
+
+function closeLabRequestModal() {
+    const modal = document.getElementById('labRequestModal');
+    modal.classList.remove('show');
+    document.getElementById('labRequestForm').reset();
+    
+    // Clear global flag after a delay to ensure modal is fully closed
+    setTimeout(() => {
+        window.isModalOpen = false;
+    }, 300);
+}
+
+// Update test options based on selected category
+function updateTestOptions() {
+    const category = document.getElementById('testCategory').value;
+    const specificTest = document.getElementById('specificTest');
+    
+    // Clear existing options
+    specificTest.innerHTML = '<option value="">Select specific test</option>';
+    
+    if (!category) {
+        specificTest.disabled = true;
+        return;
+    }
+    
+    // Show loading option and disable dropdown temporarily
+    specificTest.innerHTML = '<option value="">Loading procedures...</option>';
+    specificTest.disabled = true;
+    
+    // Fetch procedures from database
+    fetch(`/procedures/category?category=${category}`)
+        .then(response => response.json())
+        .then(data => {
+            specificTest.innerHTML = '<option value="">Select specific test</option>';
+            
+            if (data.error) {
+                console.error('Error fetching procedures:', data.error);
+                specificTest.innerHTML = '<option value="">Error loading procedures</option>';
+                specificTest.disabled = true;
+                return;
+            }
+            
+            data.forEach(procedure => {
+                const option = document.createElement('option');
+                option.value = procedure.name;
+                option.textContent = procedure.name;
+                specificTest.appendChild(option);
+            });
+            
+            // Enable the dropdown after successfully loading procedures
+            specificTest.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error fetching procedures:', error);
+            specificTest.innerHTML = '<option value="">Error loading procedures</option>';
+            specificTest.disabled = true;
+        });
+}
+
+// Lab Request Form Submission
+document.getElementById('labRequestForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    // Combine test category and specific test into a single test_requested field
+    const category = formData.get('test_category');
+    const specificTest = formData.get('specific_test');
+    const additionalTests = formData.get('additional_tests');
+    
+    let testRequested = '';
+    if (category && specificTest) {
+        testRequested = `${category.toUpperCase()}: ${specificTest}`;
+        if (additionalTests) {
+            testRequested += `\n\nAdditional: ${additionalTests}`;
+        }
+    }
+    
+    // Update the FormData with combined test_requested
+    formData.set('test_requested', testRequested);
+    
+    const submitBtn = this.querySelector('.submit-btn');
+    const originalText = submitBtn.textContent;
+    
+    submitBtn.textContent = 'Submitting...';
+    submitBtn.disabled = true;
+    
+    fetch('/lab-orders', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Lab test request submitted successfully!');
+            closeLabRequestModal();
+        } else {
+            alert('Error submitting request. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting request. Please try again.');
+    })
+    .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('labRequestModal');
+    if (event.target === modal) {
+        closeLabRequestModal();
+    }
+}
 </script>
 @endpush
 
