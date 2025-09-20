@@ -85,6 +85,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/nurse/account', function () {
         return view('nurse.nurse_account');
     });
+    // Send password reset email for current user from account page
+    Route::post('/account/send-reset-email', [App\Http\Controllers\UserController::class, 'sendAccountResetEmail'])->name('account.sendResetEmail');
 
     // ensure add/store routes exist (if not already present)
     Route::get('/nurse/addPatients', [PatientController::class, 'create'])->name('nurse.addPatients.create')->middleware('auth');
