@@ -37,7 +37,8 @@
                 <form method="POST" action="{{ route('account.sendResetEmail') }}">
                     @csrf
                     <p>Click the button below to send a password reset email to your account email address.</p>
-                    <button type="submit" class="btn-primary">Reset password</button>
+                    <!-- Use existing site action button styles to match other buttons -->
+                    <button type="submit" class="action-btn primary">Reset password</button>
                 </form>
             </div>
         </main>
