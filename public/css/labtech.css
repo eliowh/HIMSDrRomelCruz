@@ -173,3 +173,370 @@ body {
     margin: 0 0 24px 0;
     font-size: 1.5rem;
 }
+
+/* Lab Orders Styles */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: 2px solid #367F2B;
+    background: white;
+    color: #367F2B;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active, .tab-btn:hover {
+    background: #367F2B;
+    color: white;
+}
+
+.orders-table-container {
+    overflow-x: auto;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.orders-table th,
+.orders-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.orders-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #1a4931;
+}
+
+.order-row:hover {
+    background: #f8f9fa;
+}
+
+.priority-badge, .status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-normal { background: #e3f2fd; color: #1976d2; }
+.priority-urgent { background: #fff3e0; color: #f57c00; }
+.priority-stat { background: #ffebee; color: #d32f2f; }
+
+.status-pending { background: #fff3e0; color: #f57c00; }
+.status-in_progress { background: #e3f2fd; color: #1976d2; }
+.status-completed { background: #e8f5e8; color: #388e3c; }
+.status-cancelled { background: #ffebee; color: #d32f2f; }
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-right: 5px;
+    transition: all 0.2s ease;
+}
+
+.start-btn {
+    background: #2196f3;
+    color: white;
+}
+
+.start-btn:hover {
+    background: #1976d2;
+}
+
+.complete-btn {
+    background: #4caf50;
+    color: white;
+}
+
+.complete-btn:hover {
+    background: #388e3c;
+}
+
+.view-btn {
+    background: #607d8b;
+    color: white;
+}
+
+.view-btn:hover {
+    background: #455a64;
+}
+
+.no-orders {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.no-orders i {
+    font-size: 3em;
+    margin-bottom: 20px;
+    color: #ccc;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex; /* Show when this class is added */
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    width: auto;
+    min-width: 400px;
+    max-width: 600px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #1a4931;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.patient-info-display {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 0;
+    font-weight: 600;
+    color: #1a4931;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #5a6268;
+}
+
+.submit-btn {
+    background: #367F2B;
+    color: white;
+}
+
+.submit-btn:hover {
+    background: #2d6722;
+}
+
+/* File Upload Styles */
+.file-upload-container {
+    position: relative;
+}
+
+.file-upload-container input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed #367F2B;
+    border-radius: 6px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.file-upload-container input[type="file"]:hover {
+    border-color: #2d6722;
+    background: #e8f5e8;
+}
+
+.file-upload-container input[type="file"]:focus {
+    outline: none;
+    border-color: #1a4931;
+    box-shadow: 0 0 0 3px rgba(26, 73, 49, 0.1);
+}
+
+.file-hint {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+/* Checkbox styling */
+.form-group label input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+    transform: scale(1.2);
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* Loading button state */
+.btn-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.complete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.complete-btn:disabled:hover {
+    background: #4caf50;
+}
+
+/* PDF Modal Styles */
+.pdf-modal {
+    width: auto;
+    min-width: 800px;
+    max-width: 95vw;
+    max-height: 90vh;
+}
+
+.pdf-controls {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 15px;
+}
+
+.pdf-viewer {
+    width: 100%;
+    height: 600px;
+}
+
+.pdf-viewer iframe {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.view-pdf-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.view-pdf-btn:hover {
+    background: #c0392b;
+}
+
+.download-btn {
+    background: #3498db;
+    color: white;
+}
+
+.download-btn:hover {
+    background: #2980b9;
+}
+
+/* Order Details Styles */
+.order-details {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.detail-group {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.detail-group:last-child {
+    border-bottom: none;
+}
+
+.detail-group h4 {
+    margin: 0 0 10px 0;
+    color: #1a4931;
+    font-size: 1.1em;
+}
+
+.detail-group p {
+    margin: 5px 0;
+    line-height: 1.4;
+}
+
+.detail-group strong {
+    color: #555;
+}
+
+/* Responsive PDF Modal */
+@media (max-width: 900px) {
+    .pdf-modal {
+        min-width: 95%;
+        margin: 10px;
+    }
+    
+    .pdf-viewer {
+        height: 400px;
+    }
+}

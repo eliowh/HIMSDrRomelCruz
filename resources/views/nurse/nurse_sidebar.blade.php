@@ -32,8 +32,9 @@
                     <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
+            <li>
                 <a href="{{ url('/nurse/addPatients') }}" 
-                    class="sidebar-btn add-patient" title="Add Patient">
+                   class="sidebar-btn{{ request()->is('nurse/addPatients') ? ' active' : '' }}">
                     <span class="icon">➕</span> <span class="text">Add Patient</span>
                 </a>
             </li>
@@ -52,7 +53,7 @@
         </ul>
         <form action="{{ url('/logout') }}" method="POST" id="nurse-logout-form" class="logout-form">
             @csrf
-            <button type="button" class="sidebar-btn" onclick="confirmLogout()">
+            <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout()">
                 <span class="icon">🚪</span> <span class="text">Log Out</span>
             </button>
         </form>
@@ -90,6 +91,13 @@
             // Don't adjust height during filtering (check if window.isFiltering exists)
             if (window.isFiltering) return;
             
+            // Don't adjust height during modal interactions
+            if (window.isModalOpen) return;
+            
+            // Check if any modal is currently visible
+            const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
+            if (visibleModals.length > 0) return;
+            
             requestAnimationFrame(() => {
                 const contentHeight = mainContent.scrollHeight;
                 const viewportHeight = window.innerHeight - 120; // Account for header height
@@ -108,6 +116,12 @@
         function debouncedHeightAdjustment() {
             if (isToggling) return; // Extra check
             if (window.isFiltering) return; // Don't adjust during filtering
+            if (window.isModalOpen) return; // Don't adjust during modal interactions
+            
+            // Check if any modal is currently visible
+            const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
+            if (visibleModals.length > 0) return;
+            
             clearTimeout(heightTimeout);
             heightTimeout = setTimeout(adjustLayoutHeight, 300);
         }
@@ -124,7 +138,22 @@
         const observer = new MutationObserver(function(mutations) {
             let shouldAdjust = false;
             
+            // Don't adjust during modal interactions
+            if (window.isModalOpen) return;
+            
+            // Check if any modal is currently visible
+            const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
+            if (visibleModals.length > 0) return;
+            
             mutations.forEach(function(mutation) {
+                // Skip mutations related to modals or modal content
+                if (mutation.target.closest('.modal') || 
+                    mutation.target.classList.contains('modal') ||
+                    mutation.target.id === 'labRequestModal' ||
+                    mutation.target.closest('#labRequestModal')) {
+                    return;
+                }
+                
                 // Only adjust for actual content additions/removals, not attribute changes
                 if (mutation.type === 'childList') {
                     // Check if nodes were actually added or removed (not just hidden/shown)
@@ -133,7 +162,17 @@
                         const hasElementChanges = Array.from(mutation.addedNodes).some(node => node.nodeType === 1) ||
                                                 Array.from(mutation.removedNodes).some(node => node.nodeType === 1);
                         if (hasElementChanges) {
-                            shouldAdjust = true;
+                            // Double-check that the changes aren't in modal content
+                            const addedElementsInModal = Array.from(mutation.addedNodes).some(node => 
+                                node.nodeType === 1 && (node.closest('.modal') || node.classList.contains('modal'))
+                            );
+                            const removedElementsInModal = Array.from(mutation.removedNodes).some(node => 
+                                node.nodeType === 1 && (node.closest && node.closest('.modal')) || (node.classList && node.classList.contains('modal'))
+                            );
+                            
+                            if (!addedElementsInModal && !removedElementsInModal) {
+                                shouldAdjust = true;
+                            }
                         }
                     }
                 }

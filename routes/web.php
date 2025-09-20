@@ -6,6 +6,7 @@ use App\Http\Controllers\ReportController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
+use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AdminController;
 
@@ -45,7 +46,7 @@ Route::get('/password-reset-success', [UserController::class, 'passwordResetSucc
 // No more pending role route needed
 
 // Doctor Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:doctor'])->group(function () {
     Route::get('/doctor/home', [App\Http\Controllers\DoctorController::class, 'dashboard'])->name('doctor.dashboard');
     
     Route::get('/doctor/appointments', function () {
@@ -66,7 +67,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Nurse Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:nurse'])->group(function () {
     Route::get('/nurse/home', function () {
         return view('nurse.nurse_home');
     });
@@ -76,7 +77,7 @@ Route::middleware(['auth'])->group(function () {
     });
     
     // show patients list
-    Route::get('/nurse/patients', [PatientController::class, 'index'])->name('nurse.patients.index')->middleware('auth');
+    Route::get('/nurse/patients', [PatientController::class, 'index'])->name('nurse.patients.index');
 
     Route::get('/nurse/schedule', function () {
         return view('nurse.nurse_schedule');
@@ -89,19 +90,22 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/account/send-reset-email', [App\Http\Controllers\UserController::class, 'sendAccountResetEmail'])->name('account.sendResetEmail');
 
     // ensure add/store routes exist (if not already present)
-    Route::get('/nurse/addPatients', [PatientController::class, 'create'])->name('nurse.addPatients.create')->middleware('auth');
-    Route::post('/nurse/addPatients', [PatientController::class, 'store'])->name('nurse.addPatients.store')->middleware('auth');
+    Route::get('/nurse/addPatients', [PatientController::class, 'create'])->name('nurse.addPatients.create');
+    Route::post('/nurse/addPatients', [PatientController::class, 'store'])->name('nurse.addPatients.store');
 });
 
 // Lab Technician Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::get('/labtech/home', function () {
         return view('labtech.labtech_home');
     });
     
-    Route::get('/labtech/orders', function () {
-        return view('labtech.labtech_orders');
-    });
+    Route::get('/labtech/orders', [LabOrderController::class, 'index'])->name('labtech.orders');
+    Route::post('/labtech/orders/update-status/{id}', [LabOrderController::class, 'updateStatus'])->name('labtech.orders.updateStatus');
+    
+    // Returns order details with PDF URL
+    Route::get('/labtech/orders/view/{id}', [LabOrderController::class, 'viewOrder'])->name('labtech.orders.view');
+    Route::get('/labtech/orders/download-pdf/{id}', [LabOrderController::class, 'downloadPdf'])->name('labtech.orders.downloadPdf');
     
     Route::get('/labtech/patients', function () {
         return view('labtech.labtech_patients');
@@ -112,8 +116,13 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+// Lab Order Routes (accessible by nurses)
+Route::middleware(['auth', 'role:nurse'])->group(function () {
+    Route::post('/lab-orders', [LabOrderController::class, 'store'])->name('lab-orders.store');
+});
+
 // Cashier Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:cashier'])->group(function () {
     Route::get('/cashier/home', function () {
         return view('cashier.cashier_home');
     });
@@ -132,11 +141,11 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Admin Routes
-Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware('auth')->name('admin.home');
-Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->name('admin.createUser');
+Route::get('/admin/home', [App\Http\Controllers\AdminController::class, 'index'])->middleware(['auth', 'role:admin'])->name('admin.home');
+Route::post('/admin/users/create', [App\Http\Controllers\AdminController::class, 'createUser'])->middleware(['auth', 'role:admin'])->name('admin.createUser');
 
 // Admin User Management Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users/{id}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
@@ -144,7 +153,7 @@ Route::middleware(['auth'])->group(function () {
 
 // User approval route removed - users are now assigned roles at creation
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users', function () {
         $users = \App\Models\User::orderBy('created_at', 'desc')->paginate(10);
         return view('admin.admin_users', compact('users'));
@@ -163,10 +172,14 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ICD-10 Import Route
-Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->name('admin.icd10.import');
+Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->middleware(['auth', 'role:admin'])->name('admin.icd10.import');
 
 // ICD-10 live search endpoint (AJAX)
 Route::get('/icd10/search', [App\Http\Controllers\Icd10Controller::class, 'search'])->name('icd10.search');
+
+// Procedure search endpoints (AJAX)
+Route::get('/procedures/search', [App\Http\Controllers\ProcedureController::class, 'search'])->name('procedures.search');
+Route::get('/procedures/category', [App\Http\Controllers\ProcedureController::class, 'getByCategory'])->name('procedures.category');
 
 // Temporary test JSON route for debugging the autocomplete (remove after debugging)
 Route::get('/icd10/test-json', function () {

@@ -45,6 +45,7 @@ body {
     display: flex;
     width: 100%;
     min-height: 100vh;
+    max-height: none; /* Remove height restrictions */
     margin-top: 100px;
 }
 .sidebar {
@@ -56,11 +57,19 @@ body {
     display: flex;
     flex-direction: column;
     padding: 0 0 24px 0;
+    margin-bottom: 20px;
     margin-left: 20px;
-    flex-grow: 0;
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    min-height: 100vh; /* Minimum full viewport height */
+    height: auto; /* Allow height to grow with content */
     z-index: 10;
-    max-height: 98vh;
     transition: width 0.3s ease;
+}
+
+/* Ensure sidebar nav takes remaining space */
+.sidebar nav {
+    flex: 1;
+    overflow-y: auto; /* Allow scrolling if sidebar content is too long */
 }
 .sidebar.collapsed {
     width: 60px;
@@ -139,6 +148,13 @@ body {
     color: #1a4931;
     border-left: 4px solid #1a4931;
 }
+
+/* Prevent logout button from getting active styling */
+.sidebar-btn.logout-btn:not(:hover) {
+    background: transparent;
+    color: #222;
+    border-left: 4px solid transparent;
+}
 .icon {
     margin-right: 12px;
     font-size: 1.2em;
@@ -151,14 +167,14 @@ body {
     margin-right: 0;
 }
 .main-content {
-    flex: 1;
+    flex: 1; /* Takes all remaining horizontal space */
     padding: 48px 64px;
     background: #f5f7fa;
-    min-height: calc(100vh - 64px);
+    min-height: 100vh; /* Ensure full viewport height minimum */
     transition: margin-left 0.3s ease;
 }
 .main-content.expanded {
-    margin-left: 60px;
+    margin-left: 0; /* No margin adjustment needed with flexbox */
 }
 .nurse-card {
     background: #fff;
