@@ -102,6 +102,8 @@ class UserController extends Controller
             return redirect('/labtech/home');
         } elseif ($user->role === 'cashier') {
             return redirect('/cashier/home');
+        } elseif ($user->role === 'inventory') {
+            return redirect('/inventory');
         } else {
             return redirect('/');
         }
@@ -178,6 +180,34 @@ class UserController extends Controller
 
     // Redirect (Post-Redirect-Get) back to the email sent page to avoid duplicate form submit and persistent session keys
     return redirect()->route('password-reset-email-sent');
+    }
+
+    /**
+     * Send a password reset email for the currently authenticated user.
+     */
+    public function sendAccountResetEmail(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return redirect('/login');
+        }
+
+        // generate token and persist
+        $token = Str::random(60);
+        $user->password_reset_token = $token;
+        $user->save();
+
+        try {
+            $user->notify(new ResetPasswordMail($user, $token));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send reset password email for user '.$user->email.': '.$e->getMessage());
+            return redirect()->back()->with('status_error', 'Failed to send reset email. Please contact the administrator.');
+        }
+
+        // store email in session for potential resend
+        $request->session()->put('email', $user->email);
+
+        return redirect()->route('password-reset-email-sent');
     }
 
     public function resetPassword(Request $request, $token)

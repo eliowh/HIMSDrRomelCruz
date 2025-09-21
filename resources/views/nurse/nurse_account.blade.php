@@ -30,10 +30,16 @@
 
             <div class="nurse-card">
                 <h3>Change Password</h3>
-                <!-- Placeholder for password change form -->
-                <div class="placeholder-content">
-                    <p>Password change functionality will be implemented soon.</p>
-                </div>
+                <!-- Trigger sending reset password email to the user's email -->
+                @if(session('status_error'))
+                    <div class="alert alert-danger">{{ session('status_error') }}</div>
+                @endif
+                <form method="POST" action="{{ route('account.sendResetEmail') }}">
+                    @csrf
+                    <p>Click the button below to send a password reset email to your account email address.</p>
+                    <!-- Use existing site action button styles to match other buttons -->
+                    <button type="submit" class="action-btn primary">Reset password</button>
+                </form>
             </div>
         </main>
     </div>

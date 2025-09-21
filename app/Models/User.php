@@ -72,6 +72,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is inventory role.
+     */
+    public function isInventory(): bool
+    {
+        return $this->role === 'inventory';
+    }
+
+    /**
      * Check if user is an admin.
      */
     public function isAdmin(): bool

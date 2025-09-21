@@ -86,6 +86,8 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     Route::get('/nurse/account', function () {
         return view('nurse.nurse_account');
     });
+    // Send password reset email for current user from account page
+    Route::post('/account/send-reset-email', [App\Http\Controllers\UserController::class, 'sendAccountResetEmail'])->name('account.sendResetEmail');
 
     // ensure add/store routes exist (if not already present)
     Route::get('/nurse/addPatients', [PatientController::class, 'create'])->name('nurse.addPatients.create');
@@ -147,6 +149,18 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
 });
 
+// Inventory Routes
+Route::middleware(['auth', 'role:inventory'])->group(function () {
+    Route::get('/inventory', [App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/stocks', [App\Http\Controllers\InventoryController::class, 'stocks'])->name('inventory.stocks');
+    Route::get('/inventory/stocks/search', [App\Http\Controllers\InventoryController::class, 'search'])->name('inventory.stocks.search');
+    Route::post('/inventory/stocks/add', [App\Http\Controllers\InventoryController::class, 'addStock'])->name('inventory.stocks.add');
+    Route::delete('/inventory/stocks/{id}', [App\Http\Controllers\InventoryController::class, 'deleteStock'])->name('inventory.stocks.delete');
+    Route::get('/inventory/orders', [App\Http\Controllers\InventoryController::class, 'orders'])->name('inventory.orders');
+    Route::get('/inventory/reports', [App\Http\Controllers\InventoryController::class, 'reports'])->name('inventory.reports');
+    Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');
+});
+
 // User approval route removed - users are now assigned roles at creation
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -187,6 +201,10 @@ Route::get('/icd10/test-json', function () {
 
 // Room live search endpoint (AJAX) - returns [{name,price}]
 Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search'])->name('rooms.search');
+
+// Patient edit & delete (nurse) - update and destroy by patient_no
+Route::put('/nurse/patients/{patient_no}', [App\Http\Controllers\PatientController::class, 'update'])->name('nurse.patients.update')->middleware('auth');
+Route::delete('/nurse/patients/{patient_no}', [App\Http\Controllers\PatientController::class, 'destroy'])->name('nurse.patients.destroy')->middleware('auth');
 
 
 

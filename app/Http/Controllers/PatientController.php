@@ -77,4 +77,46 @@ class PatientController extends Controller
 
         return redirect(url('/nurse/patients'))->with('success', 'Patient created. Patient No: '.$patient->patient_no);
     }
+
+    /**
+     * Update patient by patient_no (nurse editable fields)
+     */
+    public function update(Request $request, $patient_no)
+    {
+        $patient = Patient::where('patient_no', $patient_no)->firstOrFail();
+
+        $data = $request->validate([
+            'first_name' => 'required|string|max:191',
+            'middle_name' => 'nullable|string|max:191',
+            'last_name' => 'required|string|max:191',
+            'date_of_birth' => 'nullable|date',
+            'age_years' => 'nullable|integer|min:0',
+            'age_months' => 'nullable|integer|min:0',
+            'age_days' => 'nullable|integer|min:0',
+            'province' => 'nullable|string|max:191',
+            'city' => 'nullable|string|max:191',
+            'barangay' => 'nullable|string|max:191',
+            'nationality' => 'nullable|string|max:191',
+            'room_no' => 'nullable|string|max:50',
+            'admission_type' => 'nullable|string|max:100',
+            'service' => 'nullable|string|max:100',
+            'doctor_name' => 'nullable|string|max:191',
+            'doctor_type' => 'nullable|string|max:100',
+            'admission_diagnosis' => 'nullable|string|max:2000',
+        ]);
+
+        $patient->update($data);
+
+        return response()->json(['ok' => true, 'message' => 'Patient updated']);
+    }
+
+    /**
+     * Delete a patient by patient_no
+     */
+    public function destroy(Request $request, $patient_no)
+    {
+        $patient = Patient::where('patient_no', $patient_no)->firstOrFail();
+        $patient->delete();
+        return response()->json(['ok' => true, 'message' => 'Patient deleted']);
+    }
 }
