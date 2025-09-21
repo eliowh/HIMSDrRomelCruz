@@ -53,6 +53,7 @@
                     <option value="doctor">Doctor</option>
                     <option value="nurse">Nurse</option>
                     <option value="lab_technician">Lab Technician</option>
+                        <option value="inventory">Inventory</option>
                     <option value="cashier">Cashier</option>
                     <option value="admin">Admin</option>
                 </select>

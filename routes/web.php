@@ -151,6 +151,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
 });
 
+// Inventory Routes
+Route::middleware(['auth', 'role:inventory'])->group(function () {
+    Route::get('/inventory', [App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/stocks', [App\Http\Controllers\InventoryController::class, 'stocks'])->name('inventory.stocks');
+    Route::get('/inventory/orders', [App\Http\Controllers\InventoryController::class, 'orders'])->name('inventory.orders');
+    Route::get('/inventory/reports', [App\Http\Controllers\InventoryController::class, 'reports'])->name('inventory.reports');
+    Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');
+});
+
 // User approval route removed - users are now assigned roles at creation
 
 Route::middleware(['auth', 'role:admin'])->group(function () {

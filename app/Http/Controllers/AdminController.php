@@ -59,7 +59,7 @@ class AdminController extends Controller
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/', // Only .com domains allowed
                 'unique:users,email'
             ],
-            'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin']
+            'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin,inventory']
         ], [
             'name.required' => 'Please enter a name.',
             'name.min' => 'Name must be 3-20 letters.',
@@ -242,7 +242,7 @@ class AdminController extends Controller
                     'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/',
                     \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id)
                 ],
-                'role' => ['required', 'in:admin,doctor,nurse,lab_technician,cashier']
+                'role' => ['required', 'in:admin,doctor,nurse,lab_technician,cashier,inventory']
             ], [
                 'name.required' => 'Please enter the user\'s name.',
                 'name.min' => 'Name must be 3-20 letters.',

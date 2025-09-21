@@ -29,6 +29,7 @@
                     <option value="nurse">Nurse</option>
                     <option value="lab_technician">Lab Technician</option>
                     <option value="cashier">Cashier</option>
+                    <option value="inventory">Inventory</option>
                 </select>
                 <span class="error-text" id="editRoleError"></span>
             </div>

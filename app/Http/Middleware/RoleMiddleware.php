@@ -37,6 +37,8 @@ class RoleMiddleware
                     return redirect('/labtech/home')->with('error', 'Access denied. You can only access lab technician areas.');
                 case 'cashier':
                     return redirect('/cashier/home')->with('error', 'Access denied. You can only access cashier areas.');
+                case 'inventory':
+                    return redirect('/inventory')->with('error', 'Access denied. You can only access inventory areas.');
                 default:
                     return redirect('/login')->with('error', 'Invalid role. Please contact administrator.');
             }
