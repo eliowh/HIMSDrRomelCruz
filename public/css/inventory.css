@@ -132,22 +132,82 @@ body {
     padding: 16px 0; 
 }
 .sidebar.collapsed .text {
-     display: none; 
-    }
-.sidebar-btn.active, .sidebar-btn:hover { background: #e3e8f7; color: #367F2B; border-left: 4px solid #367F2B; }
-.icon { margin-right:12px; font-size:1.2em; display:inline-block; width:24px; text-align:center; transition: margin 0.3s ease; }
-.sidebar.collapsed .icon { margin-right:0; }
-.main-content { flex:1; padding:48px 64px; background:#f5f7fa; min-height: calc(100vh - 64px); transition: margin-left 0.3s ease; }
-.main-content.expanded { margin-left: 60px; }
-.inventory-card { background:#fff; border-radius:12px; box-shadow:0 4px 16px rgba(54,127,43,0.15); padding:32px; margin-bottom:24px; }
-.inventory-card h2 { color:#367F2B; margin:0 0 24px 0; font-size:1.5rem; }
-.action-btn { padding:8px 14px; border-radius:6px; text-decoration:none; display:inline-block; }
-.action-btn.primary { background:#367F2B; color:white; }
-.action-btn.secondary { background:#6c757d; color:white; }
+    display: none; 
+}
+.sidebar-btn.active, .sidebar-btn:hover { 
+    background: #e3e8f7; 
+    color: #367F2B; 
+    border-left: 4px solid #367F2B; 
+}
+.icon { 
+    margin-right:12px; 
+    font-size:1.2em; 
+    display:inline-block; 
+    width:24px; 
+    text-align:center; 
+    transition: margin 0.3s ease; 
+}
+.sidebar.collapsed .icon {
+    margin-right:0; 
+}
+.main-content { 
+    flex:1; padding:48px 64px; 
+    background:#f5f7fa; 
+    min-height: calc(100vh - 64px); 
+    transition: margin-left 0.3s ease; 
+}
+.main-content.expanded { 
+    margin-left: 60px; 
+}
+.inventory-card { 
+    background:#fff; 
+    border-radius:12px; 
+    box-shadow:0 4px 16px rgba(54,127,43,0.15); 
+    padding:32px; 
+    margin-bottom:24px; 
+}
+.inventory-card h2 { 
+    color:#367F2B; 
+    margin:0 0 24px 0; 
+    font-size:1.5rem; 
+}
+.action-btn { 
+    padding:8px 14px; 
+    border-radius:6px; 
+    text-decoration:none; 
+    display:inline-block; 
+}
+.action-btn.primary { 
+    background:#367F2B; 
+    color:white; 
+}
+.action-btn.secondary { 
+    background:#6c757d; 
+    color:white; 
+}
 /* keep rest of labtech utilities (forms, modals, responsive) - minimal subset copied */
-.form-group { margin-bottom:15px; }
-.form-group label { display:block; margin-bottom:5px; font-weight:600; color:#367F2B; }
-.form-group input, .form-group textarea, .form-group select { width:100%; padding:8px 12px; border:1px solid #ddd; border-radius:4px; font-size:14px; box-sizing: border-box; }
-.submit-btn { background:#367F2B; color:white; }
-.submit-btn:hover { background:#2d6b25; }
+.form-group { 
+    margin-bottom:15px; 
+}
+.form-group label { 
+    display:block; 
+    margin-bottom:5px; 
+    font-weight:600; 
+    color:#367F2B; 
+}
+.form-group input, .form-group textarea, .form-group select { 
+    width:100%; 
+    padding:8px 12px; 
+    border:1px solid #ddd; 
+    border-radius:4px; 
+    font-size:14px; 
+    box-sizing: border-box; 
+}
+.submit-btn { 
+    background:#367F2B; 
+    color:white; 
+}
+.submit-btn:hover { 
+    background:#2d6b25;
+}
 @media (max-width: 900px) { .pdf-viewer { height:400px; } }
