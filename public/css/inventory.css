@@ -211,3 +211,105 @@ body {
     background:#2d6b25;
 }
 @media (max-width: 900px) { .pdf-viewer { height:400px; } }
+
+/* Custom Pagination Styles */
+.pagination-wrapper {
+    margin-top: 24px;
+    display: flex;
+    justify-content: right;
+    align-items: center;
+}
+
+.custom-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 10px;
+}
+
+.pagination-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    color: #122135;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.pagination-arrow:hover {
+    background: #122135;
+    color: #fff;
+    border-color: #122135;
+    transform: translateY(-1px);
+}
+
+.pagination-arrow.disabled {
+    background: #f5f5f5;
+    color: #ccc;
+    border-color: #e8e8e8;
+    cursor: not-allowed;
+}
+
+.pagination-arrow.disabled:hover {
+    transform: none;
+    background: #f5f5f5;
+    color: #ccc;
+}
+
+.page-input-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.page-text {
+    color: #122135;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.page-input {
+    width: 50px;
+    height: 32px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #122135;
+    background: #f9f9f9;
+    transition: all 0.2s ease;
+}
+
+.page-input:focus {
+    outline: none;
+    border-color: #122135;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(18, 33, 53, 0.1);
+}
+
+.page-input::-webkit-outer-spin-button,
+.page-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.page-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}

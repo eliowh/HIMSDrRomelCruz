@@ -26,11 +26,8 @@ class InventoryController extends Controller
                 });
             }
 
-            // Return all records (no pagination) and normalize null quantities to 0
-            $stocks = $stocksQuery->orderBy('generic_name')->get()->map(function($s){
-                $s->quantity = $s->quantity ?? 0;
-                return $s;
-            });
+            // Return paginated records (15 per page)
+            $stocks = $stocksQuery->orderBySemantic('generic_name')->paginate(15);
 
             return view('Inventory.inventory_stocks', compact('stocks', 'q'));
         } catch (\Throwable $e) {
@@ -79,13 +76,13 @@ class InventoryController extends Controller
         // Try finding existing stock by item_code first, then by generic+brand
         $stock = null;
         if (!empty($data['item_code'])) {
-            $stock = StockPrice::where('item_code', $data['item_code'])->first();
+            $stock = StockPrice::whereSemantic('item_code', $data['item_code'])->first();
         }
 
         if (!$stock && !empty($data['generic_name'])) {
-            $q = StockPrice::where('generic_name', $data['generic_name']);
+            $q = StockPrice::whereSemantic('generic_name', $data['generic_name']);
             if (!empty($data['brand_name'])) {
-                $q->where('brand_name', $data['brand_name']);
+                $q->whereSemantic('brand_name', $data['brand_name']);
             }
             $stock = $q->first();
         }
@@ -145,13 +142,15 @@ class InventoryController extends Controller
             return response()->json([]);
         }
 
-        $matches = StockPrice::where('item_code', 'like', "%{$q}%")
-                    ->orWhere('generic_name', 'like', "%{$q}%")
-                    ->orderBy('generic_name')
+        $matches = StockPrice::whereSemanticLike('item_code', $q)
+                    ->orWhere(function($query) use ($q) {
+                        $query->whereSemanticLike('generic_name', $q);
+                    })
+                    ->orderBySemantic('generic_name')
                     ->limit(15)
-                    ->get(['id','item_code','generic_name','brand_name','price','quantity']);
+                    ->get();
 
-        // Group brands per item (by generic_name + item_code)
+        // Map to readable properties using accessors
         $results = $matches->map(function($m){
             return [
                 'id' => $m->id,
@@ -159,7 +158,7 @@ class InventoryController extends Controller
                 'generic_name' => $m->generic_name,
                 'brand_name' => $m->brand_name,
                 'price' => $m->price,
-                'quantity' => $m->quantity ?? 0,
+                'quantity' => $m->quantity,
             ];
         });
 

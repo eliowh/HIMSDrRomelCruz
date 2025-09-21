@@ -67,7 +67,7 @@
                                         @endforeach
                                     </tbody>
                                 </table>
-                            </div>
+                            </div>                            
                         @else
                             <div class="alert alert-info">No stock items found.</div>
                         @endif
@@ -89,6 +89,10 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                {{ $stocks->appends(['q' => $q])->links('components.custom-pagination') }}
             </div>
         </main>
     </div>
