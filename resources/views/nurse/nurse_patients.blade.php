@@ -53,15 +53,11 @@
                         @endforeach
                         </tbody>
                     </table>
-                </div>
-
-                <div class="pagination-wrap">
-                    {{ $patients->links() }}
-                </div>
+                </div>                
             @else
                 <div class="alert alert-info">No patients found.</div>
             @endif
-        </div>
+        </div>        
     </div>
 
     <div class="details-column">
@@ -95,6 +91,9 @@
             </div>
         </div>
     </div>
+</div>
+<div class="pagination-wrapper">
+    {{ $patients->links('components.custom-pagination') }}
 </div>
 
 <!-- Lab Request Modal -->
@@ -130,8 +129,11 @@
             </div>
             
             <div class="form-group">
-                <label for="additionalTests">Additional Tests/Notes:</label>
-                <textarea id="additionalTests" name="additional_tests" rows="3" 
+                <div class="checkbox-label-group" style="justify-content: flex-start;">
+                    <input type="checkbox" id="enableAdditionalTests" title="Enable additional tests/notes">
+                    <label for="enableAdditionalTests">Additional Tests/Notes:</label>
+                </div>
+                <textarea id="additionalTests" name="additional_tests" rows="3" disabled
                           placeholder="e.g., Additional lab work, special instructions, or multiple tests"></textarea>
             </div>
             
@@ -242,6 +244,13 @@ function openLabRequestModal(patientId, patientName, patientNo) {
     // Reset form
     document.getElementById('labRequestForm').reset();
     document.getElementById('requestPatientId').value = patientId; // Reset this after form reset
+    
+    // Ensure additional tests textarea is disabled by default
+    const additionalTestsCheckbox = document.getElementById('enableAdditionalTests');
+    const additionalTestsTextarea = document.getElementById('additionalTests');
+    additionalTestsCheckbox.checked = false;
+    additionalTestsTextarea.disabled = true;
+    
     updateTestOptions(); // Reset the specific test dropdown
 }
 
@@ -355,6 +364,17 @@ document.getElementById('labRequestForm').addEventListener('submit', function(e)
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
     });
+});
+
+// Handle additional tests checkbox
+document.getElementById('enableAdditionalTests').addEventListener('change', function() {
+    const additionalTestsTextarea = document.getElementById('additionalTests');
+    additionalTestsTextarea.disabled = !this.checked;
+    if (this.checked) {
+        additionalTestsTextarea.focus();
+    } else {
+        additionalTestsTextarea.value = '';
+    }
 });
 
 // Close modal when clicking outside

@@ -105,9 +105,7 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::get('/labtech/orders/view/{id}', [LabOrderController::class, 'viewOrder'])->name('labtech.orders.view');
     Route::get('/labtech/orders/download-pdf/{id}', [LabOrderController::class, 'downloadPdf'])->name('labtech.orders.downloadPdf');
     
-    Route::get('/labtech/patients', function () {
-        return view('labtech.labtech_patients');
-    });
+    Route::get('/labtech/patients', [PatientController::class, 'labtechPatients'])->name('labtech.patients');
     
     Route::get('/labtech/account', function () {
         return view('labtech.labtech_account');

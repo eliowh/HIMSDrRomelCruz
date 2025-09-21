@@ -11,11 +11,18 @@ use Illuminate\Support\Facades\Storage;
 
 class LabOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = LabOrder::with(['patient', 'requestedBy', 'labTech'])
-            ->orderBy('requested_at', 'desc')
-            ->paginate(15);
+        $query = LabOrder::with(['patient', 'requestedBy', 'labTech'])
+            ->orderBy('requested_at', 'desc');
+            
+        // Apply status filter if provided
+        $status = $request->input('status');
+        if ($status && in_array($status, ['pending', 'in_progress', 'completed', 'cancelled'])) {
+            $query->where('status', $status);
+        }
+        
+        $orders = $query->paginate(10);
 
         return view('labtech.labtech_orders', compact('orders'));
     }
@@ -57,7 +64,6 @@ class LabOrderController extends Controller
                 'status' => 'required|in:pending,in_progress,completed,cancelled',
                 'results' => 'nullable|string',
                 'results_pdf' => 'nullable|file|mimes:pdf|max:10240', // Max 10MB PDF
-                'send_to_doctor' => 'nullable|in:on,1,true,0,false'
             ]);
 
             $order = LabOrder::findOrFail($id);
@@ -76,7 +82,7 @@ class LabOrderController extends Controller
                 $updateData['results'] = $request->results;
             }
             
-            // Handle PDF upload
+            // Handle PDF upload (optional)
             if ($request->hasFile('results_pdf')) {
                 $file = $request->file('results_pdf');
                 $filename = time() . '_' . $file->getClientOriginalName();
@@ -88,14 +94,12 @@ class LabOrderController extends Controller
             $updateData['lab_tech_id'] = auth()->id();
         }
 
-        $order->update($updateData);
-        
-        // If send_to_doctor is checked and order is completed, you could add notification logic here
-        $sendToDoctor = in_array($request->send_to_doctor, ['on', '1', 'true', true], true);
-        if ($sendToDoctor && $request->status === 'completed') {
-            // TODO: Add notification to requesting doctor
-            // This could send an email or create a notification record
+        if ($request->status === 'cancelled') {
+            $updateData['cancelled_at'] = Carbon::now();
+            $updateData['lab_tech_id'] = auth()->id();
         }
+
+        $order->update($updateData);
 
         return response()->json([
             'success' => true,

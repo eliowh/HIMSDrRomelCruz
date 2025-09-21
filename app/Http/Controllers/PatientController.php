@@ -24,10 +24,28 @@ class PatientController extends Controller
                 });
             })
             ->orderByDesc('patient_no')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         return view('nurse.nurse_patients', compact('patients','q'));
+    }
+    
+    public function labtechPatients(Request $request)
+    {
+        $q = $request->query('q');
+        $patients = Patient::when($q, function ($query, $q) {
+                $query->where(function ($s) use ($q) {
+                    $s->where('first_name','like',"%{$q}%")
+                      ->orWhere('last_name','like',"%{$q}%")
+                      ->orWhere('middle_name','like',"%{$q}%")
+                      ->orWhere('patient_no','like',"%{$q}%");
+                });
+            })
+            ->orderByDesc('patient_no')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('labtech.labtech_patients', compact('patients','q'));
     }
 
     public function store(Request $request)

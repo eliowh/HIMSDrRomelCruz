@@ -21,6 +21,7 @@ class LabOrder extends Model
         'requested_at',
         'started_at',
         'completed_at',
+        'cancelled_at',
         'results',
         'results_pdf_path'
     ];
@@ -29,6 +30,7 @@ class LabOrder extends Model
         'requested_at' => 'datetime',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function patient()

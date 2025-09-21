@@ -25,6 +25,7 @@
                 <button class="tab-btn" data-status="pending">Pending</button>
                 <button class="tab-btn" data-status="in_progress">In Progress</button>
                 <button class="tab-btn" data-status="completed">Completed</button>
+                <button class="tab-btn" data-status="cancelled">Cancelled</button>
             </div>
 
             <div class="labtech-card">
@@ -33,20 +34,30 @@
                         <table class="orders-table">
                             <thead>
                                 <tr>
-                                    <th>Order ID</th>
+                                    <th class="sortable" data-sort="order-id">
+                                        Order ID <span class="sort-icon"><i class="fas fa-sort"></i></span>
+                                    </th>
                                     <th>Patient</th>
                                     <th>Tests Requested</th>
-                                    <th>Requested By</th>
-                                    <th>Priority</th>
-                                    <th>Status</th>
-                                    <th>Requested At</th>
+                                    <th class="sortable" data-sort="requester">
+                                        Requested By <span class="sort-icon"><i class="fas fa-sort"></i></span>
+                                    </th>
+                                    <th class="sortable" data-sort="priority">
+                                        Priority <span class="sort-icon"><i class="fas fa-sort"></i></span>
+                                    </th>
+                                    <th class="sortable" data-sort="status">
+                                        Status <span class="sort-icon"><i class="fas fa-sort"></i></span>
+                                    </th>
+                                    <th class="sortable" data-sort="requested-at">
+                                        Requested At <span class="sort-icon"><i class="fas fa-sort"></i></span>
+                                    </th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($orders as $order)
                                 <tr class="order-row" data-status="{{ $order->status }}">
-                                    <td class="order-id">#{{ str_pad($order->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                    <td class="order-id" data-value="{{ $order->id }}">#{{ str_pad($order->id, 4, '0', STR_PAD_LEFT) }}</td>
                                     <td class="patient-info">
                                         <strong>{{ $order->patient_name }}</strong><br>
                                         <small>ID: {{ $order->patient_no }}</small>
@@ -57,18 +68,18 @@
                                             <small class="notes">Notes: {{ $order->notes }}</small>
                                         @endif
                                     </td>
-                                    <td class="requester">{{ $order->requestedBy->name }}</td>
-                                    <td class="priority">
+                                    <td class="requester" data-value="{{ $order->requestedBy->name }}">{{ $order->requestedBy->name }}</td>
+                                    <td class="priority" data-value="{{ $order->priority }}">
                                         <span class="priority-badge priority-{{ $order->priority }}">
                                             {{ ucfirst($order->priority) }}
                                         </span>
                                     </td>
-                                    <td class="status">
+                                    <td class="status" data-value="{{ $order->status }}">
                                         <span class="status-badge status-{{ $order->status }}">
                                             {{ ucfirst(str_replace('_', ' ', $order->status)) }}
                                         </span>
                                     </td>
-                                    <td class="requested-at">
+                                    <td class="requested-at" data-value="{{ $order->requested_at->timestamp }}">
                                         {{ $order->requested_at->format('M d, Y') }}<br>
                                         <small>{{ $order->requested_at->format('h:i A') }}</small>
                                     </td>
@@ -80,6 +91,9 @@
                                         @elseif($order->status === 'in_progress')
                                             <button class="btn complete-btn" onclick="showCompleteModal({{ $order->id }})">
                                                 Complete
+                                            </button>
+                                            <button class="btn cancel-btn" onclick="cancelOrder({{ $order->id }})">
+                                                Cancel
                                             </button>
                                         @endif
                                         
@@ -98,10 +112,30 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <!-- Pagination -->
-                    <div class="pagination-wrapper">
-                        {{ $orders->links() }}
+                    
+                    <!-- Empty state placeholders for filtered tabs -->
+                    <div id="empty-pending" class="empty-state-placeholder" style="display: none;">
+                        <i class="fas fa-clock"></i>
+                        <h3>No Pending Orders</h3>
+                        <p>There are currently no pending lab orders to display.</p>
+                    </div>
+                    
+                    <div id="empty-in-progress" class="empty-state-placeholder" style="display: none;">
+                        <i class="fas fa-spinner"></i>
+                        <h3>No In Progress Orders</h3>
+                        <p>There are currently no lab orders in progress.</p>
+                    </div>
+                    
+                    <div id="empty-completed" class="empty-state-placeholder" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>No Completed Orders</h3>
+                        <p>There are currently no completed lab orders to display.</p>
+                    </div>
+                    
+                    <div id="empty-cancelled" class="empty-state-placeholder" style="display: none;">
+                        <i class="fas fa-ban"></i>
+                        <h3>No Cancelled Orders</h3>
+                        <p>There are currently no cancelled lab orders to display.</p>
                     </div>
                 @else
                     <div class="no-orders">
@@ -109,6 +143,13 @@
                         <h3>No Lab Orders</h3>
                         <p>No laboratory orders have been requested yet.</p>
                     </div>
+                @endif
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-wrapper" id="pagination-container" style="{{ $orders->count() > 0 ? 'display: flex;' : 'display: none;' }}">
+                @if($orders->count() > 0)
+                    {{ $orders->appends(['status' => request('status')])->links('components.custom-pagination') }}
                 @endif
             </div>
         </main>
@@ -126,18 +167,11 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="resultsPdf">Upload Results (PDF): *</label>
+                    <label for="resultsPdf">Upload Results (PDF):</label>
                     <div class="file-upload-container">
-                        <input type="file" id="resultsPdf" name="results_pdf" accept=".pdf" required>
-                        <small class="file-hint">Upload the lab results as PDF (converted from X-ray images)</small>
+                        <input type="file" id="resultsPdf" name="results_pdf" accept=".pdf">
+                        <small class="file-hint">Upload the lab results as PDF (optional)</small>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="sendToDoctor" name="send_to_doctor" checked>
-                        Send results to requesting doctor
-                    </label>
                 </div>
                 
                 <div class="form-actions">
@@ -182,24 +216,126 @@
 
     <script>
         let currentOrderId = null;
+        let currentSort = { column: null, direction: 'asc' };
+        let currentStatus = 'all';
 
-        // Tab filtering
+        // Initialize on document ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFromURL();
+            
+            // Set up sortable columns
+            setupSortableColumns();
+            
+            // Handle browser back/forward navigation
+            window.addEventListener('popstate', function() {
+                initializeFromURL();
+            });
+        });
+        
+        // Function to initialize the view based on the URL parameters
+        function initializeFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let statusParam = urlParams.has('status') ? urlParams.get('status') : 'all';
+            
+            // Validate status parameter
+            if(!['pending', 'in_progress', 'completed', 'cancelled', 'all'].includes(statusParam)) {
+                statusParam = 'all';
+            }
+            
+            currentStatus = statusParam;
+            
+            // Set the correct tab as active
+            document.querySelectorAll('.tab-btn').forEach(tab => {
+                tab.classList.remove('active');
+                if(tab.dataset.status === statusParam) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Apply the filter
+            filterByStatus(statusParam);
+            
+            // Update pagination links to maintain current status
+            updatePaginationLinks();
+        }
+        
+        // Function to update pagination links to maintain the current status filter
+        function updatePaginationLinks() {
+            // Update links in custom pagination component
+            document.querySelectorAll('#pagination-container a').forEach(link => {
+                if (link.href) {
+                    const linkUrl = new URL(link.href);
+                    
+                    // If we have a status filter and it's not already in the link
+                    if (currentStatus !== 'all') {
+                        linkUrl.searchParams.set('status', currentStatus);
+                    }
+                    
+                    link.href = linkUrl.toString();
+                }
+            });
+            
+            // Also update the page input handling in custom pagination
+            const pageInputs = document.querySelectorAll('.page-input');
+            if (pageInputs.length > 0) {
+                // Replace the default goToPage function if it exists
+                if (typeof window.goToPage === 'function') {
+                    window.originalGoToPage = window.goToPage;
+                    window.goToPage = function(page) {
+                        const currentUrl = new URL(window.location.href);
+                        const pageInput = document.querySelector('.page-input');
+                        
+                        // Get max page from the pagination component
+                        const maxPage = parseInt(pageInput.getAttribute('max') || 1);
+                        
+                        // Validate page number
+                        page = parseInt(page);
+                        if (page < 1) page = 1;
+                        if (page > maxPage) page = maxPage;
+                        
+                        // Update input value to corrected page
+                        if (pageInput) pageInput.value = page;
+                        
+                        // Set the page and maintain current status
+                        currentUrl.searchParams.set('page', page);
+                        if (currentStatus !== 'all') {
+                            currentUrl.searchParams.set('status', currentStatus);
+                        }
+                        
+                        window.location.href = currentUrl.toString();
+                    };
+                }
+            }
+        }
+
+        // Tab filtering with server-side pagination
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const status = this.dataset.status;
                 
-                // Update active tab
-                document.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Filter rows
-                document.querySelectorAll('.order-row').forEach(row => {
-                    if (status === 'all' || row.dataset.status === status) {
-                        row.style.display = '';
+                // Only redirect if status changed
+                if (status !== currentStatus) {
+                    currentStatus = status;
+                    
+                    // Update active tab
+                    document.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Build the new URL - reset to page 1 when changing tabs
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.delete('page'); // Reset to page 1
+                    
+                    if(status === 'all') {
+                        // Remove status parameter for "All" tab
+                        currentUrl.searchParams.delete('status');
+                        // Reload the page instead of just pushing state to ensure proper pagination
+                        window.location.href = currentUrl.toString();
                     } else {
-                        row.style.display = 'none';
+                        currentUrl.searchParams.set('status', status);
+                        // Reload the page instead of just pushing state to ensure proper pagination
+                        window.location.href = currentUrl.toString();
                     }
-                });
+                }
             });
         });
 
@@ -235,7 +371,6 @@
             document.getElementById('completeModal').classList.remove('show');
             document.getElementById('results').value = '';
             document.getElementById('resultsPdf').value = '';
-            document.getElementById('sendToDoctor').checked = true;
             currentOrderId = null;
         }
 
@@ -247,13 +382,6 @@
             const submitBtn = this.querySelector('.complete-btn');
             const btnText = submitBtn.querySelector('.btn-text');
             const btnLoading = submitBtn.querySelector('.btn-loading');
-            
-            // Check if PDF is uploaded
-            const pdfFile = document.getElementById('resultsPdf').files[0];
-            if (!pdfFile) {
-                alert('Please upload a PDF file with the test results.');
-                return;
-            }
             
             // Show loading state
             btnText.style.display = 'none';
@@ -291,6 +419,32 @@
                 submitBtn.disabled = false;
             });
         });
+
+        // Cancel order function
+        function cancelOrder(orderId) {
+            if (confirm('Are you sure you want to cancel this lab order? This action cannot be undone.')) {
+                fetch(`/labtech/orders/update-status/${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ status: 'cancelled' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error cancelling order: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error cancelling order. Please try again.');
+                });
+            }
+        }
 
         // PDF Viewing Functions
         function viewPdf(orderId) {
@@ -408,6 +562,143 @@
 
         // Close modal with X button
         document.querySelector('.close').onclick = closeCompleteModal;
+        
+        // Function to set up sortable columns
+        function setupSortableColumns() {
+            document.querySelectorAll('th.sortable').forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = this.dataset.sort;
+                    
+                    // Toggle sort direction or set initial direction
+                    if(currentSort.column === column) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.column = column;
+                        currentSort.direction = 'asc';
+                    }
+                    
+                    // Update sort icons
+                    document.querySelectorAll('.sort-icon i').forEach(icon => {
+                        icon.className = 'fas fa-sort';
+                    });
+                    
+                    const thisIcon = this.querySelector('.sort-icon i');
+                    thisIcon.className = currentSort.direction === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+                    
+                    // Sort table rows
+                    sortTable(column, currentSort.direction);
+                });
+            });
+        }
+        
+        // Function to sort table
+        function sortTable(column, direction) {
+            const tbody = document.querySelector('.orders-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                const aCell = a.querySelector('.' + column);
+                const bCell = b.querySelector('.' + column);
+                
+                if(!aCell || !bCell) return 0;
+                
+                // Get sorting values - first try data-value attribute, then cell text
+                let aValue = aCell.getAttribute('data-value');
+                let bValue = bCell.getAttribute('data-value');
+                
+                if(!aValue) aValue = aCell.textContent.trim();
+                if(!bValue) bValue = bCell.textContent.trim();
+                
+                // Check if values are numbers
+                const aNum = parseFloat(aValue);
+                const bNum = parseFloat(bValue);
+                
+                if(!isNaN(aNum) && !isNaN(bNum)) {
+                    return direction === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+                
+                // Otherwise compare as strings
+                return direction === 'asc' ? 
+                    aValue.localeCompare(bValue) : 
+                    bValue.localeCompare(aValue);
+            });
+            
+            // Re-append rows in the sorted order
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Re-check visibility based on current filter
+            filterByStatus(currentStatus);
+        }
+        
+        // Function to filter by status
+        function filterByStatus(status) {
+            const rows = document.querySelectorAll('.order-row');
+            let visibleCount = 0;
+            const table = document.querySelector('.orders-table');
+            const paginationContainer = document.getElementById('pagination-container');
+            
+            // Hide all placeholders first
+            document.querySelectorAll('.empty-state-placeholder').forEach(placeholder => {
+                placeholder.style.display = 'none';
+            });
+            
+            // Show table by default
+            if (table) {
+                table.style.display = '';
+            }
+            
+            // Filter the rows
+            rows.forEach(row => {
+                if(status === 'all' || row.dataset.status === status) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show empty state placeholder if needed
+            if(visibleCount === 0 && status !== 'all') {
+                const emptyStateId = `empty-${status.replace('_', '-')}`;
+                const emptyState = document.getElementById(emptyStateId);
+                
+                if(emptyState) {
+                    if(table) table.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    
+                    // Hide pagination for empty tabs
+                    if(paginationContainer) {
+                        paginationContainer.style.display = 'none';
+                    }
+                } else {
+                    // Show pagination for non-empty tabs
+                    if(paginationContainer) {
+                        paginationContainer.style.display = visibleCount > 0 ? 'flex' : 'none';
+                    }
+                }
+            } else {
+                // Show pagination for non-empty tabs
+                if(paginationContainer) {
+                    paginationContainer.style.display = visibleCount > 0 ? 'flex' : 'none';
+                }
+            }
+            
+            return visibleCount;
+        }
+        
+        // Function to check if we need to display empty states
+        function checkEmptyStates() {
+            // If we have a status filter active, run filterByStatus to show/hide appropriate content
+            if(currentStatus !== 'all') {
+                filterByStatus(currentStatus);
+            } else {
+                // For 'all' status, just make sure we hide empty state placeholders
+                document.querySelectorAll('.empty-state-placeholder').forEach(placeholder => {
+                    placeholder.style.display = 'none';
+                });
+            }
+        }
     </script>
 </body>
 </html>
