@@ -64,6 +64,7 @@ class LabOrderController extends Controller
                 'status' => 'required|in:pending,in_progress,completed,cancelled',
                 'results' => 'nullable|string',
                 'results_pdf' => 'nullable|file|mimes:pdf|max:10240', // Max 10MB PDF
+                'cancel_reason' => 'required_if:status,cancelled|nullable|string|max:1000',
             ]);
 
             $order = LabOrder::findOrFail($id);
@@ -97,6 +98,11 @@ class LabOrderController extends Controller
         if ($request->status === 'cancelled') {
             $updateData['cancelled_at'] = Carbon::now();
             $updateData['lab_tech_id'] = auth()->id();
+            
+            // Save the cancellation reason
+            if ($request->has('cancel_reason')) {
+                $updateData['cancel_reason'] = $request->cancel_reason;
+            }
         }
 
         $order->update($updateData);
@@ -137,5 +143,33 @@ class LabOrderController extends Controller
         
         return Storage::disk('public')->download($order->results_pdf_path, 
             'Lab_Results_' . $order->patient_name . '_' . $order->id . '.pdf');
+    }
+    
+    /**
+     * Get a patient's lab test history
+     *
+     * @param int $patientId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPatientTestHistory($patientId)
+    {
+        try {
+            // Get all lab orders for the patient, ordered by latest first
+            $testHistory = LabOrder::where('patient_id', $patientId)
+                ->with(['requestedBy', 'labTech'])
+                ->orderBy('requested_at', 'desc')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'tests' => $testHistory
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching patient test history: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving test history: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

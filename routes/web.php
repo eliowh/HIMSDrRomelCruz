@@ -78,6 +78,10 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // show patients list
     Route::get('/nurse/patients', [PatientController::class, 'index'])->name('nurse.patients.index');
+    
+    // Patient edit functionality (nurse) - update by patient_no
+    // Delete functionality has been removed from nurse interface as requested
+    Route::put('/nurse/patients/{patient_no}', [PatientController::class, 'update'])->name('nurse.patients.update');
 
     Route::get('/nurse/schedule', function () {
         return view('nurse.nurse_schedule');
@@ -108,6 +112,7 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::get('/labtech/orders/download-pdf/{id}', [LabOrderController::class, 'downloadPdf'])->name('labtech.orders.downloadPdf');
     
     Route::get('/labtech/patients', [PatientController::class, 'labtechPatients'])->name('labtech.patients');
+    Route::get('/labtech/patients/{patient}/test-history', [LabOrderController::class, 'getPatientTestHistory'])->name('labtech.patient.testHistory');
     
     Route::get('/labtech/account', function () {
         return view('labtech.labtech_account');
@@ -201,10 +206,6 @@ Route::get('/icd10/test-json', function () {
 
 // Room live search endpoint (AJAX) - returns [{name,price}]
 Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search'])->name('rooms.search');
-
-// Patient edit & delete (nurse) - update and destroy by patient_no
-Route::put('/nurse/patients/{patient_no}', [App\Http\Controllers\PatientController::class, 'update'])->name('nurse.patients.update')->middleware('auth');
-Route::delete('/nurse/patients/{patient_no}', [App\Http\Controllers\PatientController::class, 'destroy'])->name('nurse.patients.destroy')->middleware('auth');
 
 
 

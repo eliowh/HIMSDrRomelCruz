@@ -94,6 +94,12 @@
                                 <dt>Doctor Type</dt><dd id="md-doctor_type">-</dd>
                                 <dt>Created At</dt><dd id="md-created_at">-</dd>
                             </dl>
+                            
+                            <div class="patient-actions">
+                                <button id="viewTestHistoryBtn" class="btn history-btn" type="button" disabled>
+                                    <i class="fas fa-flask"></i> View Test History
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -105,6 +111,8 @@
     </div>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    @include('labtech.modals.test_history_modal')
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -113,10 +121,30 @@
             const detailsCard = document.getElementById('detailsCard');
             const detailsEmpty = document.getElementById('detailsEmpty');
             const detailsContent = document.getElementById('detailsContent');
+            const testHistoryModal = document.getElementById('testHistoryModal');
+            const viewTestHistoryBtn = document.getElementById('viewTestHistoryBtn');
+            let currentPatient = null;
 
             function or(v){ return v===null||v===undefined||v==='' ? '-' : v; }
 
+            // Function to update the test history button with count badge
+            function updateTestHistoryButton(testCount) {
+                const btn = document.getElementById('viewTestHistoryBtn');
+                
+                if (testCount > 0) {
+                    btn.innerHTML = `
+                        <i class="fas fa-flask"></i> View Test History 
+                        <span class="test-count-badge">${testCount}</span>
+                    `;
+                    btn.classList.add('has-tests');
+                } else {
+                    btn.innerHTML = `<i class="fas fa-flask"></i> View Test History`;
+                    btn.classList.remove('has-tests');
+                }
+            }
+            
             function renderPatient(patient){
+                currentPatient = patient; // Store the current patient
                 document.getElementById('md-patient_no').textContent = or(patient.patient_no);
                 document.getElementById('md-name').textContent = or([patient.last_name, patient.first_name, patient.middle_name].filter(Boolean).join(', '));
                 document.getElementById('md-dob').textContent = or(patient.date_of_birth);
@@ -133,6 +161,30 @@
                 document.getElementById('md-doctor_name').textContent = or(patient.doctor_name);
                 document.getElementById('md-doctor_type').textContent = or(patient.doctor_type);
                 document.getElementById('md-created_at').textContent = or(patient.created_at);
+                
+                // Enable the view test history button now that we have a patient selected
+                viewTestHistoryBtn.disabled = false;
+                
+                // Check for test history when a patient is selected
+                if (patient.id) {
+                    fetch(`/labtech/patients/${patient.id}/test-history`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.tests) {
+                            updateTestHistoryButton(data.tests.length);
+                        } else {
+                            updateTestHistoryButton(0);
+                        }
+                    })
+                    .catch(() => {
+                        updateTestHistoryButton(0);
+                    });
+                }
             }
 
             function clearActive(){
@@ -160,6 +212,157 @@
             if (rows.length && !document.querySelector('.patient-row.active')) {
                 rows[0].querySelector('.js-open-patient').click();
             }
+            
+            // Test History Modal Functions
+            function openTestHistoryModal() {
+                if (!currentPatient) return;
+                
+                // Update the modal patient information
+                document.getElementById('history-patient-name').textContent = 
+                    [currentPatient.last_name, currentPatient.first_name, currentPatient.middle_name]
+                        .filter(Boolean).join(', ');
+                document.getElementById('history-patient-no').textContent = 
+                    `Patient No: ${or(currentPatient.patient_no)}`;
+                
+                // Show loading state
+                document.getElementById('testHistoryLoading').style.display = 'flex';
+                document.getElementById('testHistoryEmpty').style.display = 'none';
+                document.getElementById('testHistoryList').style.display = 'none';
+                
+                // Show the modal
+                testHistoryModal.classList.add('show');
+                
+                // Fetch test history from the server
+                fetchPatientTestHistory(currentPatient.id);
+            }
+            
+            function closeTestHistoryModal() {
+                testHistoryModal.classList.remove('show');
+            }
+            
+            function fetchPatientTestHistory(patientId) {
+                fetch(`/labtech/patients/${patientId}/test-history`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading spinner
+                    document.getElementById('testHistoryLoading').style.display = 'none';
+                    
+                    if (data.success) {
+                        if (data.tests && data.tests.length > 0) {
+                            renderTestHistory(data.tests);
+                            document.getElementById('testHistoryList').style.display = 'block';
+                            
+                            // Update the test history button with count badge
+                            updateTestHistoryButton(data.tests.length);
+                        } else {
+                            document.getElementById('testHistoryEmpty').style.display = 'flex';
+                            updateTestHistoryButton(0);
+                        }
+                    } else {
+                        document.getElementById('testHistoryEmpty').style.display = 'flex';
+                        updateTestHistoryButton(0);
+                        console.error("Error fetching test history:", data.message || "Unknown error");
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('testHistoryLoading').style.display = 'none';
+                    document.getElementById('testHistoryEmpty').style.display = 'flex';
+                    console.error("Error fetching test history:", error);
+                });
+            }
+            
+            function renderTestHistory(tests) {
+                const historyList = document.getElementById('testHistoryList');
+                historyList.innerHTML = ''; // Clear existing content
+                
+                tests.forEach(test => {
+                    const testCard = document.createElement('div');
+                    testCard.className = 'test-history-item';
+                    
+                    // Format date
+                    const requestDate = new Date(test.requested_at);
+                    const formattedDate = requestDate.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    
+                    const formattedTime = requestDate.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    // Create status badge
+                    const statusClass = `status-badge status-${test.status}`;
+                    const statusLabel = test.status.replace('_', ' ').toUpperCase();
+                    
+                    testCard.innerHTML = `
+                        <div class="test-header">
+                            <div class="test-id">#${String(test.id).padStart(4, '0')}</div>
+                            <span class="${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div class="test-info">
+                            <h4>${test.test_requested}</h4>
+                            <p class="test-date">
+                                <i class="fas fa-calendar-alt"></i> ${formattedDate} at ${formattedTime}
+                            </p>
+                            <p class="test-requester">
+                                <i class="fas fa-user-md"></i> Requested by: ${test.requested_by ? test.requested_by.name : 'Unknown'}
+                            </p>
+                            ${test.priority ? `
+                                <p class="test-priority">
+                                    <span class="priority-badge priority-${test.priority}">${test.priority.toUpperCase()}</span>
+                                </p>
+                            ` : ''}
+                            ${test.notes ? `
+                                <div class="test-notes">
+                                    <strong>Notes:</strong> ${test.notes}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="test-actions">
+                            ${test.status === 'completed' && test.results_pdf_path ? `
+                                <button class="btn view-pdf-btn" onclick="viewTestPdf(${test.id})">
+                                    <i class="fas fa-file-pdf"></i> View Results
+                                </button>
+                            ` : ''}
+                            <button class="btn view-btn" onclick="viewTestDetails(${test.id})">
+                                Details
+                            </button>
+                        </div>
+                    `;
+                    
+                    historyList.appendChild(testCard);
+                });
+            }
+            
+            // Function to view test PDF (to be implemented in the controller)
+            function viewTestPdf(testId) {
+                window.open(`/labtech/orders/view-pdf/${testId}`, '_blank');
+            }
+            
+            // Function to view test details (to be implemented in the controller)
+            function viewTestDetails(testId) {
+                window.location.href = `/labtech/orders?highlight=${testId}`;
+            }
+            
+            // Event listeners for the test history button and modal
+            viewTestHistoryBtn.addEventListener('click', openTestHistoryModal);
+            
+            // Close modal when clicking the X button
+            testHistoryModal.querySelector('.close').addEventListener('click', closeTestHistoryModal);
+            
+            // Close modal when clicking outside of it
+            window.addEventListener('click', function(event) {
+                if (event.target === testHistoryModal) {
+                    closeTestHistoryModal();
+                }
+            });
         });
     </script>
 </body>
