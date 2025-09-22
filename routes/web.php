@@ -156,6 +156,7 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
     Route::get('/inventory/stocks/search', [App\Http\Controllers\InventoryController::class, 'search'])->name('inventory.stocks.search');
     Route::post('/inventory/stocks/add', [App\Http\Controllers\InventoryController::class, 'addStock'])->name('inventory.stocks.add');
     Route::delete('/inventory/stocks/{id}', [App\Http\Controllers\InventoryController::class, 'deleteStock'])->name('inventory.stocks.delete');
+    Route::patch('/inventory/stocks/{id}', [App\Http\Controllers\InventoryController::class, 'updateStock'])->name('inventory.stocks.update');
     Route::get('/inventory/orders', [App\Http\Controllers\InventoryController::class, 'orders'])->name('inventory.orders');
     Route::get('/inventory/reports', [App\Http\Controllers\InventoryController::class, 'reports'])->name('inventory.reports');
     Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');

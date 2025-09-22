@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use App\Models\StockPrice;
 
 class InventoryController extends Controller
@@ -27,7 +28,12 @@ class InventoryController extends Controller
             }
 
             // Return all records (no pagination) and normalize null quantities to 0
-            $stocks = $stocksQuery->orderBy('generic_name')->get()->map(function($s){
+            // Order by generic_name only if the column exists in the table to avoid SQL errors
+            if (Schema::hasColumn((new StockPrice)->getTable(), 'generic_name')) {
+                $stocksQuery = $stocksQuery->orderBy('generic_name');
+            }
+
+            $stocks = $stocksQuery->get()->map(function($s){
                 $s->quantity = $s->quantity ?? 0;
                 return $s;
             });
@@ -145,10 +151,14 @@ class InventoryController extends Controller
             return response()->json([]);
         }
 
-        $matches = StockPrice::where('item_code', 'like', "%{$q}%")
-                    ->orWhere('generic_name', 'like', "%{$q}%")
-                    ->orderBy('generic_name')
-                    ->limit(15)
+        $matchesQuery = StockPrice::where('item_code', 'like', "%{$q}%")
+                    ->orWhere('generic_name', 'like', "%{$q}%");
+
+        if (Schema::hasColumn((new StockPrice)->getTable(), 'generic_name')) {
+            $matchesQuery = $matchesQuery->orderBy('generic_name');
+        }
+
+        $matches = $matchesQuery->limit(15)
                     ->get(['id','item_code','generic_name','brand_name','price','quantity']);
 
         // Group brands per item (by generic_name + item_code)
@@ -164,5 +174,60 @@ class InventoryController extends Controller
         });
 
         return response()->json($results);
+    }
+
+    /**
+     * Update stock item details (item_code, generic_name, brand_name, price)
+     */
+    public function updateStock(Request $request, $id)
+    {
+        // Log incoming request for debugging (include DB name for clarity)
+        \Log::info('Inventory.updateStock called', ['id' => $id, 'payload' => $request->all(), 'db' => \DB::connection()->getDatabaseName()]);
+
+        $data = $request->validate([
+            'item_code' => ['nullable','string','max:100'],
+            'generic_name' => ['nullable','string','max:255'],
+            'brand_name' => ['nullable','string','max:255'],
+            'price' => ['nullable','numeric','min:0'],
+            'quantity' => ['nullable','integer','min:0'],
+        ]);
+
+        // Try several lookup strategies so edits work regardless of whether 'id' is numeric PK or an item_code
+        $stock = null;
+        try {
+            $stock = StockPrice::find($id);
+            if (!$stock) {
+                $stock = StockPrice::where('item_code', $id)->first();
+            }
+
+            // If still not found but payload contains item_code, try that
+            if (!$stock && !empty($data['item_code'])) {
+                $stock = StockPrice::where('item_code', $data['item_code'])->first();
+            }
+
+            if (!$stock) {
+                \Log::warning('Inventory.updateStock: stock not found', ['id'=>$id, 'payload'=>$data]);
+                return response()->json(['ok' => false, 'message' => 'Stock item not found.'], 404);
+            }
+
+            \Log::info('Inventory.updateStock found stock', ['stock_before' => $stock->toArray()]);
+
+            // Use fill to update permitted attributes
+            $stock->fill($data);
+            $stock->save();
+
+            // Refresh from DB (in case of casts/defaults)
+            $stock = $stock->fresh();
+
+            \Log::info('Inventory.updateStock saved stock', ['stock_after' => $stock->toArray()]);
+
+            return response()->json(['ok' => true, 'stock' => $stock]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            \Log::warning('Inventory.updateStock validation failed', ['errors' => $ve->errors(), 'payload' => $request->all()]);
+            return response()->json(['ok' => false, 'errors' => $ve->errors()], 422);
+        } catch (\Throwable $e) {
+            \Log::error('Inventory.updateStock error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['ok' => false, 'message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
     }
 }

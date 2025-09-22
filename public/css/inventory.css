@@ -173,7 +173,8 @@ body {
 }
 .action-btn { 
     padding:8px 14px; 
-    border-radius:6px; 
+    border-radius:6px;
+    height: 50px; 
     text-decoration:none; 
     display:inline-block; 
 }
@@ -211,3 +212,39 @@ body {
     background:#2d6b25;
 }
 @media (max-width: 900px) { .pdf-viewer { height:400px; } }
+
+/* Inventory stocks specific styles */
+.stocks-grid { display:grid; grid-template-columns:1fr 380px; gap:16px; align-items:start; }
+/* layout columns - no extra rules needed here */
+.table-wrap { overflow:auto; }
+.patients-table { width:100%; border-collapse:collapse; }
+.patients-table th, .patients-table td { padding:10px; border-bottom:1px solid #eee; }
+.patients-table th { text-align:left; }
+.patients-table td { border-bottom:1px solid #f2f4f7; }
+.patients-table td.text-right { text-align:right; }
+.stock-row.active { background:#f0fff4; }
+
+/* Details card */
+#detailsCard .patients-header h3 { margin:0; color:#367F2B; }
+#detailsEmpty { color:#666; }
+#detailsContent dl dt { font-weight:700; color:#367F2B; }
+#detailsContent dl dd { margin:0 0 8px 0; }
+
+/* Modal mini overrides */
+.modal.mini .modal-content { width:520px; max-width:92%; padding:12px; border-radius:10px; }
+.modal.mini .modal-header, .modal.mini .modal-footer { padding:10px 12px; }
+.modal.mini h3 { margin:6px 0 10px; font-size:18px; }
+.modal.mini .close { font-size:20px; top:8px; right:10px; }
+
+/* ICD-style suggestions */
+.icd-suggestions { background:#fff; border:1px solid #ddd; max-height:240px; overflow:auto; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+.icd-suggestion { padding:8px 10px; cursor:pointer; border-bottom:1px solid #f1f1f1; }
+.icd-suggestion:last-child{ border-bottom:none; }
+.icd-suggestion:hover, .icd-suggestion.active { background:#f0f7f1; }
+
+/* Buttons */
+.btn { padding:6px 10px; border-radius:6px; border:none; cursor:pointer; }
+.btn.view-btn { background:#eefcee; color:#2d6b25; }
+.btn.edit-btn { background:#fff3cd; color:#856404; margin-left:8px; }
+.btn.delete-btn { background:#dc3545; color:#fff; margin-left:8px; }
+

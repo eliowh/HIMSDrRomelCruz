@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // If the table already exists (from a duplicate migration), skip creation to avoid SQL errors
+        if (Schema::hasTable('patients')) {
+            return;
+        }
+
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
             $table->string('patient_id')->unique();
