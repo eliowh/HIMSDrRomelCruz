@@ -104,6 +104,10 @@ class UserController extends Controller
             return redirect('/cashier/home');
         } elseif ($user->role === 'inventory') {
             return redirect('/inventory');
+        } elseif ($user->role === 'pharmacy') {
+            return redirect('/pharmacy/home');
+        } elseif ($user->role === 'billing') {
+            return redirect('/billing/home');
         } else {
             return redirect('/');
         }

@@ -39,6 +39,10 @@ class RoleMiddleware
                     return redirect('/cashier/home')->with('error', 'Access denied. You can only access cashier areas.');
                 case 'inventory':
                     return redirect('/inventory')->with('error', 'Access denied. You can only access inventory areas.');
+                case 'pharmacy':
+                    return redirect('/pharmacy/home')->with('error', 'Access denied. You can only access pharmacy areas.');
+                case 'billing':
+                    return redirect('/billing/home')->with('error', 'Access denied. You can only access billing areas.');
                 default:
                     return redirect('/login')->with('error', 'Invalid role. Please contact administrator.');
             }

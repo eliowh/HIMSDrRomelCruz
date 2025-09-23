@@ -53,8 +53,10 @@
                     <option value="doctor">Doctor</option>
                     <option value="nurse">Nurse</option>
                     <option value="lab_technician">Lab Technician</option>
-                        <option value="inventory">Inventory</option>
+                    <option value="inventory">Inventory</option>
                     <option value="cashier">Cashier</option>
+                    <option value="pharmacy">Pharmacy</option>
+                    <option value="billing">Billing</option>
                     <option value="admin">Admin</option>
                 </select>
                 <div class="error-text" style="display: none;"></div>
@@ -156,6 +158,12 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
         .then(data => {
             showSuccessMessage(data.message || 'User created successfully!');
             resetForm(form);
+            // Close modal and refresh so the new user appears in the list
+            setTimeout(() => {
+                // Close the modal if it's open
+                try { closeAddUserModal(); } catch (e) {}
+                location.reload();
+            }, 1000);
         })
         .catch(error => {
             if (error.message !== 'Validation failed') {

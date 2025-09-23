@@ -86,4 +86,20 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+
+    /**
+     * Check if user is pharmacy role.
+     */
+    public function isPharmacy(): bool
+    {
+        return $this->role === 'pharmacy';
+    }
+
+    /**
+     * Check if user is billing role.
+     */
+    public function isBilling(): bool
+    {
+        return $this->role === 'billing';
+    }
 }

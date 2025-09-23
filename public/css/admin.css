@@ -458,6 +458,50 @@ body {
     color: #7b1fa2;
 }
 
+.role-pharmacy {
+    background: #e0f2f1;
+    color: #00695c;
+}
+
+.role-billing {
+    background: #fce4ec;
+    color: #ad1457;
+}
+
+.role-inventory {
+    background: #f1f8e9;
+    color: #558b2f;
+}
+
+/* Status Badge Styles */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-active {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-inactive {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.status-discharged {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.status-deceased {
+    background: #fafafa;
+    color: #424242;
+}
+
 /* Action Dropdown Styles */
 .action-dropdown {
     position: relative;
@@ -567,6 +611,96 @@ body {
     font-size: 2rem;
     font-weight: 700;
     color: #1a237e;
+}
+
+/* Stocks Summary Styles */
+.stocks-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stocks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+}
+
+.stock-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.stock-item:hover {
+    background: #e9ecef;
+}
+
+.stock-icon {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.stock-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stock-number {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a237e;
+}
+
+.stock-label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.stocks-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stock-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #1a237e;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.stock-action-btn:hover {
+    background: #303f9f;
+    color: white;
+}
+
+.stock-action-btn.alert {
+    background: #f57c00;
+}
+
+.stock-action-btn.alert:hover {
+    background: #ff9800;
 }
 
 /* Quick Actions */
@@ -841,6 +975,7 @@ body {
 .type-user_registration { background: #e8f5e8; color: #388e3c; }
 .type-system_log { background: #fff3e0; color: #f57c00; }
 .type-custom { background: #fce4ec; color: #c2185b; }
+.type-user_report { background: #e0f2f1; color: #00796b; }
 
 .status-badge {
     display: inline-block;
@@ -1413,4 +1548,76 @@ body {
     .reg-meta {
         justify-content: space-between;
     }
+}
+
+/* Search and Clear Button Styles */
+.search-btn {
+    background: #367F2B;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(26, 73, 49, 0.10);
+    margin-left: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.search-btn:hover {
+    background: #2d6624;
+}
+
+.clear-btn {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(220, 53, 69, 0.10);
+    margin-left: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.clear-btn:hover {
+    background: #c82333;
+}
+
+.filter-search-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Sortable Table Headers */
+.sortable {
+    cursor: pointer !important;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.sortable:hover {
+    background-color: rgba(54, 127, 43, 0.1);
+}
+
+.sort-indicator {
+    font-size: 0.8rem;
+    margin-left: 5px;
+    color: #999;
+    font-weight: normal;
+}
+
+.sort-indicator.asc {
+    color: #367F2B;
+    font-weight: bold;
+}
+
+.sort-indicator.desc {
+    color: #367F2B;
+    font-weight: bold;
 }

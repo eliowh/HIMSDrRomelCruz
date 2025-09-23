@@ -21,13 +21,20 @@
                 <div class="filter-search-controls">
                     <select id="roleFilter" class="role-select">
                         <option value="">All Roles</option>
-                        <option value="admin">Admin</option>
-                        <option value="doctor">Doctor</option>
-                        <option value="nurse">Nurse</option>
-                        <option value="lab_technician">Lab Technician</option>
-                        <option value="cashier">Cashier</option>
+                        <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="doctor" {{ request('role') == 'doctor' ? 'selected' : '' }}>Doctor</option>
+                        <option value="nurse" {{ request('role') == 'nurse' ? 'selected' : '' }}>Nurse</option>
+                        <option value="lab_technician" {{ request('role') == 'lab_technician' ? 'selected' : '' }}>Lab Technician</option>
+                        <option value="inventory" {{ request('role') == 'inventory' ? 'selected' : '' }}>Inventory</option>
+                        <option value="cashier" {{ request('role') == 'cashier' ? 'selected' : '' }}>Cashier</option>
+                        <option value="pharmacy" {{ request('role') == 'pharmacy' ? 'selected' : '' }}>Pharmacy</option>
+                        <option value="billing" {{ request('role') == 'billing' ? 'selected' : '' }}>Billing</option>
                     </select>
-                    <input type="text" id="searchInput" placeholder="Search by name..." class="search-input">
+                    <input type="text" id="searchInput" placeholder="Search by name..." class="search-input" value="{{ request('search') }}">
+                    <button id="searchButton" class="search-btn">Search</button>
+                    @if(request('search') || request('role'))
+                        <button id="clearButton" class="clear-btn">Clear</button>
+                    @endif
                 </div>
                 <button class="add-user-btn" onclick="openAddUserModal()">Add New User</button>
             </div>
@@ -37,10 +44,46 @@
                 <table class="admin-table" id="usersTable">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Created</th>
+                            <th class="sortable" data-sort="name">
+                                Name
+                                @if(request('sort') == 'name')
+                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
+                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                @else
+                                    <span class="sort-indicator">↕</span>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="email">
+                                Email
+                                @if(request('sort') == 'email')
+                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
+                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                @else
+                                    <span class="sort-indicator">↕</span>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="role">
+                                Role
+                                @if(request('sort') == 'role')
+                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
+                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                @else
+                                    <span class="sort-indicator">↕</span>
+                                @endif
+                            </th>
+                            <th class="sortable" data-sort="created_at">
+                                Created
+                                @if(request('sort') == 'created_at' || !request('sort'))
+                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
+                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                @else
+                                    <span class="sort-indicator">↕</span>
+                                @endif
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -51,7 +94,11 @@
                             <td>{{ $user->email }}</td>
                             <td>
                                 <span class="role-badge role-{{ $user->role }}">
-                                    {{ $user->role === 'lab_technician' ? 'Lab Technician' : ucfirst($user->role) }}
+                                    @if($user->role === 'lab_technician')
+                                        Lab Technician
+                                    @else
+                                        {{ ucfirst($user->role) }}
+                                    @endif
                                 </span>
                             </td>
                             <td>{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
@@ -68,9 +115,17 @@
                             </td>
                         </tr>
                         @endforeach
-                        <tr class="no-results" style="display: none;">
-                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">No users found.</td>
+                        @if($users->count() == 0)
+                        <tr class="no-results">
+                            <td colspan="5" style="text-align: center; color: #666; padding: 20px;">
+                                @if(request('search') || request('role'))
+                                    No users found matching your search criteria.
+                                @else
+                                    No users found.
+                                @endif
+                            </td>
                         </tr>
+                        @endif
                     </tbody>
                 </table>
             </div>
@@ -82,8 +137,8 @@
         </div>
     </div>
 
-    @include('admin.modal.admin_createUser')
-    @include('admin.modal.admin_editUser')
+    @include('admin.modals.admin_createUser')
+    @include('admin.modals.admin_editUser')
 
     <script>
     function openAddUserModal() {
@@ -113,65 +168,94 @@
             input.classList.remove('error');
         });
         document.getElementById('editErrorMessage').style.display = 'none';
+        // Remove any existing success messages inside edit modal
+        const existingSuccess = document.querySelectorAll('#editUserModal .alert-success');
+        existingSuccess.forEach(el => el.remove());
     }
 
-    // Filter and Search Functionality
+    // Filter and Search Functionality - Server-side search for cross-page results
     const roleFilter = document.getElementById('roleFilter');
     const searchInput = document.getElementById('searchInput');
-    const usersTable = document.getElementById('usersTable');
-    const tableRows = usersTable.querySelectorAll('tbody tr');
-    
-    // Global flag to prevent sidebar height adjustment during filtering
-    window.isFiltering = false;
+    const searchButton = document.getElementById('searchButton');
+    const clearButton = document.getElementById('clearButton');
 
-    function filterUsers() {
-        window.isFiltering = true; // Set global flag to prevent sidebar adjustments
+    function performSearch() {
+        const searchTerm = searchInput.value.trim();
+        const selectedRole = roleFilter.value;
         
-        const selectedRole = roleFilter.value.toLowerCase();
-        const searchTerm = searchInput.value.toLowerCase();
-
-        let visibleCount = 0;
-        tableRows.forEach(row => {
-            if (row.classList.contains('no-results')) return; // skip placeholder
-            const userRole = row.getAttribute('data-role') || '';
-            const userName = row.getAttribute('data-name') || '';
-            
-            const matchesRole = !selectedRole || userRole === selectedRole;
-            const matchesSearch = !searchTerm || userName.includes(searchTerm);
-            
-            if (matchesRole && matchesSearch) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        const noResultsRow = document.querySelector('#usersTable tbody tr.no-results');
-        if (noResultsRow) {
-            noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
-        }
-
-        // Hide/show pagination when filtering - preserve flex styling
-        const paginationWrapper = document.querySelector('.pagination-wrapper');
-        if (paginationWrapper) {
-            // Hide pagination if any filters are active
-            if (selectedRole || searchTerm) {
-                paginationWrapper.style.display = 'none';
-            } else {
-                // Reset to original display value instead of 'block'
-                paginationWrapper.style.display = '';
-            }
+        // Build URL with search parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('page'); // Reset to page 1 when searching
+        
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
         }
         
-        // Reset flag after a short delay to allow DOM changes to settle
-        setTimeout(() => {
-            window.isFiltering = false;
-        }, 200);
+        if (selectedRole) {
+            url.searchParams.set('role', selectedRole);
+        } else {
+            url.searchParams.delete('role');
+        }
+        
+        // Redirect to perform server-side search
+        window.location.href = url.toString();
     }
 
-    roleFilter.addEventListener('change', filterUsers);
-    searchInput.addEventListener('input', filterUsers);
+    function clearSearch() {
+        // Remove all search parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete('search');
+        url.searchParams.delete('role');
+        url.searchParams.delete('page');
+        window.location.href = url.toString();
+    }
+
+    // Event listeners
+    roleFilter.addEventListener('change', performSearch);
+    searchButton.addEventListener('click', performSearch);
+    
+    if (clearButton) {
+        clearButton.addEventListener('click', clearSearch);
+    }
+    
+    // Allow Enter key to trigger search
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+
+    // Sorting Functionality
+    function sortTable(column) {
+        const url = new URL(window.location.href);
+        const currentSort = url.searchParams.get('sort');
+        const currentDirection = url.searchParams.get('direction');
+        
+        // If clicking the same column, toggle direction
+        let newDirection = 'asc';
+        if (currentSort === column && currentDirection === 'asc') {
+            newDirection = 'desc';
+        }
+        
+        // Set sort parameters
+        url.searchParams.set('sort', column);
+        url.searchParams.set('direction', newDirection);
+        url.searchParams.delete('page'); // Reset to page 1 when sorting
+        
+        // Redirect with new sort parameters
+        window.location.href = url.toString();
+    }
+
+    // Add click event listeners to sortable headers
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function() {
+            const sortColumn = this.getAttribute('data-sort');
+            sortTable(sortColumn);
+        });
+    });
 
     // Dropdown Actions
     function toggleDropdown(userId) {
@@ -288,9 +372,12 @@
             console.log('Server response:', result);
             
             if (result.success) {
-                alert('User updated successfully!');
-                closeEditUserModal();
-                location.reload(); // Refresh to show updated data
+                // Show in-modal success message and refresh shortly after
+                showUserSuccessMessage(result.message || 'User updated successfully!');
+                setTimeout(() => {
+                    try { closeEditUserModal(); } catch (e) {}
+                    location.reload(); // Refresh to show updated data
+                }, 1000);
             } else {
                 if (result.errors) {
                     console.log('Validation errors:', result.errors);
@@ -318,6 +405,33 @@
             submitBtn.disabled = false;
         }
     });
+
+    // Show success message inside the edit user modal (keeps behavior consistent with create flows)
+    function showUserSuccessMessage(message) {
+        // Remove any existing messages
+        const existingMessages = document.querySelectorAll('#editUserModal .alert-success, #editUserModal .error-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert-success';
+        successDiv.textContent = message;
+
+        const form = document.getElementById('editUserForm');
+        form.parentElement.insertBefore(successDiv, form);
+    }
+
+    function showUserErrorMessage(message) {
+        // Remove existing messages
+        const existingMessages = document.querySelectorAll('#editUserModal .alert-success, #editUserModal .error-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+
+        const form = document.getElementById('editUserForm');
+        form.parentElement.insertBefore(errorDiv, form);
+    }
 
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(event) {

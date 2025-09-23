@@ -27,6 +27,18 @@
                 </a>
             </li>
             <li>
+                <a href="{{ url('/admin/rooms') }}"
+                   class="sidebar-btn{{ request()->is('admin/rooms') ? ' active' : '' }}">
+                    <span class="icon">🏠</span> <span class="text">Room Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url('/admin/patients') }}"
+                   class="sidebar-btn{{ request()->is('admin/patients') ? ' active' : '' }}">
+                    <span class="icon">👥</span> <span class="text">Patient Records</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ url('/admin/reports') }}"
                    class="sidebar-btn{{ request()->is('admin/reports') ? ' active' : '' }}">
                     <span class="icon">📊</span> <span class="text">Reports</span>

@@ -30,6 +30,8 @@
                     <option value="lab_technician">Lab Technician</option>
                     <option value="cashier">Cashier</option>
                     <option value="inventory">Inventory</option>
+                    <option value="pharmacy">Pharmacy</option>
+                    <option value="billing">Billing</option>
                 </select>
                 <span class="error-text" id="editRoleError"></span>
             </div>

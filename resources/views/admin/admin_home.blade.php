@@ -48,6 +48,22 @@
                             <p class="stat-number">{{ \App\Models\User::where('role', 'lab_technician')->count() }}</p>
                         </div>
                     </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💊</div>
+                        <div class="stat-content">
+                            <h3>Pharmacy</h3>
+                            <p class="stat-number">{{ \App\Models\User::where('role', 'pharmacy')->count() }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <h3>Billing</h3>
+                            <p class="stat-number">{{ \App\Models\User::where('role', 'billing')->count() }}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Quick Actions Card -->
@@ -58,18 +74,63 @@
                             <span class="btn-icon">👥</span>
                             Manage Users
                         </a>
+
                         <button class="action-btn secondary" onclick="openAddUserModal()">
                             <span class="btn-icon">➕</span>
                             Add New User
                         </button>
+
+                        <a href="{{ route('admin.patients') }}" class="action-btn secondary">
+                            <span class="btn-icon">🩺</span>
+                            Manage Patients
+                        </a>
+
+                        <button class="action-btn secondary" onclick="openAddRoomModal()">
+                            <span class="btn-icon">➕</span>
+                            Add New Room
+                        </button>
+
                         <a href="{{ route('admin.reports') }}" class="action-btn secondary">
                             <span class="btn-icon">📊</span>
                             View Reports
                         </a>
-                        <a href="#" class="action-btn secondary">
-                            <span class="btn-icon">⚙️</span>
-                            System Settings
-                        </a>
+                    </div>
+                </div>
+
+                <!-- Inventory Stocks Summary Card -->
+                <div class="admin-card">
+                    <h3>Inventory Summary</h3>
+                    <div class="stocks-summary">
+                        <div class="stocks-grid">
+                            <div class="stock-item">
+                                <div class="stock-icon">📦</div>
+                                <div class="stock-info">
+                                    <span class="stock-number">{{ $stocksSummary['total_items'] ?? 0 }}</span>
+                                    <span class="stock-label">Total Items</span>
+                                </div>
+                            </div>
+                            <div class="stock-item">
+                                <div class="stock-icon">⚠️</div>
+                                <div class="stock-info">
+                                    <span class="stock-number">{{ $stocksSummary['low_stock'] ?? 0 }}</span>
+                                    <span class="stock-label">Low Stock</span>
+                                </div>
+                            </div>
+                            <div class="stock-item">
+                                <div class="stock-icon">❌</div>
+                                <div class="stock-info">
+                                    <span class="stock-number">{{ $stocksSummary['out_of_stock'] ?? 0 }}</span>
+                                    <span class="stock-label">Out of Stock</span>
+                                </div>
+                            </div>
+                            <div class="stock-item">
+                                <div class="stock-icon">💰</div>
+                                <div class="stock-info">
+                                    <span class="stock-number">₱{{ number_format((float)($stocksSummary['total_value'] ?? 0), 2) }}</span>
+                                    <span class="stock-label">Total Value</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -139,7 +200,8 @@
             </div>
         </div>
 
-        @include('admin.modal.admin_createUser')
+        @include('admin.modals.admin_createUser')
+        @include('admin.modals.admin_createRoom')
 
         <script>
         function openAddUserModal() {
@@ -147,6 +209,16 @@
         }
         function closeAddUserModal() {
             document.getElementById('addUserModal').style.display = 'none';
+        }
+
+        function openAddRoomModal() {
+            const modal = document.getElementById('addRoomModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeAddRoomModal() {
+            const modal = document.getElementById('addRoomModal');
+            if (modal) modal.style.display = 'none';
         }
         </script>
     </body>

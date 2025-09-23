@@ -167,13 +167,96 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
     Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');
 });
 
+// Pharmacy Routes
+Route::middleware(['auth', 'role:pharmacy'])->group(function () {
+    Route::get('/pharmacy/home', function () {
+        return view('pharmacy.pharmacy_dashboard');
+    })->name('pharmacy.dashboard');
+    
+    Route::get('/pharmacy/medications', function () {
+        return view('pharmacy.pharmacy_medications');
+    })->name('pharmacy.medications');
+    
+    Route::get('/pharmacy/prescriptions', function () {
+        return view('pharmacy.pharmacy_prescriptions');
+    })->name('pharmacy.prescriptions');
+    
+    Route::get('/pharmacy/account', function () {
+        return view('pharmacy.pharmacy_account');
+    })->name('pharmacy.account');
+});
+
+// Billing Routes
+Route::middleware(['auth', 'role:billing'])->group(function () {
+    Route::get('/billing/home', function () {
+        return view('billing.billing_dashboard');
+    })->name('billing.dashboard');
+    
+    Route::get('/billing/invoices', function () {
+        return view('billing.billing_invoices');
+    })->name('billing.invoices');
+    
+    Route::get('/billing/payments', function () {
+        return view('billing.billing_payments');
+    })->name('billing.payments');
+    
+    Route::get('/billing/account', function () {
+        return view('billing.billing_account');
+    })->name('billing.account');
+});
+
 // User approval route removed - users are now assigned roles at creation
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/users', function () {
-        $users = \App\Models\User::orderBy('created_at', 'desc')->paginate(10);
+    Route::get('/admin/users', function (\Illuminate\Http\Request $request) {
+        $search = $request->get('search');
+        $role = $request->get('role');
+        $sortBy = $request->get('sort', 'created_at');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        // Validate sort column
+        $allowedSortColumns = ['name', 'email', 'role', 'created_at'];
+        if (!in_array($sortBy, $allowedSortColumns)) {
+            $sortBy = 'created_at';
+        }
+        
+        // Validate sort direction
+        $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'desc';
+        
+        $query = \App\Models\User::orderBy($sortBy, $sortDirection);
+        
+        // If searching, don't paginate - show all results
+        if ($search || $role) {
+            if ($search) {
+                $query->where('name', 'LIKE', "%{$search}%");
+            }
+            if ($role) {
+                $query->where('role', $role);
+            }
+            $users = $query->get();
+            $users = new \Illuminate\Pagination\LengthAwarePaginator(
+                $users, 
+                $users->count(), 
+                max($users->count(), 1), // Prevent division by zero
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+        } else {
+            $users = $query->paginate(10);
+        }
+        
         return view('admin.admin_users', compact('users'));
     });
+    
+    // Room Management Routes
+    Route::get('/admin/rooms', [AdminController::class, 'rooms'])->name('admin.rooms');
+    Route::post('/admin/rooms/create', [AdminController::class, 'createRoom'])->name('admin.rooms.create');
+    Route::post('/admin/rooms/edit', [AdminController::class, 'editRoom'])->name('admin.rooms.edit');
+    Route::put('/admin/rooms/update', [AdminController::class, 'updateRoom'])->name('admin.rooms.update');
+    
+    // Patient Records Management Routes
+    Route::get('/admin/patients', [AdminController::class, 'patients'])->name('admin.patients');
+    Route::patch('/admin/patients/{id}/status', [AdminController::class, 'updatePatientStatus'])->name('admin.patients.update-status');
     
     // Report Routes
     Route::get('/admin/reports', [ReportController::class, 'index'])->name('admin.reports');

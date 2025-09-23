@@ -13,11 +13,37 @@ class ReportController extends Controller
     /**
      * Display the reports dashboard
      */
-    public function index()
+    public function index(Request $request)
     {
-        $reports = Report::with('generatedBy')
-            ->orderBy('generated_at', 'desc')
-            ->paginate(15);
+        // Define allowed sort columns for security
+        $allowedSortColumns = ['id', 'title', 'type', 'status', 'generated_by', 'generated_at'];
+        
+        // Get sort parameters with validation
+        $sortBy = $request->get('sort', 'generated_at');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        // Validate sort column
+        if (!in_array($sortBy, $allowedSortColumns)) {
+            $sortBy = 'generated_at';
+        }
+        
+        // Validate sort direction
+        if (!in_array($sortDirection, ['asc', 'desc'])) {
+            $sortDirection = 'desc';
+        }
+        
+        $query = Report::with('generatedBy');
+        
+        // Apply sorting with special handling for user names
+        if ($sortBy === 'generated_by') {
+            $query->leftJoin('users', 'reports.generated_by', '=', 'users.id')
+                  ->select('reports.*')
+                  ->orderBy('users.name', $sortDirection);
+        } else {
+            $query->orderBy($sortBy, $sortDirection);
+        }
+        
+        $reports = $query->paginate(15)->appends($request->query());
 
         $stats = [
             'total_reports' => Report::count(),

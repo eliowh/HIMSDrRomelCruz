@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Report;
+use App\Models\Room;
+use App\Models\Patient;
 use Illuminate\Http\Request;
 use App\Notifications\RoleAssigned;
 use App\Notifications\NewUserCredentials;
@@ -19,7 +21,29 @@ class AdminController extends Controller
     public function index()
     {
         $adminName = $this->getAdminName();
-        return view('admin.admin_home', compact('adminName'));
+        
+        // Get stocks summary data
+        try {
+            $totalItems = \App\Models\StockPrice::count();
+            $lowStock = \App\Models\StockPrice::where('quantity', '<=', 10)->count();
+            $outOfStock = \App\Models\StockPrice::where('quantity', 0)->count();
+            $totalValue = (float)\App\Models\StockPrice::sum(\DB::raw('CAST(price AS DECIMAL(10,2)) * CAST(quantity AS DECIMAL(10,2))'));
+        } catch (\Exception $e) {
+            // Default values if there's an error
+            $totalItems = 0;
+            $lowStock = 0;
+            $outOfStock = 0;
+            $totalValue = 0.0;
+        }
+        
+        $stocksSummary = [
+            'total_items' => $totalItems,
+            'low_stock' => $lowStock,
+            'out_of_stock' => $outOfStock,
+            'total_value' => $totalValue
+        ];
+        
+        return view('admin.admin_home', compact('adminName', 'stocksSummary'));
     }
     public function getAdminName()
     {
@@ -59,7 +83,7 @@ class AdminController extends Controller
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/', // Only .com domains allowed
                 'unique:users,email'
             ],
-            'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin,inventory']
+            'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin,inventory,pharmacy,billing']
         ], [
             'name.required' => 'Please enter a name.',
             'name.min' => 'Name must be 3-20 letters.',
@@ -242,7 +266,7 @@ class AdminController extends Controller
                     'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/',
                     \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id)
                 ],
-                'role' => ['required', 'in:admin,doctor,nurse,lab_technician,cashier,inventory']
+                'role' => ['required', 'in:admin,doctor,nurse,lab_technician,cashier,inventory,pharmacy,billing']
             ], [
                 'name.required' => 'Please enter the user\'s name.',
                 'name.min' => 'Name must be 3-20 letters.',
@@ -386,5 +410,344 @@ class AdminController extends Controller
         Excel::import(new Icd10Import, $request->file('file'));
 
         return back()->with('success', 'ICD-10 data imported.');
+    }
+
+    // Room Management Methods
+    public function rooms(Request $request)
+    {
+        try {
+            $query = \DB::table('roomlist');
+            
+            // Skip header row and empty entries
+            $query->whereNotNull('COL 1')
+                  ->where('COL 1', '!=', '')
+                  ->where('COL 1', '!=', 'Room Name')  // Skip header
+                  ->where('COL 1', 'NOT LIKE', '%Room Name%');
+            
+            // Get search and sort parameters
+            $search = $request->get('q', '');
+            $sortBy = $request->get('sort', 'COL 1');
+            $sortDirection = $request->get('direction', 'asc');
+            
+            // Validate sort column
+            $allowedSortColumns = ['COL 1', 'COL 2'];
+            if (!in_array($sortBy, $allowedSortColumns)) {
+                $sortBy = 'COL 1';
+            }
+            
+            // Validate sort direction
+            $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'asc';
+            
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('COL 1', 'like', "%{$search}%")
+                      ->orWhere('COL 2', 'like', "%{$search}%");
+                });
+                // Apply sorting before getting results
+                $query->orderBy($sortBy, $sortDirection);
+                // If searching, don't paginate - show all results
+                $allRooms = $query->get();
+                $rooms = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allRooms, 
+                    $allRooms->count(), 
+                    max($allRooms->count(), 1), // Prevent division by zero
+                    1,
+                    ['path' => request()->url(), 'query' => request()->query()]
+                );
+            } else {
+                // Apply sorting for paginated results
+                $query->orderBy($sortBy, $sortDirection);
+                $rooms = $query->paginate(10);
+            }
+            return view('admin.admin_rooms', compact('rooms'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Room management error: ' . $e->getMessage());
+            $emptyCollection = collect();
+            $rooms = new \Illuminate\Pagination\LengthAwarePaginator(
+                $emptyCollection,
+                0,
+                10,
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+            return view('admin.admin_rooms', compact('rooms'))->with('error', 'Error loading rooms data.');
+        }
+    }
+
+    public function createRoom(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'room_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s\-]+$/'],
+            'room_price' => ['required', 'string']
+        ], [
+            'room_name.required' => 'Room name is required.',
+            'room_name.regex' => 'Room name can only contain letters, numbers, spaces, and hyphens.',
+            'room_price.required' => 'Room price is required.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Check if room name already exists (excluding header row)
+        $existingRoom = \DB::table('roomlist')
+            ->where('COL 1', $request->room_name)
+            ->whereNotIn('COL 1', ['Room Name', ''])
+            ->first();
+            
+        if ($existingRoom) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['room_name' => ['A room with this name already exists.']]
+            ], 422);
+        }
+
+        // Clean and validate price - remove commas and convert to float
+        $cleanPrice = str_replace(',', '', $request->room_price);
+        if (!is_numeric($cleanPrice) || $cleanPrice < 0) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['room_price' => ['Room price must be a valid positive number.']]
+            ], 422);
+        }
+
+        try {
+            \DB::table('roomlist')->insert([
+                'COL 1' => $request->room_name,  // Room Name
+                'COL 2' => $cleanPrice  // Price (cleaned of commas)
+            ]);
+
+            Report::log(
+                'Room Management',
+                Report::TYPE_USER_REPORT,
+                "Admin created new room: {$request->room_name}",
+                [
+                    'room_name' => $request->room_name,
+                    'room_price' => $cleanPrice,
+                    'admin_id' => auth()->id()
+                ],
+                auth()->id()
+            );
+
+            return response()->json(['success' => true, 'message' => 'Room created successfully.']);
+            
+        } catch (\Exception $e) {
+            \Log::error('Create room error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error creating room.'], 500);
+        }
+    }
+
+    public function editRoom(Request $request)
+    {
+        try {
+            // Get room name from request body
+            $roomName = $request->input('room_name');
+            
+            if (!$roomName) {
+                return response()->json(['success' => false, 'message' => 'Room name is required.']);
+            }
+            
+            $room = \DB::table('roomlist')->where('COL 1', $roomName)->first();
+            
+            if (!$room) {
+                return response()->json(['success' => false, 'message' => 'Room not found.']);
+            }
+
+            return response()->json(['success' => true, 'room' => $room]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Edit room error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error loading room data.'], 500);
+        }
+    }
+
+    public function updateRoom(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'room_name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s\-]+$/'],
+            'room_price' => ['required', 'string'],
+            'id' => ['required', 'string'] // This will contain the original room name
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Clean and validate price - remove commas and convert to float
+        $cleanPrice = str_replace(',', '', $request->room_price);
+        if (!is_numeric($cleanPrice) || $cleanPrice < 0) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['room_price' => ['Room price must be a valid positive number.']]
+            ], 422);
+        }
+
+        // Use the original room name (from id field) to find the room
+        $originalRoomName = $request->id;
+        
+        // Check if the new room name already exists (only if it's different from the original)
+        if ($request->room_name !== $originalRoomName) {
+            $existingRoom = \DB::table('roomlist')
+                ->where('COL 1', $request->room_name)
+                ->whereNotIn('COL 1', ['Room Name', ''])
+                ->first();
+                
+            if ($existingRoom) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => ['room_name' => ['A room with this name already exists.']]
+                ], 422);
+            }
+        }
+
+        try {
+            $room = \DB::table('roomlist')->where('COL 1', $originalRoomName)->first();
+            if (!$room) {
+                return response()->json(['success' => false, 'message' => 'Room not found.']);
+            }
+
+            \DB::table('roomlist')->where('COL 1', $originalRoomName)->update([
+                'COL 1' => $request->room_name,  // Room Name (new name)
+                'COL 2' => $cleanPrice  // Price (cleaned of commas)
+            ]);
+
+            Report::log(
+                'Room Management',
+                Report::TYPE_USER_REPORT,
+                "Admin updated room: {$originalRoomName} to {$request->room_name}",
+                [
+                    'original_room_name' => $originalRoomName,
+                    'new_room_name' => $request->room_name,
+                    'admin_id' => auth()->id()
+                ],
+                auth()->id()
+            );
+
+            return response()->json(['success' => true, 'message' => 'Room updated successfully.']);
+            
+        } catch (\Exception $e) {
+            \Log::error('Update room error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error updating room.'], 500);
+        }
+    }
+
+    // Patient Records Management
+    public function patients(Request $request)
+    {
+        try {
+            $query = \DB::table('patients');
+            
+            // Get search and sort parameters
+            $search = $request->get('q', '');
+            $status = $request->get('status', '');
+            $sortBy = $request->get('sort', 'created_at');
+            $sortDirection = $request->get('direction', 'desc');
+            
+            // Validate sort column to prevent SQL injection
+            $allowedSortColumns = ['patient_no', 'first_name', 'last_name', 'status', 'room_no', 'created_at'];
+            if (!in_array($sortBy, $allowedSortColumns)) {
+                $sortBy = 'created_at';
+            }
+            
+            // Validate sort direction
+            $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'desc';
+            
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhere('patient_no', 'like', "%{$search}%")
+                      ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+                });
+            }
+            
+            if ($status) {
+                $query->where('status', ucfirst($status)); // Convert to match database format
+            }
+            
+            // Apply sorting
+            if ($sortBy === 'first_name') {
+                // For name sorting, sort by full name
+                $query->orderByRaw("CONCAT(first_name, ' ', last_name) {$sortDirection}");
+            } else {
+                $query->orderBy($sortBy, $sortDirection);
+            }
+            
+            if ($search || $status) {
+                // If searching, don't paginate - show all results
+                $allPatients = $query->get();
+                $patients = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allPatients, 
+                    $allPatients->count(), 
+                    max($allPatients->count(), 1), // Prevent division by zero
+                    1,
+                    ['path' => request()->url(), 'query' => request()->query()]
+                );
+            } else {
+                $patients = $query->paginate(10);
+            }
+            return view('admin.admin_patients', compact('patients'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Patient management error: ' . $e->getMessage());
+            $emptyCollection = collect();
+            $patients = new \Illuminate\Pagination\LengthAwarePaginator(
+                $emptyCollection,
+                0,
+                10,
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+            return view('admin.admin_patients', compact('patients'))->with('error', 'Error loading patient data.');
+        }
+    }
+
+    public function updatePatientStatus(Request $request, $id)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'status' => ['required', 'in:active,discharged,deceased']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Invalid status.'], 422);
+        }
+
+        try {
+            $patient = \DB::table('patients')->where('id', $id)->first();
+            if (!$patient) {
+                return response()->json(['success' => false, 'message' => 'Patient not found.']);
+            }
+
+            \DB::table('patients')->where('id', $id)->update([
+                'status' => ucfirst($request->status), // Capitalize to match database format
+                'updated_at' => now()
+            ]);
+
+            Report::log(
+                'Patient Management',
+                Report::TYPE_USER_REPORT,
+                "Admin updated patient status: {$patient->first_name} {$patient->last_name} - {$request->status}",
+                [
+                    'patient_id' => $id,
+                    'patient_name' => "{$patient->first_name} {$patient->last_name}",
+                    'new_status' => $request->status,
+                    'admin_id' => auth()->id()
+                ],
+                auth()->id()
+            );
+
+            return response()->json(['success' => true, 'message' => 'Patient status updated successfully.']);
+            
+        } catch (\Exception $e) {
+            \Log::error('Update patient status error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error updating patient status.'], 500);
+        }
     }
 }

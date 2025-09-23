@@ -30,6 +30,7 @@ class Report extends Model
     const TYPE_LOGIN_REPORT = 'login_report';
     const TYPE_USER_REGISTRATION = 'user_registration';
     const TYPE_PASSWORD_RESET = 'password_reset';
+    const TYPE_USER_REPORT = 'user_report';
     const TYPE_CUSTOM = 'custom';
 
     // Report statuses
@@ -56,6 +57,7 @@ class Report extends Model
             self::TYPE_LOGIN_REPORT => 'Login Report',
             self::TYPE_USER_REGISTRATION => 'User Registration',
             self::TYPE_PASSWORD_RESET => 'Password Reset',
+            self::TYPE_USER_REPORT => 'User Report',
             self::TYPE_CUSTOM => 'Custom Report',
             default => ucfirst(str_replace('_', ' ', $this->type))
         };
