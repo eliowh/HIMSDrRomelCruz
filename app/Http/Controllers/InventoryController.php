@@ -1,0 +1,233 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use App\Models\StockPrice;
+
+class InventoryController extends Controller
+{
+    public function index()
+    {
+        return view('Inventory.inventory_home');
+    }
+
+    public function stocks()
+    {
+        $q = request()->get('q', '');
+
+        try {
+            $stocksQuery = StockPrice::query();
+            if ($q) {
+                $stocksQuery->where(function($builder) use ($q) {
+                    $builder->where('item_code', 'like', "%{$q}%")
+                            ->orWhere('generic_name', 'like', "%{$q}%")
+                            ->orWhere('brand_name', 'like', "%{$q}%");
+                });
+            }
+
+            // Return all records (no pagination) and normalize null quantities to 0
+            // Order by generic_name only if the column exists in the table to avoid SQL errors
+            if (Schema::hasColumn((new StockPrice)->getTable(), 'generic_name')) {
+                $stocksQuery = $stocksQuery->orderBy('generic_name');
+            }
+
+            $stocks = $stocksQuery->get()->map(function($s){
+                $s->quantity = $s->quantity ?? 0;
+                return $s;
+            });
+
+            return view('Inventory.inventory_stocks', compact('stocks', 'q'));
+        } catch (\Throwable $e) {
+            // Log the error and return an empty collection so the page doesn't crash.
+            \Log::error('Inventory stocks load failed: ' . $e->getMessage());
+
+            $stocks = collect([]);
+            $dbError = $e->getMessage();
+            return view('Inventory.inventory_stocks', compact('stocks', 'q', 'dbError'));
+        }
+    }
+
+    public function orders()
+    {
+        return view('Inventory.inventory_orders');
+    }
+
+    public function reports()
+    {
+        return view('Inventory.inventory_reports');
+    }
+
+    public function account()
+    {
+        return view('Inventory.inventory_account');
+    }
+
+    /**
+     * Add quantity to an existing stock item or create a new stock entry.
+     */
+    public function addStock(Request $request)
+    {
+        $data = $request->validate([
+            'item_code' => ['nullable', 'string', 'max:100'],
+            'generic_name' => ['nullable', 'string', 'max:255'],
+            'brand_name' => ['nullable', 'string', 'max:255'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        // Require either item_code or generic_name
+        if (empty($data['item_code']) && empty($data['generic_name'])) {
+            return response()->json(['ok' => false, 'message' => 'Please provide item code or generic name.'], 422);
+        }
+
+        // Try finding existing stock by item_code first, then by generic+brand
+        $stock = null;
+        if (!empty($data['item_code'])) {
+            $stock = StockPrice::where('item_code', $data['item_code'])->first();
+        }
+
+        if (!$stock && !empty($data['generic_name'])) {
+            $q = StockPrice::where('generic_name', $data['generic_name']);
+            if (!empty($data['brand_name'])) {
+                $q->where('brand_name', $data['brand_name']);
+            }
+            $stock = $q->first();
+        }
+
+        if ($stock) {
+            $stock->quantity = ($stock->quantity ?? 0) + intval($data['quantity']);
+            if (isset($data['price'])) { $stock->price = $data['price']; }
+            $stock->save();
+        } else {
+            $stock = StockPrice::create([
+                'item_code' => $data['item_code'] ?? null,
+                'generic_name' => $data['generic_name'] ?? null,
+                'brand_name' => $data['brand_name'] ?? null,
+                'price' => $data['price'] ?? 0,
+                'quantity' => $data['quantity'],
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'stock' => $stock]);
+    }
+
+    /**
+     * Delete a stock item by id (or item_code fallback).
+     */
+    public function deleteStock(Request $request, $id)
+    {
+        try {
+            // Try find by primary key id first
+            $stock = StockPrice::find($id);
+
+            // If not found and $id is not numeric, try by item_code
+            if (!$stock) {
+                $stock = StockPrice::where('item_code', $id)->first();
+            }
+
+            if (!$stock) {
+                return response()->json(['ok' => false, 'message' => 'Stock item not found.'], 404);
+            }
+
+            $stock->delete();
+
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to delete stock: ' . $e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Delete failed.'], 500);
+        }
+    }
+
+    /**
+     * Search stocks by item_code or generic_name for autocomplete.
+     * Returns an array of matches with available brands grouped per generic.
+     */
+    public function search(Request $request)
+    {
+        $q = $request->get('q', '');
+        if (empty($q)) {
+            return response()->json([]);
+        }
+
+        $matchesQuery = StockPrice::where('item_code', 'like', "%{$q}%")
+                    ->orWhere('generic_name', 'like', "%{$q}%");
+
+        if (Schema::hasColumn((new StockPrice)->getTable(), 'generic_name')) {
+            $matchesQuery = $matchesQuery->orderBy('generic_name');
+        }
+
+        $matches = $matchesQuery->limit(15)
+                    ->get(['id','item_code','generic_name','brand_name','price','quantity']);
+
+        // Group brands per item (by generic_name + item_code)
+        $results = $matches->map(function($m){
+            return [
+                'id' => $m->id,
+                'item_code' => $m->item_code,
+                'generic_name' => $m->generic_name,
+                'brand_name' => $m->brand_name,
+                'price' => $m->price,
+                'quantity' => $m->quantity ?? 0,
+            ];
+        });
+
+        return response()->json($results);
+    }
+
+    /**
+     * Update stock item details (item_code, generic_name, brand_name, price)
+     */
+    public function updateStock(Request $request, $id)
+    {
+        // Log incoming request for debugging (include DB name for clarity)
+        \Log::info('Inventory.updateStock called', ['id' => $id, 'payload' => $request->all(), 'db' => \DB::connection()->getDatabaseName()]);
+
+        $data = $request->validate([
+            'item_code' => ['nullable','string','max:100'],
+            'generic_name' => ['nullable','string','max:255'],
+            'brand_name' => ['nullable','string','max:255'],
+            'price' => ['nullable','numeric','min:0'],
+            'quantity' => ['nullable','integer','min:0'],
+        ]);
+
+        // Try several lookup strategies so edits work regardless of whether 'id' is numeric PK or an item_code
+        $stock = null;
+        try {
+            $stock = StockPrice::find($id);
+            if (!$stock) {
+                $stock = StockPrice::where('item_code', $id)->first();
+            }
+
+            // If still not found but payload contains item_code, try that
+            if (!$stock && !empty($data['item_code'])) {
+                $stock = StockPrice::where('item_code', $data['item_code'])->first();
+            }
+
+            if (!$stock) {
+                \Log::warning('Inventory.updateStock: stock not found', ['id'=>$id, 'payload'=>$data]);
+                return response()->json(['ok' => false, 'message' => 'Stock item not found.'], 404);
+            }
+
+            \Log::info('Inventory.updateStock found stock', ['stock_before' => $stock->toArray()]);
+
+            // Use fill to update permitted attributes
+            $stock->fill($data);
+            $stock->save();
+
+            // Refresh from DB (in case of casts/defaults)
+            $stock = $stock->fresh();
+
+            \Log::info('Inventory.updateStock saved stock', ['stock_after' => $stock->toArray()]);
+
+            return response()->json(['ok' => true, 'stock' => $stock]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            \Log::warning('Inventory.updateStock validation failed', ['errors' => $ve->errors(), 'payload' => $request->all()]);
+            return response()->json(['ok' => false, 'errors' => $ve->errors()], 422);
+        } catch (\Throwable $e) {
+            \Log::error('Inventory.updateStock error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['ok' => false, 'message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
+    }
+}
