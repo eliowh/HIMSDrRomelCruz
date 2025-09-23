@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use App\Models\StockPrice;
 
 class InventoryController extends Controller
@@ -27,13 +26,11 @@ class InventoryController extends Controller
                 });
             }
 
-            // Return all records (no pagination) and normalize null quantities to 0
-            // Order by generic_name only if the column exists in the table to avoid SQL errors
-            if (Schema::hasColumn((new StockPrice)->getTable(), 'generic_name')) {
-                $stocksQuery = $stocksQuery->orderBy('generic_name');
-            }
-
-            $stocks = $stocksQuery->get()->map(function($s){
+            // Return paginated records and normalize null quantities to 0
+            $stocks = $stocksQuery->orderBy('generic_name')->paginate(15);
+            
+            // Transform the paginated data to normalize quantities
+            $stocks->getCollection()->transform(function($s) {
                 $s->quantity = $s->quantity ?? 0;
                 return $s;
             });
@@ -43,7 +40,10 @@ class InventoryController extends Controller
             // Log the error and return an empty collection so the page doesn't crash.
             \Log::error('Inventory stocks load failed: ' . $e->getMessage());
 
-            $stocks = collect([]);
+            // Create a paginator from an empty array
+            $stocks = new \Illuminate\Pagination\LengthAwarePaginator(
+                [], 0, 15, 1, ['path' => request()->url()]
+            );
             $dbError = $e->getMessage();
             return view('Inventory.inventory_stocks', compact('stocks', 'q', 'dbError'));
         }
@@ -151,14 +151,10 @@ class InventoryController extends Controller
             return response()->json([]);
         }
 
-        $matchesQuery = StockPrice::where('item_code', 'like', "%{$q}%")
-                    ->orWhere('generic_name', 'like', "%{$q}%");
-
-        if (Schema::hasColumn((new StockPrice)->getTable(), 'generic_name')) {
-            $matchesQuery = $matchesQuery->orderBy('generic_name');
-        }
-
-        $matches = $matchesQuery->limit(15)
+        $matches = StockPrice::where('item_code', 'like', "%{$q}%")
+                    ->orWhere('generic_name', 'like', "%{$q}%")
+                    ->orderBy('generic_name')
+                    ->limit(15)
                     ->get(['id','item_code','generic_name','brand_name','price','quantity']);
 
         // Group brands per item (by generic_name + item_code)
@@ -175,7 +171,7 @@ class InventoryController extends Controller
 
         return response()->json($results);
     }
-
+    
     /**
      * Update stock item details (item_code, generic_name, brand_name, price)
      */
@@ -231,3 +227,4 @@ class InventoryController extends Controller
         }
     }
 }
+

@@ -173,8 +173,7 @@ body {
 }
 .action-btn { 
     padding:8px 14px; 
-    border-radius:6px;
-    height: 50px; 
+    border-radius:6px; 
     text-decoration:none; 
     display:inline-block; 
 }
@@ -211,40 +210,547 @@ body {
 .submit-btn:hover { 
     background:#2d6b25;
 }
+
+/* Action buttons */
+.action-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.2rem;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    margin-right: 0.25rem;
+}
+
+.btn-view {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-view:hover {
+    background-color: #138496;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+/* Stock details styling */
+#detailsCard {
+    background: #fff;
+}
+
+.details-card .patients-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.details-card h5 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #367F2B;
+}
+
+#detailsEmpty {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+#detailsContent {
+    margin-top: 1rem;
+}
+
+.details-item {
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.details-label {
+    font-weight: 600;
+    color: #367F2B;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.details-value {
+    color: #495057;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .inventory-search {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .inventory-search .search-form {
+        width: 100%;
+    }
+    
+    .inventory-search .form-control {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .details-card {
+        margin-top: 1.5rem;
+    }
+    
+    .stock-table {
+        font-size: 0.875rem;
+    }
+    
+    .action-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    .inventory-pagination {
+        justify-content: center;
+    }
+}
+
 @media (max-width: 900px) { .pdf-viewer { height:400px; } }
 
-/* Inventory stocks specific styles */
-.stocks-grid { display:grid; grid-template-columns:1fr 380px; gap:16px; align-items:start; }
-/* layout columns - no extra rules needed here */
-.table-wrap { overflow:auto; }
-.patients-table { width:100%; border-collapse:collapse; }
-.patients-table th, .patients-table td { padding:10px; border-bottom:1px solid #eee; }
-.patients-table th { text-align:left; }
-.patients-table td { border-bottom:1px solid #f2f4f7; }
-.patients-table td.text-right { text-align:right; }
-.stock-row.active { background:#f0fff4; }
+/* Inventory search styles */
+.inventory-search {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
 
-/* Details card */
-#detailsCard .patients-header h3 { margin:0; color:#367F2B; }
-#detailsEmpty { color:#666; }
-#detailsContent dl dt { font-weight:700; color:#367F2B; }
-#detailsContent dl dd { margin:0 0 8px 0; }
+.inventory-search h2 {
+    margin: 0;
+    flex-shrink: 0;
+}
 
-/* Modal mini overrides */
-.modal.mini .modal-content { width:520px; max-width:92%; padding:12px; border-radius:10px; }
-.modal.mini .modal-header, .modal.mini .modal-footer { padding:10px 12px; }
-.modal.mini h3 { margin:6px 0 10px; font-size:18px; }
-.modal.mini .close { font-size:20px; top:8px; right:10px; }
+.inventory-search .search-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
-/* ICD-style suggestions */
-.icd-suggestions { background:#fff; border:1px solid #ddd; max-height:240px; overflow:auto; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
-.icd-suggestion { padding:8px 10px; cursor:pointer; border-bottom:1px solid #f1f1f1; }
-.icd-suggestion:last-child{ border-bottom:none; }
-.icd-suggestion:hover, .icd-suggestion.active { background:#f0f7f1; }
+.inventory-search .form-control {
+    width: 250px;
+    height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
 
-/* Buttons */
-.btn { padding:6px 10px; border-radius:6px; border:none; cursor:pointer; }
-.btn.view-btn { background:#eefcee; color:#2d6b25; }
-.btn.edit-btn { background:#fff3cd; color:#856404; margin-left:8px; }
-.btn.delete-btn { background:#dc3545; color:#fff; margin-left:8px; }
+.search-btn, .add-stock-btn {
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
 
+.search-btn {
+    background-color: #367F2B;
+    color: white;
+}
+
+.search-btn:hover {
+    background-color: #2d6b25;
+}
+
+.add-stock-btn {
+    background-color: #28a745;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.add-stock-btn:hover {
+    background-color: #218838;
+}
+
+.add-stock-btn i {
+    font-size: 1rem;
+}
+
+/* Stock table styles */
+.stock-table {
+    width: 100%;
+    margin-top: 1rem;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.stock-table th {
+    background-color: #f8f9fa;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.stock-table th:nth-child(4),
+.stock-table th:nth-child(5) {
+    text-align: right;
+}
+
+.stock-table th:nth-child(6) {
+    text-align: center;
+}
+
+/* Sorting styles */
+.stock-table th.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    padding-right: 25px;
+}
+
+.stock-table th.sortable:hover {
+    background-color: #e9ecef;
+}
+
+.stock-table th.sortable .sort-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    font-size: 0.85em;
+}
+
+.stock-table th.sortable.asc .sort-icon,
+.stock-table th.sortable.desc .sort-icon {
+    color: #367F2B;
+}
+
+.stock-table td {
+    padding: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.stock-table td:nth-child(4),
+.stock-table td:nth-child(5) {
+    text-align: right;
+}
+
+.stock-table td:nth-child(6) {
+    text-align: center;
+}
+
+.stock-row {
+    cursor: pointer;
+}
+
+.stock-row.active {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.stock-row:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Stock details card */
+.details-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1.25rem;
+    height: 100%;
+}
+
+.details-card h5 {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.details-item {
+    margin-bottom: 0.75rem;
+}
+
+.details-label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.details-value {
+    color: #495057;
+}
+
+/* Inventory modal styles */
+.inventory-modal .modal-content {
+    border-radius: 0.3rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.inventory-modal .modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.inventory-modal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.inventory-modal .modal-body {
+    padding: 1.5rem;
+}
+
+.inventory-modal .form-group {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.inventory-modal .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.inventory-modal .form-control {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.inventory-modal .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.inventory-modal .modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.inventory-modal .btn-cancel {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+}
+
+.inventory-modal .btn-cancel:hover {
+    background-color: #5a6268;
+}
+
+.inventory-modal .btn-save {
+    background-color: #28a745;
+    color: white;
+    border: none;
+}
+
+.inventory-modal .btn-save:hover {
+    background-color: #218838;
+}
+
+/* Autocomplete suggestions */
+.suggestions-container {
+    position: absolute;
+    z-index: 1050;
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    display: none;
+}
+
+.icd-suggestion {
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.icd-suggestion:hover, .icd-suggestion.active {
+    background-color: #f8f9fa;
+}
+
+/* Pagination styling */
+.inventory-pagination {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.inventory-pagination .pagination {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.inventory-pagination .page-item {
+    margin: 0 0.25rem;
+}
+
+.inventory-pagination .page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dee2e6;
+    color: #007bff;
+    text-decoration: none;
+    border-radius: 0.25rem;
+}
+
+.inventory-pagination .page-item.active .page-link {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.inventory-pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+/* Action buttons */
+.action-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.2rem;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    margin-right: 0.25rem;
+}
+
+.btn-view {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-view:hover {
+    background-color: #138496;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+/* Stock details styling */
+.details-card .patients-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.details-card h5 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #367F2B;
+}
+
+#detailsEmpty {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+#detailsContent {
+    margin-top: 1rem;
+}
+
+.details-item {
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.details-label {
+    font-weight: 600;
+    color: #367F2B;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.details-value {
+    color: #495057;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .inventory-search {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .inventory-search .search-form {
+        width: 100%;
+    }
+    
+    .inventory-search .form-control {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .details-card {
+        margin-top: 1.5rem;
+    }
+    
+    .stock-table {
+        font-size: 0.875rem;
+    }
+    
+    .action-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    .inventory-pagination {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 900px) { 
+    .pdf-viewer { 
+        height: 400px; 
+    } 
+}
