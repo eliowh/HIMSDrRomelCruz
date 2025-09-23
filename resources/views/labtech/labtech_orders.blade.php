@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url('css/labtech.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- Modal styles moved to labtech.css -->
 </head>
 <body>
     @php
@@ -156,63 +157,16 @@
     </div>
 
     <!-- Complete Order Modal -->
-    <div id="completeModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Complete Lab Order</h3>
-            <form id="completeForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="results">Test Results:</label>
-                    <textarea id="results" name="results" rows="4" placeholder="Enter test results summary or notes..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="resultsPdf">Upload Results (PDF):</label>
-                    <div class="file-upload-container">
-                        <input type="file" id="resultsPdf" name="results_pdf" accept=".pdf">
-                        <small class="file-hint">Upload the lab results as PDF (optional)</small>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn cancel-btn" onclick="closeCompleteModal()">Cancel</button>
-                    <button type="submit" class="btn complete-btn">
-                        <span class="btn-text">Complete Order</span>
-                        <span class="btn-loading" style="display: none;">
-                            <i class="fas fa-spinner fa-spin"></i> Uploading...
-                        </span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    @include('labtech.modals.complete_order_modal')
 
     <!-- PDF Viewer Modal -->
-    <div id="pdfModal" class="modal">
-        <div class="modal-content pdf-modal">
-            <span class="close" onclick="closePdfModal()">&times;</span>
-            <h3 id="pdfModalTitle">Lab Results PDF</h3>
-            <div class="pdf-controls">
-                <button class="btn download-btn" id="downloadPdfBtn">
-                    <i class="fas fa-download"></i> Download PDF
-                </button>
-            </div>
-            <div class="pdf-viewer">
-                <iframe id="pdfFrame" src="" width="100%" height="600px" frameborder="0"></iframe>
-            </div>
-        </div>
-    </div>
+    @include('labtech.modals.pdf_viewer_modal')
 
     <!-- Order Details Modal -->
-    <div id="orderDetailsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeOrderDetailsModal()">&times;</span>
-            <h3>Order Details</h3>
-            <div id="orderDetailsContent">
-                <!-- Order details will be loaded here -->
-            </div>
-        </div>
-    </div>
+    @include('labtech.modals.order_details_modal')
+    
+    <!-- Cancellation Reason Modal -->
+    @include('labtech.modals.cancel_reason_modal')
 
     <script>
         let currentOrderId = null;
@@ -229,6 +183,18 @@
             // Handle browser back/forward navigation
             window.addEventListener('popstate', function() {
                 initializeFromURL();
+            });
+            
+            // Set up cancel reason form submission
+            document.getElementById('cancelReasonForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const reason = document.getElementById('cancelReason').value.trim();
+                if (reason) {
+                    processCancellation(reason);
+                } else {
+                    alert('Please provide a reason for cancellation.');
+                    document.getElementById('cancelReason').focus();
+                }
             });
         });
         
@@ -420,30 +386,68 @@
             });
         });
 
-        // Cancel order function
+        // Cancel order function - Show modal instead of confirm
         function cancelOrder(orderId) {
-            if (confirm('Are you sure you want to cancel this lab order? This action cannot be undone.')) {
-                fetch(`/labtech/orders/update-status/${orderId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ status: 'cancelled' })
+            // Store the order ID for the cancellation process
+            currentOrderId = orderId;
+            
+            // Clear any previous reasons
+            document.getElementById('cancelReason').value = '';
+            
+            // Show the cancellation reason modal
+            document.getElementById('cancelReasonModal').classList.add('show');
+        }
+        
+        // Close cancellation reason modal
+        function closeCancelReasonModal() {
+            document.getElementById('cancelReasonModal').classList.remove('show');
+            currentOrderId = null;
+        }
+        
+        // Function to actually process the cancellation with reason
+        function processCancellation(reason) {
+            if (!currentOrderId) return;
+            
+            const orderId = currentOrderId;
+            const submitBtn = document.querySelector('#cancelReasonForm .complete-btn');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+            
+            // Show loading state
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+            submitBtn.disabled = true;
+            
+            fetch(`/labtech/orders/update-status/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ 
+                    status: 'cancelled',
+                    cancel_reason: reason 
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Error cancelling order: ' + (data.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error cancelling order. Please try again.');
-                });
-            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeCancelReasonModal();
+                    location.reload();
+                } else {
+                    alert('Error cancelling order: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error cancelling order. Please try again.');
+            })
+            .finally(() => {
+                // Reset button state
+                btnText.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
+                submitBtn.disabled = false;
+            });
         }
 
         // PDF Viewing Functions
@@ -508,6 +512,15 @@
                                     ${order.lab_tech ? `<p><strong>Lab Tech:</strong> ${order.lab_tech.name}</p>` : ''}
                                 </div>
                                 
+                                ${order.status === 'cancelled' && order.cancel_reason ? `
+                                <div class="detail-group">
+                                    <h4>Cancellation Information</h4>
+                                    <p><strong>Reason for Cancellation:</strong></p>
+                                    <div class="cancel-reason">${order.cancel_reason}</div>
+                                    <p><strong>Cancelled At:</strong> ${order.cancelled_at ? new Date(order.cancelled_at).toLocaleString() : 'Unknown'}</p>
+                                </div>
+                                ` : ''}
+                                
                                 ${order.results ? `
                                 <div class="detail-group">
                                     <h4>Results</h4>
@@ -550,6 +563,7 @@
             const completeModal = document.getElementById('completeModal');
             const pdfModal = document.getElementById('pdfModal');
             const orderDetailsModal = document.getElementById('orderDetailsModal');
+            const cancelReasonModal = document.getElementById('cancelReasonModal');
             
             if (event.target === completeModal) {
                 closeCompleteModal();
@@ -557,11 +571,26 @@
                 closePdfModal();
             } else if (event.target === orderDetailsModal) {
                 closeOrderDetailsModal();
+            } else if (event.target === cancelReasonModal) {
+                closeCancelReasonModal();
             }
         }
 
-        // Close modal with X button
-        document.querySelector('.close').onclick = closeCompleteModal;
+        // Close modal with X buttons
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            const modalParent = closeBtn.closest('.modal');
+            if (modalParent) {
+                if (modalParent.id === 'completeModal') {
+                    closeBtn.onclick = closeCompleteModal;
+                } else if (modalParent.id === 'pdfModal') {
+                    closeBtn.onclick = closePdfModal;
+                } else if (modalParent.id === 'orderDetailsModal') {
+                    closeBtn.onclick = closeOrderDetailsModal;
+                } else if (modalParent.id === 'cancelReasonModal') {
+                    closeBtn.onclick = closeCancelReasonModal;
+                }
+            }
+        });
         
         // Function to set up sortable columns
         function setupSortableColumns() {

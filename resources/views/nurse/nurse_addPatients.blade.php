@@ -2,6 +2,7 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
+<link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients_fixes.css') }}">
 <div class="nurse-card">
     <h3>Add Patient</h3>
 
@@ -48,13 +49,13 @@
         </div>
 
         <label>Province</label>
-        <select name="province">
+        <select name="province" required>
             <option value="Bulacan" {{ old('province','Bulacan')=='Bulacan' ? 'selected':'' }}>Bulacan</option>
             <!-- add others if needed -->
         </select>
 
         <label>City</label>
-        <select name="city">
+        <select name="city" required>
             <option value="Malolos City" {{ old('city','Malolos City')=='Malolos City' ? 'selected':'' }}>Malolos City</option>
             <!-- add others if needed -->
         </select>
@@ -89,8 +90,8 @@
         <div class="form-row" style="gap:10px;">
             <div class="form-col">
                 <label>Admission Type (Adm. Type)</label>
-                <select name="admission_type">
-                    <option value="" {{ old('admission_type')=='' ? 'selected':'' }}>-- Select --</option>
+                <select name="admission_type" required>
+                    <option value="" disabled {{ old('admission_type')=='' ? 'selected':'' }}>-- Select --</option>
                     <option value="Emergency" {{ old('admission_type')=='Emergency' ? 'selected':'' }}>Emergency</option>
                     <option value="Elective" {{ old('admission_type')=='Elective' ? 'selected':'' }}>Elective</option>
                     <option value="Transfer" {{ old('admission_type')=='Transfer' ? 'selected':'' }}>Transfer</option>
@@ -99,8 +100,8 @@
 
             <div class="form-col">
                 <label>Service</label>
-                <select name="service">
-                    <option value="" {{ old('service')=='' ? 'selected':'' }}>-- Select Service --</option>
+                <select name="service" required>
+                    <option value="" disabled {{ old('service')=='' ? 'selected':'' }}>-- Select Service --</option>
                     <option value="Inpatient" {{ old('service')=='Inpatient' ? 'selected':'' }}>Inpatient</option>
                     <option value="Outpatient" {{ old('service')=='Outpatient' ? 'selected':'' }}>Outpatient</option>
                     <option value="Surgery" {{ old('service')=='Surgery' ? 'selected':'' }}>Surgery</option>
@@ -116,8 +117,8 @@
             </div>
             <div class="form-col">
                 <label>Doctor Type</label>
-                <select name="doctor_type">
-                    <option value="" {{ old('doctor_type')=='' ? 'selected':'' }}>-- Select --</option>
+                <select name="doctor_type" required>
+                    <option value="" disabled {{ old('doctor_type')=='' ? 'selected':'' }}>-- Select --</option>
                     <option value="Consultant" {{ old('doctor_type')=='Consultant' ? 'selected':'' }}>Consultant</option>
                     <option value="Resident" {{ old('doctor_type')=='Resident' ? 'selected':'' }}>Resident</option>
                     <option value="Intern" {{ old('doctor_type')=='Intern' ? 'selected':'' }}>Intern</option>

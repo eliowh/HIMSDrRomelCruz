@@ -22,6 +22,7 @@ class LabOrder extends Model
         'started_at',
         'completed_at',
         'cancelled_at',
+        'cancel_reason',
         'results',
         'results_pdf_path'
     ];

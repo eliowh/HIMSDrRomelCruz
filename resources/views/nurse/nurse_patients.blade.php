@@ -6,13 +6,15 @@
 @php $patients = $patients ?? collect(); $q = $q ?? ''; @endphp
 
 <link rel="stylesheet" href="{{ url('css/nursecss/nurse_patients.css') }}">
+<link rel="stylesheet" href="{{ url('css/nursecss/nurse_patients_updates.css') }}">
+<link rel="stylesheet" href="{{ url('css/nursecss/edit_patient_modal.css') }}">
 
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
             <div class="patients-header">
                 <h3>Patients</h3>
-                <form method="GET" class="patients-search" style="margin-left:auto;">
+                <form method="GET" class="patients-search">
                     <input type="search" name="q" value="{{ $q }}" placeholder="Search..." class="search-input">
                 </form>
             </div>
@@ -87,7 +89,6 @@
 
                 <div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
                     <button id="btnEditPatient" class="btn secondary">Edit</button>
-                    <button id="btnDeletePatient" class="btn" style="background:#ef4444;">Delete</button>
                 </div>
             </div>
         </div>
@@ -97,76 +98,8 @@
     {{ $patients->links('components.custom-pagination') }}
 </div>
 
-<!-- Lab Request Modal -->
-<div id="labRequestModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeLabRequestModal()">&times;</span>
-        <h3>Request Lab Test</h3>
-        <form id="labRequestForm">
-            <input type="hidden" id="requestPatientId" name="patient_id">
-            
-            <div class="form-group">
-                <label>Patient:</label>
-                <p id="requestPatientInfo" class="patient-info-display"></p>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="testCategory">Test Category: *</label>
-                    <select id="testCategory" name="test_category" required onchange="updateTestOptions()">
-                        <option value="">Select category</option>
-                        <option value="laboratory">Laboratory Tests</option>
-                        <option value="xray">X-Ray Procedures</option>
-                        <option value="ultrasound">Ultrasound</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="specificTest">Specific Test/Procedure: *</label>
-                    <select id="specificTest" name="specific_test" required disabled>
-                        <option value="">Select test first</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <div class="checkbox-label-group" style="justify-content: flex-start;">
-                    <input type="checkbox" id="enableAdditionalTests" title="Enable additional tests/notes">
-                    <label for="enableAdditionalTests">Additional Tests/Notes:</label>
-                </div>
-                <textarea id="additionalTests" name="additional_tests" rows="3" disabled
-                          placeholder="e.g., Additional lab work, special instructions, or multiple tests"></textarea>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="priority">Priority: *</label>
-                    <select id="priority" name="priority" required>
-                        <option value="normal">Normal</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="stat">STAT</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="scheduledDate">Preferred Date:</label>
-                    <input type="date" id="scheduledDate" name="scheduled_date" min="{{ date('Y-m-d') }}">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="notes">Clinical Notes:</label>
-                <textarea id="notes" name="notes" rows="2" 
-                          placeholder="Clinical indications, symptoms, or special instructions for the technician"></textarea>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn cancel-btn" onclick="closeLabRequestModal()">Cancel</button>
-                <button type="submit" class="btn submit-btn">Submit Request</button>
-            </div>
-        </form>
-    </div>
-</div>
+@include('nurse.modals.lab_request_modal')
+@include('nurse.modals.edit_patient_modal')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -236,46 +169,9 @@ document.addEventListener('DOMContentLoaded', function () {
         rows[0].querySelector('.js-open-patient').click();
     }
 
-    // --- Edit / Delete modal wiring ---
+    // --- Edit modal wiring ---
     const btnEdit = document.getElementById('btnEditPatient');
-    const btnDelete = document.getElementById('btnDeletePatient');
-    // create a simple modal for editing
-    const modal = document.createElement('div'); modal.className='modal'; modal.id='editModal';
-    modal.innerHTML = `
-        <div class="modal-backdrop"></div>
-        <div class="modal-content">
-            <div class="modal-header"><strong>Edit Patient</strong><button class="modal-close">×</button></div>
-            <div class="modal-body">
-                <form id="editPatientForm">
-                    <input type="hidden" name="_token" value="{{ csrf_token() }}" />
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                        <input name="first_name" placeholder="First name" required />
-                        <input name="last_name" placeholder="Last name" required />
-                        <input name="middle_name" placeholder="Middle name" />
-                        <input name="date_of_birth" type="date" />
-                        <input name="province" placeholder="Province" />
-                        <input name="city" placeholder="City" />
-                        <input name="barangay" placeholder="Barangay" />
-                        <input name="nationality" placeholder="Nationality" />
-                        <input name="room_no" placeholder="Room No" />
-                        <input name="admission_type" placeholder="Admission Type" />
-                        <input name="service" placeholder="Service" />
-                        <input name="doctor_name" placeholder="Doctor" />
-                        <input name="doctor_type" placeholder="Doctor Type" />
-                        <textarea name="admission_diagnosis" placeholder="Admission diagnosis" style="grid-column:1 / -1;"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <div></div>
-                <div>
-                    <button class="btn secondary modal-close">Cancel</button>
-                    <button id="savePatientBtn" class="btn">Save</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+    const modal = document.getElementById('editModal');
 
     function openEditModal(patient){
         const form = document.getElementById('editPatientForm');
@@ -294,10 +190,20 @@ document.addEventListener('DOMContentLoaded', function () {
         form.elements['doctor_name'].value = patient.doctor_name || '';
         form.elements['doctor_type'].value = patient.doctor_type || '';
         form.elements['admission_diagnosis'].value = patient.admission_diagnosis || '';
+        
+        // Set the admission diagnosis description if available
+        if (form.elements['admission_diagnosis_description']) {
+            form.elements['admission_diagnosis_description'].value = patient.admission_diagnosis_description || '';
+        }
+        
         modal.classList.add('open');
+        modal.classList.add('show');
     }
 
-    function closeModal(){ modal.classList.remove('open'); }
+    function closeModal(){ 
+        modal.classList.remove('open'); 
+        modal.classList.remove('show'); 
+    }
     modal.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeModal));
 
     // Save button sends PUT to update
@@ -334,37 +240,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // non-json but ok response
             location.reload();
         }).catch(e=>{ console.error(e); alert('Update failed: ' + e.message); });
-    });
-
-    // Delete button
-    btnDelete.addEventListener('click', function(){
-        const patientNo = document.getElementById('md-patient_no').textContent;
-        if(!patientNo || patientNo === '-') return alert('No patient selected');
-        if(!confirm('Delete patient ' + patientNo + '? This cannot be undone.')) return;
-        const token = _csrf();
-        // Use POST + _method=DELETE so PHP/Laravel receives proper parsed input
-        const delData = new URLSearchParams();
-        delData.set('_token', token);
-        delData.set('_method', 'DELETE');
-        fetch(`/nurse/patients/${encodeURIComponent(patientNo)}`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8', 'Accept': 'application/json'},
-            body: delData.toString()
-        }).then(async r=>{
-            const text = await r.text();
-            const ct = r.headers.get('content-type') || '';
-            if(!r.ok){
-                if(r.status === 419) return alert('Session expired. Please refresh and login.');
-                return alert('Delete failed: HTTP ' + r.status + '\n' + (text ? text.slice(0,300) : ''));
-            }
-            let j = null;
-            if(ct.includes('application/json')){
-                try{ j = JSON.parse(text); }catch(e){ /* ignore */ }
-            }
-            if(j && j.ok){ location.href = '/nurse/patients'; }
-            else { alert('Delete failed: ' + (j?.message || text || 'unknown')); }
-        }).catch(e=>{ console.error(e); alert('Delete failed: ' + e.message); });
     });
 
     // wire edit button to open modal with currently selected patient

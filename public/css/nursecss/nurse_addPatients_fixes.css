@@ -1,0 +1,69 @@
+/* Style fixes for Add Patient page */
+
+/* Fix the button styling to match other pages */
+button[type="submit"] {
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
+}
+
+button[type="submit"]:hover {
+    background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.3);
+}
+
+/* Fix inline styles */
+hr {
+    margin: 20px 0 !important;
+    border: none !important;
+    border-top: 1px solid #e5e7eb !important;
+}
+
+.form-row {
+    gap: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+/* Fix form input focus states */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Ensure consistent spacing */
+label {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+}
+
+/* Fix notice paragraph style */
+p {
+    font-size: 0.9em;
+    color: #6b7280 !important;
+    margin-top: 20px;
+}
