@@ -9,6 +9,7 @@ use App\Http\Controllers\LabtechController;
 use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PharmacyController;
 
 // Home
 Route::get('/', function () {
@@ -169,32 +170,12 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
     Route::delete('/inventory/stocks/{id}', [App\Http\Controllers\InventoryController::class, 'deleteStock'])->name('inventory.stocks.delete');
     Route::patch('/inventory/stocks/{id}', [App\Http\Controllers\InventoryController::class, 'updateStock'])->name('inventory.stocks.update');
     Route::get('/inventory/orders', [App\Http\Controllers\InventoryController::class, 'orders'])->name('inventory.orders');
-    Route::post('/inventory/orders/{id}/update-status', function ($id) {
-        $status = request('status');
-        
-        if (!in_array($status, ['approved', 'completed', 'cancelled'])) {
-            return response()->json(['success' => false, 'message' => 'Invalid status']);
-        }
-        
-        try {
-            DB::table('stock_orders')
-                ->where('id', $id)
-                ->update([
-                    'status' => $status,
-                    'updated_at' => now()
-                ]);
-            
-            return response()->json([
-                'success' => true, 
-                'message' => 'Order status updated successfully'
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Failed to update order status: ' . $e->getMessage()
-            ]);
-        }
-    })->name('inventory.orders.updateStatus');
+    Route::post('/inventory/orders/{id}/update-status', [App\Http\Controllers\InventoryController::class, 'updateOrderStatus'])->name('inventory.orders.updateStatus');
+    
+    // API Routes for stocks reference lookup
+    Route::get('/inventory/stocks-reference', [App\Http\Controllers\InventoryController::class, 'getStocksReference'])->name('inventory.stocks.reference');
+    Route::get('/inventory/stocks-reference/{itemCode}', [App\Http\Controllers\InventoryController::class, 'getStockByItemCode'])->name('inventory.stocks.item');
+    
     Route::get('/inventory/reports', [App\Http\Controllers\InventoryController::class, 'reports'])->name('inventory.reports');
     Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');
 });
@@ -205,11 +186,16 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
         return view('pharmacy.pharmacy_home');
     })->name('pharmacy.home');
     
+    // Order Management Routes
     Route::get('/pharmacy/orders', [App\Http\Controllers\PharmacyController::class, 'orders'])->name('pharmacy.orders');
     Route::post('/pharmacy/orders', [App\Http\Controllers\PharmacyController::class, 'storeOrder'])->name('pharmacy.orders.store');
     Route::put('/pharmacy/orders/{id}', [App\Http\Controllers\PharmacyController::class, 'updateOrder'])->name('pharmacy.orders.update');
     Route::delete('/pharmacy/orders/{id}', [App\Http\Controllers\PharmacyController::class, 'deleteOrder'])->name('pharmacy.orders.delete');
     Route::post('/pharmacy/orders/{id}/cancel', [App\Http\Controllers\PharmacyController::class, 'cancelOrder'])->name('pharmacy.orders.cancel');
+    
+    // API Routes for dropdown population
+    Route::get('/pharmacy/stocks-reference', [App\Http\Controllers\PharmacyController::class, 'getStocksReference'])->name('pharmacy.stocks.reference');
+    Route::get('/pharmacy/stocks-reference/{itemCode}', [App\Http\Controllers\PharmacyController::class, 'getStockByItemCode'])->name('pharmacy.stocks.item');
     
     Route::get('/pharmacy/account', function () {
         return view('pharmacy.pharmacy_account');

@@ -754,3 +754,98 @@ body {
         height: 400px; 
     } 
 }
+
+/* Dashboard Widget Enhancements */
+.widget-trend {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 0.85rem;
+}
+
+.trend-indicator {
+    margin-right: 6px;
+    font-weight: 600;
+}
+
+.trend-up { 
+    color: #28a745; 
+}
+
+.trend-down { 
+    color: #dc3545; 
+}
+
+.trend-neutral { 
+    color: #6c757d; 
+}
+
+.widget-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.stat-item {
+    text-align: center;
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #367F2B;
+    margin: 0;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin: 2px 0 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Alert styles for critical widgets */
+.widget.alert-critical .widget-value {
+    color: #dc3545;
+    animation: pulse 2s infinite;
+}
+
+.widget.alert-warning .widget-value {
+    color: #ffc107;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Dashboard loading state */
+.widget.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.widget.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #367F2B;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
