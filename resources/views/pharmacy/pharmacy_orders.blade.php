@@ -19,7 +19,18 @@
 
         <main class="main-content">
             <div class="page-header">
-                <h2>Pharmacy Orders</h2>
+                <div class="header-content">
+                    <h2>Pharmacy Orders</h2>
+                    @if($orders->total() > 0)
+                        <p class="results-summary">
+                            @if($status !== 'all')
+                                Showing {{ $orders->total() }} {{ ucfirst($status) }} order{{ $orders->total() !== 1 ? 's' : '' }}
+                            @else
+                                Showing {{ $orders->total() }} total order{{ $orders->total() !== 1 ? 's' : '' }}
+                            @endif
+                        </p>
+                    @endif
+                </div>
                 <button class="btn pharmacy-btn-primary" onclick="openRequestOrderModal()">
                     <i class="fas fa-plus"></i> Request Order
                 </button>
@@ -37,10 +48,10 @@
                     Approved <span class="count-badge">{{ $statusCounts['approved'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'completed' ? 'active' : '' }}" data-status="completed">
-                    Released/Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
+                    Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'cancelled' ? 'active' : '' }}" data-status="cancelled">
-                    Rejected/Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
+                    Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
                 </button>
             </div>
 
@@ -123,7 +134,8 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
+                    </div>                   
+                    
                 @else
                     <div class="no-orders">
                         <i class="fas fa-pills"></i>
@@ -146,6 +158,17 @@
                     </div>
                 @endif
             </div>
+            <!-- Custom Pagination -->
+            @if($orders->hasPages() && $orders->lastPage() > 1)
+                <div class="pagination-wrapper">
+                    <div class="pagination-info">
+                        <span>Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} orders</span>
+                    </div>
+                    <div class="pagination-container">
+                        <x-custom-pagination :paginator="$orders" />
+                    </div>
+                </div>
+            @endif
         </main>
     </div>
 
@@ -165,6 +188,10 @@
             const tabButtons = document.querySelectorAll('.tab-btn');
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
+                    // Add loading state to clicked tab
+                    btn.disabled = true;
+                    btn.innerHTML = btn.innerHTML.replace('</span>', '</span> <i class="fas fa-spinner fa-spin"></i>');
+                    
                     filterByStatus(this.dataset.status);
                 });
             });
@@ -174,11 +201,21 @@
             
             // Set up form event listeners
             setupFormEventListeners();
+            
+            // Handle back/forward browser navigation
+            window.addEventListener('popstate', function() {
+                // Reload page when user uses browser back/forward
+                window.location.reload();
+            });
         });
 
         function filterByStatus(status) {
             // Redirect to same page with status filter
             const url = new URL(window.location);
+            
+            // Reset to page 1 when switching tabs
+            url.searchParams.delete('page');
+            
             if (status === 'all') {
                 url.searchParams.delete('status');
             } else {

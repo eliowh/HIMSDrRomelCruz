@@ -182,9 +182,7 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
 
 // Pharmacy Routes
 Route::middleware(['auth', 'role:pharmacy'])->group(function () {
-    Route::get('/pharmacy/home', function () {
-        return view('pharmacy.pharmacy_home');
-    })->name('pharmacy.home');
+    Route::get('/pharmacy/home', [App\Http\Controllers\PharmacyController::class, 'home'])->name('pharmacy.home');
     
     // Order Management Routes
     Route::get('/pharmacy/orders', [App\Http\Controllers\PharmacyController::class, 'orders'])->name('pharmacy.orders');

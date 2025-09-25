@@ -25,7 +25,7 @@ class PharmacyController extends Controller
             $query->where('status', $status);
         }
         
-        $orders = $query->get();
+        $orders = $query->paginate(15)->appends($request->query());
         
         // Get counts for each status
         $statusCounts = [
@@ -314,5 +314,51 @@ class PharmacyController extends Controller
                 'additional_info' => $stock['COL 5'] ?? '',
             ]
         ]);
+    }
+
+    public function home()
+    {
+        $userId = Auth::id();
+        
+        // Get pharmacy order statistics
+        $pendingOrders = StockOrder::forUser($userId)->pending()->count();
+        $approvedOrders = StockOrder::forUser($userId)->approved()->count();
+        $completedOrders = StockOrder::forUser($userId)->completed()->count();
+        $cancelledOrders = StockOrder::forUser($userId)->cancelled()->count();
+        $totalOrders = StockOrder::forUser($userId)->count();
+        
+        // Get recent pharmacy orders (last 5)
+        $recentOrders = StockOrder::with('user')
+            ->forUser($userId)
+            ->orderBy('requested_at', 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Calculate total value of pending orders
+        $pendingOrdersValue = StockOrder::forUser($userId)
+            ->pending()
+            ->sum('total_price');
+        
+        // Calculate total value of completed orders this month
+        $completedOrdersValue = StockOrder::forUser($userId)
+            ->completed()
+            ->whereMonth('requested_at', now()->month)
+            ->whereYear('requested_at', now()->year)
+            ->sum('total_price');
+        
+        // Get low stock items (you can adjust this logic based on your needs)
+        $lowStockCount = 0; // Placeholder - you can implement this based on your stock management
+        
+        return view('pharmacy.pharmacy_home', compact(
+            'pendingOrders',
+            'approvedOrders', 
+            'completedOrders',
+            'cancelledOrders',
+            'totalOrders',
+            'recentOrders',
+            'pendingOrdersValue',
+            'completedOrdersValue',
+            'lowStockCount'
+        ));
     }
 }

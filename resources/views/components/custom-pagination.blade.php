@@ -34,17 +34,36 @@
         function goToPage(page) {
             const currentUrl = new URL(window.location.href);
             const maxPage = {{ $paginator->lastPage() }};
+            const currentPage = {{ $paginator->currentPage() }};
             
             // Validate page number
             page = parseInt(page);
-            if (page < 1) page = 1;
+            if (isNaN(page) || page < 1) page = 1;
             if (page > maxPage) page = maxPage;
             
             // Update input value to corrected page
-            event.target.value = page;
+            if (event && event.target) {
+                event.target.value = page;
+            }
+            
+            // Don't navigate if we're already on this page
+            if (page === currentPage) {
+                return;
+            }
+            
+            // Add loading state
+            const paginationWrapper = document.querySelector('.pagination-wrapper');
+            if (paginationWrapper) {
+                paginationWrapper.style.opacity = '0.6';
+                paginationWrapper.style.pointerEvents = 'none';
+            }
             
             // Navigate to the page
-            currentUrl.searchParams.set('page', page);
+            if (page === 1) {
+                currentUrl.searchParams.delete('page');
+            } else {
+                currentUrl.searchParams.set('page', page);
+            }
             window.location.href = currentUrl.toString();
         }
     </script>
