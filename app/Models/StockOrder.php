@@ -50,8 +50,8 @@ class StockOrder extends Model
         return [
             self::STATUS_PENDING => 'Pending',
             self::STATUS_APPROVED => 'Approved',
-            self::STATUS_COMPLETED => 'Released/Completed',
-            self::STATUS_CANCELLED => 'Rejected/Cancelled',
+            self::STATUS_COMPLETED => 'Completed',
+            self::STATUS_CANCELLED => 'Cancelled',
         ];
     }
 
