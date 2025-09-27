@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Report;
 use App\Models\Room;
 use App\Models\Patient;
+use App\Traits\SecurityHelpers;
 use Illuminate\Http\Request;
 use App\Notifications\RoleAssigned;
 use App\Notifications\NewUserCredentials;
@@ -17,9 +18,19 @@ use App\Imports\Icd10Import;
 
 class AdminController extends Controller
 {
+    use SecurityHelpers;
+
+    public function __construct()
+    {
+        // Middleware is applied at route level, no need to apply here
+        // $this->middleware(['auth', 'role:admin']);
+    }
 
     public function index()
     {
+        // Verify admin access with enhanced security
+        $this->verifyAdminAccess();
+        
         $adminName = $this->getAdminName();
         
         // Get stocks summary data
@@ -443,22 +454,14 @@ class AdminController extends Controller
                     $q->where('COL 1', 'like', "%{$search}%")
                       ->orWhere('COL 2', 'like', "%{$search}%");
                 });
-                // Apply sorting before getting results
-                $query->orderBy($sortBy, $sortDirection);
-                // If searching, don't paginate - show all results
-                $allRooms = $query->get();
-                $rooms = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $allRooms, 
-                    $allRooms->count(), 
-                    max($allRooms->count(), 1), // Prevent division by zero
-                    1,
-                    ['path' => request()->url(), 'query' => request()->query()]
-                );
-            } else {
-                // Apply sorting for paginated results
-                $query->orderBy($sortBy, $sortDirection);
-                $rooms = $query->paginate(10);
             }
+            
+            // Apply sorting and paginate for all results (with or without search)
+            $query->orderBy($sortBy, $sortDirection);
+            $rooms = $query->paginate(10);
+            
+            // Preserve search parameters in pagination links
+            $rooms->appends(request()->query());
             return view('admin.admin_rooms', compact('rooms'));
             
         } catch (\Exception $e) {
@@ -680,19 +683,11 @@ class AdminController extends Controller
                 $query->orderBy($sortBy, $sortDirection);
             }
             
-            if ($search || $status) {
-                // If searching, don't paginate - show all results
-                $allPatients = $query->get();
-                $patients = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $allPatients, 
-                    $allPatients->count(), 
-                    max($allPatients->count(), 1), // Prevent division by zero
-                    1,
-                    ['path' => request()->url(), 'query' => request()->query()]
-                );
-            } else {
-                $patients = $query->paginate(10);
-            }
+            // Apply pagination for all results (with or without search/filter)
+            $patients = $query->paginate(10);
+            
+            // Preserve search and filter parameters in pagination links
+            $patients->appends(request()->query());
             return view('admin.admin_patients', compact('patients'));
             
         } catch (\Exception $e) {

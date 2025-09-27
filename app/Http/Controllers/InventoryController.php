@@ -115,7 +115,11 @@ class InventoryController extends Controller
             $query->where('status', $status);
         }
         
-        $orders = $query->get();
+        // Paginate by 20 items
+        $orders = $query->paginate(20);
+        
+        // Preserve the status filter in pagination links
+        $orders->appends(['status' => $status]);
         
         // Get counts for each status
         $statusCounts = [
@@ -169,9 +173,118 @@ class InventoryController extends Controller
         }
     }
 
-    public function reports()
+    public function reports(Request $request)
     {
-        return view('Inventory.inventory_reports');
+        try {
+            $reportType = $request->get('type', 'overview');
+            
+            // Base query
+            $stocksQuery = StockPrice::query();
+            
+            switch ($reportType) {
+                case 'low-stock':
+                    $data = $stocksQuery->lowStock()
+                        ->inStock()
+                        ->orderBy('quantity', 'asc')
+                        ->paginate(20);
+                    break;
+                    
+                case 'out-of-stock':
+                    $data = $stocksQuery->outOfStock()
+                        ->orderBy('generic_name')
+                        ->paginate(20);
+                    break;
+                    
+                case 'expiring':
+                    $days = (int) $request->get('days', 30);
+                    $data = $stocksQuery->expiringSoon($days)
+                        ->inStock()
+                        ->orderBy('expiry_date', 'asc')
+                        ->paginate(20);
+                    break;
+                    
+                case 'expired':
+                    $data = $stocksQuery->expired()
+                        ->orderBy('expiry_date', 'desc')
+                        ->paginate(20);
+                    break;
+                    
+                case 'stock-movement':
+                    // Get recent stock orders for movement analysis
+                    $data = StockOrder::with('user')
+                        ->where('status', 'completed')
+                        ->where('requested_at', '>=', now()->subDays(30))
+                        ->orderBy('requested_at', 'desc')
+                        ->paginate(20);
+                    break;
+                    
+                case 'overview':
+                default:
+                    // Overview doesn't need pagination - just summary stats
+                    $data = null;
+                    break;
+            }
+            
+            // Calculate summary statistics
+            $stats = [
+                'total_items' => StockPrice::count(),
+                'total_value' => StockPrice::selectRaw('SUM(quantity * price) as total')->value('total') ?? 0,
+                'in_stock' => StockPrice::inStock()->count(),
+                'out_of_stock' => StockPrice::outOfStock()->count(),
+                'low_stock' => StockPrice::lowStock()->inStock()->count(),
+                'expiring_soon' => StockPrice::expiringSoon((int) 30)->inStock()->count(),
+                'expired' => StockPrice::expired()->count(),
+                'recent_orders' => StockOrder::where('requested_at', '>=', now()->subDays(7))->count(),
+            ];
+            
+            // Get top 10 most valuable items for overview
+            $topValueItems = StockPrice::selectRaw('*, (quantity * price) as total_value')
+                ->where('quantity', '>', 0)
+                ->orderBy('total_value', 'desc')
+                ->limit(10)
+                ->get();
+                
+            // Get recent low stock alerts
+            $lowStockAlerts = StockPrice::lowStock()
+                ->inStock()
+                ->orderBy('quantity', 'asc')
+                ->limit(5)
+                ->get();
+                
+            // Get upcoming expiries
+            $upcomingExpiries = StockPrice::expiringSoon((int) 15)
+                ->inStock()
+                ->orderBy('expiry_date', 'asc')
+                ->limit(5)
+                ->get();
+            
+            return view('Inventory.inventory_reports', compact(
+                'reportType', 
+                'data', 
+                'stats', 
+                'topValueItems', 
+                'lowStockAlerts', 
+                'upcomingExpiries'
+            ));
+            
+        } catch (\Exception $e) {
+            \Log::error('Inventory reports error: ' . $e->getMessage());
+            
+            // Return basic view with error
+            $stats = [
+                'total_items' => 0,
+                'total_value' => 0,
+                'in_stock' => 0,
+                'out_of_stock' => 0,
+                'low_stock' => 0,
+                'expiring_soon' => 0,
+                'expired' => 0,
+                'recent_orders' => 0,
+            ];
+            
+            return view('Inventory.inventory_reports', compact('stats'))
+                ->with('error', 'Error loading reports data.');
+        }
     }
 
     public function account()

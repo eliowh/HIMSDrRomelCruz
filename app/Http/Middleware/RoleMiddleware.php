@@ -17,35 +17,34 @@ class RoleMiddleware
     {
         // Check if user is authenticated
         if (!auth()->check()) {
-            return redirect('/login');
+            return redirect('/login')->with('error', 'Please log in to access this area.');
         }
 
         // Get the user's role
-        $userRole = auth()->user()->role;
+        $user = auth()->user();
+        $userRole = $user->role;
 
         // Check if user has the required role
         if ($userRole !== $role) {
-            // Redirect to user's own dashboard based on their role
-            switch ($userRole) {
-                case 'admin':
-                    return redirect('/admin/home')->with('error', 'Access denied. You can only access admin areas.');
-                case 'doctor':
-                    return redirect('/doctor/home')->with('error', 'Access denied. You can only access doctor areas.');
-                case 'nurse':
-                    return redirect('/nurse/home')->with('error', 'Access denied. You can only access nurse areas.');
-                case 'lab_technician':
-                    return redirect('/labtech/home')->with('error', 'Access denied. You can only access lab technician areas.');
-                case 'cashier':
-                    return redirect('/cashier/home')->with('error', 'Access denied. You can only access cashier areas.');
-                case 'inventory':
-                    return redirect('/inventory')->with('error', 'Access denied. You can only access inventory areas.');
-                case 'pharmacy':
-                    return redirect('/pharmacy/home')->with('error', 'Access denied. You can only access pharmacy areas.');
-                case 'billing':
-                    return redirect('/billing/home')->with('error', 'Access denied. You can only access billing areas.');
-                default:
-                    return redirect('/login')->with('error', 'Invalid role. Please contact administrator.');
+            // Log the unauthorized access attempt
+            \Log::warning('Unauthorized access attempt', [
+                'user_id' => $user->id,
+                'user_role' => $userRole,
+                'required_role' => $role,
+                'url' => $request->fullUrl(),
+                'ip' => $request->ip(),
+            ]);
+
+            // Create a user-friendly error message
+            $errorMessage = "Access denied. This area requires {$role} privileges.";
+            
+            // For AJAX requests, return JSON response
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $errorMessage], 403);
             }
+            
+            // For regular requests, show 403 error page
+            abort(403, $errorMessage);
         }
 
         return $next($request);

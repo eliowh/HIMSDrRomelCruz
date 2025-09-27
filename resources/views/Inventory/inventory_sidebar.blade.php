@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Panel</title>
-    <link rel="stylesheet" href="{{ url('css/inventory.css') }}">
+    <link rel="stylesheet" href="{{ url('css/inventorycss/inventory.css') }}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -15,7 +15,7 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/inventory') }}" class="sidebar-btn{{ request()->is('inventory') ? ' active' : '' }}">
+                <a href="{{ url('/inventory/home') }}" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>

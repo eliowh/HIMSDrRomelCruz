@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doctor Appointments</title>
-    <link rel="stylesheet" href="{{url('css/doctor.css')}}">
+    <link rel="stylesheet" href="{{url('css/doctorcss/doctor.css')}}">
 </head>
 <body>
     @php

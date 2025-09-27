@@ -5,8 +5,9 @@
 @section('content')
 @php $patients = $patients ?? collect(); $q = $q ?? ''; @endphp
 
-<link rel="stylesheet" href="{{ url('css/nursecss/nurse_patients.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/nurse_patients_updates.css') }}">
+    <link rel="stylesheet" href="{{ url('css/nursecss/nurse_patients.css') }}">
+    <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="{{ url('css/nursecss/edit_patient_modal.css') }}">
 
 <div class="patients-grid">

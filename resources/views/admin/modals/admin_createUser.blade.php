@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="{{url('css/admin.css')}}">
+<link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
 <div id="addUserModal" class="addUserModal">
     <div class="addUserModalContent">
         <button onclick="closeAddUserModal()" class="addUserModalClose">&times;</button>

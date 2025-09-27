@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="{{ url('css/app.css') }}">
-    <title>Login | Dr. Romel Cruz Hospital</title>
+    <title>Login | Romel Cruz Hospital</title>
 </head>
 <body>
     <div id="errorPopup" class="popup">
@@ -41,7 +41,7 @@
     <div class="container">
         <div class="left">
             <div class="formbox">
-                <h3 class="main-title">DR ROMEL CRUZ HOSPITAL</h3>
+                <h3 class="main-title">ROMEL CRUZ HOSPITAL</h3>
                 <h4>Sign in to your hospital account</h4>
                 <p class="welcome">Please enter your details</p>
                 <form action="/login" method="POST" autocomplete="off">

@@ -3,7 +3,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Records</title>
-    <link rel="stylesheet" href="{{url('css/doctor.css')}}">
+    <link rel="stylesheet" href="{{url('css/doctorcss/doctor.css')}}">
+    <link rel="stylesheet" href="{{url('css/pagination.css')}}">
 </head>
 <body>
     @php

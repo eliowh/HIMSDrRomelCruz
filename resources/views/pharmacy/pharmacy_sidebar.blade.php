@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/pharmacy.css')}}">
+    <link rel="stylesheet" href="{{url('css/pharmacycss/pharmacy.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">

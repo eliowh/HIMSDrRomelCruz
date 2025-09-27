@@ -135,14 +135,6 @@
 @endsection
 
 @push('scripts')
-<style>
-.icd-suggestions { background:#fff; border:1px solid #ddd; max-height:240px; overflow:auto; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
-.icd-suggestion { padding:10px 12px; cursor:pointer; border-bottom:1px solid #f1f1f1; }
-.icd-suggestion:last-child{ border-bottom: none; }
-.icd-suggestion:hover, .icd-suggestion.active { background:#f0f7f1; }
-.icd-suggestion .code { font-weight:700; color:#1a4931; margin-right:8px; }
-.icd-suggestion .desc { color:#333; font-size:0.95rem; }
-</style>
 
 <script>
 (function(){
