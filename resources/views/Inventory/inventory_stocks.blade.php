@@ -105,6 +105,26 @@
                                 <div class="details-label">Quantity</div>
                                 <div class="details-value" id="md-quantity">-</div>
                             </div>
+                            <div class="details-item">
+                                <div class="details-label">Reorder Level</div>
+                                <div class="details-value" id="md-reorder_level">-</div>
+                            </div>
+                            <div class="details-item">
+                                <div class="details-label">Expiry Date</div>
+                                <div class="details-value" id="md-expiry_date">-</div>
+                            </div>
+                            <div class="details-item">
+                                <div class="details-label">Supplier</div>
+                                <div class="details-value" id="md-supplier">-</div>
+                            </div>
+                            <div class="details-item">
+                                <div class="details-label">Batch Number</div>
+                                <div class="details-value" id="md-batch_number">-</div>
+                            </div>
+                            <div class="details-item">
+                                <div class="details-label">Date Received</div>
+                                <div class="details-value" id="md-date_received">-</div>
+                            </div>
                         </div>
                     </div>
                 </div>

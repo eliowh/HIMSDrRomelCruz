@@ -6,6 +6,7 @@
     <title>Inventory Orders</title>
     <link rel="stylesheet" href="{{ url('css/inventorycss/inventory.css') }}">
     <link rel="stylesheet" href="{{ url('css/inventorycss/inventory_orders.css') }}">
+    <link rel="stylesheet" href="{{ url('css/inventorycss/add_stock_modal.css') }}">
     <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -80,7 +81,7 @@
                                         </td>
                                         <td>{{ $order->requested_at ? $order->requested_at->format('M d, Y') : '-' }}</td>
                                         <td>
-                                            <div class="action-dropdown">
+                                            <div class="action-dropdown" id="action-dropdown-container-{{ $order->id }}">
                                                 <button class="action-btn" onclick="toggleDropdown({{ $order->id }})">
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
@@ -96,6 +97,9 @@
                                                             <i class="fas fa-times"></i> Reject
                                                         </a>
                                                     @elseif($order->status === 'approved')
+                                                        <a href="#" onclick="openEncodeModal({{ $order->id }}, '{{ $order->item_code }}', '{{ $order->generic_name }}', '{{ $order->brand_name }}', {{ $order->quantity }}, {{ $order->unit_price }})" class="encode-action">
+                                                            <i class="fas fa-edit"></i> Encode
+                                                        </a>
                                                         <a href="#" onclick="updateOrderStatus({{ $order->id }}, 'completed')" class="complete-action">
                                                             <i class="fas fa-check-double"></i> Mark Completed
                                                         </a>
@@ -145,18 +149,76 @@
         </div>
     </div>
 
+    @include('Inventory.modals.encode_stock_modal')
+
     <script>
         function toggleDropdown(orderId) {
             const dropdown = document.getElementById(`dropdown-${orderId}`);
+            const button = dropdown.previousElementSibling;
             
-            // Close all other dropdowns
+            // Close all other dropdowns and restore them
             document.querySelectorAll('.dropdown-content').forEach(dd => {
                 if (dd.id !== `dropdown-${orderId}`) {
                     dd.classList.remove('show');
+                    // Restore dropdown to its original parent if it was moved
+                    const originalParent = document.getElementById(dd.dataset.originalParent);
+                    if (originalParent && dd.parentElement !== originalParent) {
+                        originalParent.appendChild(dd);
+                        dd.style.position = '';
+                        dd.style.top = '';
+                        dd.style.left = '';
+                        dd.style.right = '';
+                    }
                 }
             });
             
-            dropdown.classList.toggle('show');
+            if (dropdown.classList.contains('show')) {
+                // Hide dropdown and restore to original position
+                dropdown.classList.remove('show');
+                const originalParent = document.getElementById(dropdown.dataset.originalParent);
+                if (originalParent && dropdown.parentElement !== originalParent) {
+                    originalParent.appendChild(dropdown);
+                    dropdown.style.position = '';
+                    dropdown.style.top = '';
+                    dropdown.style.left = '';
+                    dropdown.style.right = '';
+                }
+            } else {
+                // Store original parent before moving
+                const originalParent = dropdown.parentElement;
+                if (!dropdown.dataset.originalParent) {
+                    originalParent.id = originalParent.id || `action-container-${orderId}`;
+                    dropdown.dataset.originalParent = originalParent.id;
+                }
+                
+                // Move dropdown to main-content to avoid any container constraints
+                const mainContent = document.querySelector('.main-content');
+                mainContent.appendChild(dropdown);
+                
+                // Get button position relative to viewport
+                const buttonRect = button.getBoundingClientRect();
+                const dropdownHeight = 160; // Estimated dropdown height
+                const viewportHeight = window.innerHeight;
+                
+                // Position dropdown
+                dropdown.style.position = 'fixed';
+                dropdown.style.zIndex = '9999';
+                dropdown.style.right = 'auto';
+                
+                // Check if there's enough space below
+                if (buttonRect.bottom + dropdownHeight > viewportHeight && buttonRect.top > dropdownHeight) {
+                    // Show above button
+                    dropdown.style.top = (buttonRect.top - dropdownHeight) + 'px';
+                } else {
+                    // Show below button
+                    dropdown.style.top = buttonRect.bottom + 'px';
+                }
+                
+                // Align right edge of dropdown with right edge of button
+                dropdown.style.left = (buttonRect.right - 160) + 'px'; // 160px is min-width of dropdown
+                
+                dropdown.classList.add('show');
+            }
         }
 
         function viewOrderDetails(orderId) {
@@ -274,6 +336,74 @@
                 });
             }
         }
+
+        function openEncodeModal(orderId, itemCode, genericName, brandName, quantity, price) {
+            document.getElementById('encode-order-id').value = orderId;
+            document.getElementById('encode-item_code').value = itemCode;
+            document.getElementById('encode-generic_name').value = genericName;
+            document.getElementById('encode-brand_name').value = brandName;
+            document.getElementById('encode-quantity').value = quantity;
+            document.getElementById('encode-price').value = price;
+
+            const modal = document.getElementById('encodeStockModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeEncodeStockModal() {
+            const modal = document.getElementById('encodeStockModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.getElementById('encodeStockForm').reset();
+            }, 300);
+        }
+
+        document.getElementById('encodeStockForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const submitBtn = form.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+
+            const formData = new FormData(form);
+
+            fetch('{{ route('inventory.stocks.addFromOrder') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    alert(data.message || 'Stock encoded successfully!');
+                    closeEncodeStockModal();
+                    // Optionally, mark the order as completed
+                    updateOrderStatus(formData.get('order_id'), 'completed');
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to encode stock'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error encoding stock. Please try again.');
+            })
+            .finally(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+
+        document.getElementById('encode-non-perishable').addEventListener('change', function() {
+            document.getElementById('encode-expiry-date').disabled = this.checked;
+            if (this.checked) {
+                document.getElementById('encode-expiry-date').value = '';
+            }
+        });
 
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(event) {

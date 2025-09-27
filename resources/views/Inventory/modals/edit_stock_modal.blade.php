@@ -6,27 +6,66 @@
         <form id="editStockForm">
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <input type="hidden" name="id" id="edit-id">
-            <div class="form-group">
-                <label>Item Code</label>
-                <input id="edit-item_code" name="item_code" />
+
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="form-group">
+                    <label>Item Code</label>
+                    <input id="edit-item_code" name="item_code" />
+                </div>
+                <div class="form-group">
+                    <label>Generic Name</label>
+                    <input id="edit-generic_name" name="generic_name" />
+                </div>
+                <div class="form-group">
+                    <label>Brand Name</label>
+                    <input id="edit-brand_name" name="brand_name" />
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input id="edit-price" name="price" type="number" step="1.00" min="0" onchange="formatDecimal(this, 2)" />
+                </div>
             </div>
-            <div class="form-group">
-                <label>Generic Name</label>
-                <input id="edit-generic_name" name="generic_name" />
-            </div>
-            <div class="form-group">
-                <label>Brand Name</label>
-                <input id="edit-brand_name" name="brand_name" />
-            </div>
-            <div class="form-group">
-                <label>Price</label>
-                <input id="edit-price" name="price" type="number" step="1.00" min="0" onchange="formatDecimal(this, 2)" />
-            </div>
-            <div class="form-group">
+
+            <div class="form-group" style="margin-top:8px;">
                 <label>Quantity</label>
                 <input id="edit-quantity" name="quantity" type="number" />
             </div>
-            <div style="display:flex;justify-content:flex-end;gap:8px;">
+
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <div class="form-group">
+                    <label>Reorder Level</label>
+                    <input id="edit-reorder_level" name="reorder_level" type="number" value="10" />
+                </div>
+                <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input id="edit-expiry_date" name="expiry_date" type="date" />
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="edit-non-perishable" name="non_perishable" style="width: auto; height: auto; margin-right: 5px;">
+                    <span>Non-perishable</span>
+                </label>
+            </div>
+
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <div class="form-group">
+                    <label>Supplier</label>
+                    <input id="edit-supplier" name="supplier" />
+                </div>
+                <div class="form-group">
+                    <label>Batch Number</label>
+                    <input id="edit-batch_number" name="batch_number" />
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top:8px;">
+                <label>Date Received</label>
+                <input id="edit-date_received" name="date_received" type="date" />
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
                 <button type="button" class="btn cancel-btn" onclick="closeEditStockModal()">Cancel</button>
                 <button type="submit" class="btn submit-btn">Save</button>
             </div>
@@ -57,6 +96,11 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
         brand_name: document.getElementById('edit-brand_name').value,
         price: document.getElementById('edit-price').value,
         quantity: document.getElementById('edit-quantity').value,
+        reorder_level: document.getElementById('edit-reorder_level').value,
+        expiry_date: document.getElementById('edit-expiry_date').value,
+        supplier: document.getElementById('edit-supplier').value,
+        batch_number: document.getElementById('edit-batch_number').value,
+        date_received: document.getElementById('edit-date_received').value,
         _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
     };
 

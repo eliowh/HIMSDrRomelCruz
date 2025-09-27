@@ -39,6 +39,39 @@
                 <input name="quantity" type="number" min="1" required placeholder="Quantity" />
             </div>
 
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <div class="form-group">
+                    <label>Reorder Level</label>
+                    <input name="reorder_level" type="number" placeholder="Reorder Level" value="10" />
+                </div>
+                <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input name="expiry_date" type="date" id="add-expiry-date" />
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="non_perishable" id="add-non-perishable" style="width: auto; height: auto; margin-right: 5px;"> 
+                    <span>Non-perishable</span>
+                </label>
+            </div>
+
+            <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <div class="form-group">
+                    <label>Supplier</label>
+                    <input name="supplier" placeholder="Supplier" />
+                </div>
+                <div class="form-group">
+                    <label>Batch Number</label>
+                    <input name="batch_number" placeholder="Batch Number" />
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:8px;">
+                <label>Date Received</label>
+                <input name="date_received" type="date" />
+            </div>
+
             <div class="form-actions" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px;">
                 <button type="button" class="btn cancel-btn" onclick="closeAddStockModal()">Cancel</button>
                 <button type="submit" class="btn submit-btn">Add</button>

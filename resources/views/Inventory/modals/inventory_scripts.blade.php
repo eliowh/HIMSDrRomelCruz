@@ -136,6 +136,11 @@ document.addEventListener('DOMContentLoaded', function(){
         document.getElementById('md-brand_name').textContent = or(stock.brand_name);
         document.getElementById('md-price').textContent = stock.price !== null ? parseFloat(stock.price).toFixed(2) : '-';
         document.getElementById('md-quantity').textContent = or(stock.quantity ?? 0);
+        document.getElementById('md-reorder_level').textContent = or(stock.reorder_level);
+        document.getElementById('md-expiry_date').textContent = or(stock.expiry_date);
+        document.getElementById('md-supplier').textContent = or(stock.supplier);
+        document.getElementById('md-batch_number').textContent = or(stock.batch_number);
+        document.getElementById('md-date_received').textContent = or(stock.date_received);
         // store current stock for editing
         window.__currentStock = stock;
         const editBtn = document.getElementById('editStockBtn');
@@ -173,6 +178,11 @@ document.addEventListener('DOMContentLoaded', function(){
             document.getElementById('edit-brand_name').value = s.brand_name || '';
             document.getElementById('edit-price').value = s.price || '';
             document.getElementById('edit-quantity').value = s.quantity || 0;
+            document.getElementById('edit-reorder_level').value = s.reorder_level || '';
+            document.getElementById('edit-expiry_date').value = s.expiry_date || '';
+            document.getElementById('edit-supplier').value = s.supplier || '';
+            document.getElementById('edit-batch_number').value = s.batch_number || '';
+            document.getElementById('edit-date_received').value = s.date_received || '';
             openEditStockModal();
         });
     }
@@ -347,5 +357,43 @@ document.addEventListener('DOMContentLoaded', function(){
             }).catch(e => { console.error(e); alert('Delete error: ' + e.message); });
         });
     });
+});
+
+// Non-perishable checkbox logic
+document.addEventListener('DOMContentLoaded', function() {
+    function setupCheckboxLogic(checkboxId, expiryId) {
+        const checkbox = document.getElementById(checkboxId);
+        const expiryInput = document.getElementById(expiryId);
+
+        if (checkbox && expiryInput) {
+            checkbox.addEventListener('change', function() {
+                expiryInput.disabled = this.checked;
+                if (this.checked) {
+                    expiryInput.value = '';
+                }
+            });
+        }
+    }
+
+    setupCheckboxLogic('add-non-perishable', 'add-expiry-date');
+    setupCheckboxLogic('edit-non-perishable', 'edit-expiry_date');
+
+    // When opening the edit modal, set the checkbox state
+    const editBtn = document.getElementById('editStockBtn');
+    if(editBtn) {
+        editBtn.addEventListener('click', function() {
+            const stock = window.__currentStock;
+            const editNonPerishable = document.getElementById('edit-non-perishable');
+            const editExpiryDate = document.getElementById('edit-expiry_date');
+
+            if (stock && editNonPerishable && editExpiryDate) {
+                // A non-perishable item might have a null, empty, or far-future expiry date.
+                // We'll consider it non-perishable if the expiry_date is not set.
+                const isNonPerishable = !stock.expiry_date;
+                editNonPerishable.checked = isNonPerishable;
+                editExpiryDate.disabled = isNonPerishable;
+            }
+        });
+    }
 });
 </script>

@@ -6,6 +6,7 @@ use App\Http\Controllers\ReportController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AdminController;
@@ -321,6 +322,7 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
     
     // Account Management
     Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');
+    Route::post('/inventory/stocks/add-from-order', [App\Http\Controllers\InventoryController::class, 'addStockFromOrder'])->name('inventory.stocks.addFromOrder');
 });
 
 /*
