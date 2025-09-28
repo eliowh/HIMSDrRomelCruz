@@ -123,7 +123,7 @@
     border: 1px solid #dee2e6;
 }
 
-.dropdown-content[style*="bottom: 100%"] {
+.dropdown-content[style*="bottom:"] {
     box-shadow: 0 -8px 16px rgba(0,0,0,0.15);
 }
 

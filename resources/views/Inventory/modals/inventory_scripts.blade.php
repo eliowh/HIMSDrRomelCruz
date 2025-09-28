@@ -171,7 +171,10 @@ document.addEventListener('DOMContentLoaded', function(){
     if (editBtn) {
         editBtn.addEventListener('click', function(){
             const s = window.__currentStock;
-            if (!s) return alert('No stock selected');
+            if (!s) {
+                showError('No stock selected', 'Selection Error');
+                return;
+            }
             document.getElementById('edit-id').value = s.id || s.item_code;
             document.getElementById('edit-item_code').value = s.item_code || '';
             document.getElementById('edit-generic_name').value = s.generic_name || '';
@@ -325,36 +328,38 @@ document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('.delete-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
             const id = this.getAttribute('data-id');
-            if (!confirm('Are you sure you want to delete this stock item? This cannot be undone.')) return;
+            showConfirm('Are you sure you want to delete this stock item? This cannot be undone.', 'Confirm Deletion', function(confirmed) {
+                if (!confirmed) return;
 
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-            fetch('{{ url('/inventory/stocks') }}/' + encodeURIComponent(id), {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': token,
-                    'Accept': 'application/json'
-                },
-                credentials: 'same-origin'
-            }).then(async res => {
-                const txt = await res.text();
-                let json = null;
-                try { json = JSON.parse(txt); } catch(e){}
-                if (!res.ok) {
-                    const msg = (json && json.message) ? json.message : txt || 'Delete failed';
-                    alert('Delete failed: ' + msg);
-                    return;
-                }
-                // success: remove row from DOM and clear details if necessary
-                const row = btn.closest('tr');
-                if (row) row.remove();
-                const detailsItem = document.getElementById('md-item_code');
-                if (detailsItem && detailsItem.textContent === id) {
-                    document.getElementById('detailsContent').style.display = 'none';
-                    document.getElementById('detailsEmpty').style.display = '';
-                }
-                alert('Deleted');
-            }).catch(e => { console.error(e); alert('Delete error: ' + e.message); });
+                fetch('{{ url('/inventory/stocks') }}/' + encodeURIComponent(id), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                }).then(async res => {
+                    const txt = await res.text();
+                    let json = null;
+                    try { json = JSON.parse(txt); } catch(e){}
+                    if (!res.ok) {
+                        const msg = (json && json.message) ? json.message : txt || 'Delete failed';
+                        showError('Delete failed: ' + msg, 'Deletion Error');
+                        return;
+                    }
+                    // success: remove row from DOM and clear details if necessary
+                    const row = btn.closest('tr');
+                    if (row) row.remove();
+                    const detailsItem = document.getElementById('md-item_code');
+                    if (detailsItem && detailsItem.textContent === id) {
+                        document.getElementById('detailsContent').style.display = 'none';
+                        document.getElementById('detailsEmpty').style.display = '';
+                    }
+                    showSuccess('Stock item deleted successfully!', 'Deleted');
+                }).catch(e => { console.error(e); showError('Delete error: ' + e.message, 'Network Error'); });
+            });
         });
     });
 });

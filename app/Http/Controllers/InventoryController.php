@@ -486,8 +486,18 @@ class InventoryController extends Controller
 
             \Log::info('Inventory.updateStock found stock', ['stock_before' => $stock->toArray()]);
 
-            // Use fill to update permitted attributes
-            $stock->fill($data);
+            // Update only fields that have values, preserve existing values for empty fields
+            foreach ($data as $key => $value) {
+                if ($key === 'expiry_date' || $key === 'date_received') {
+                    // Only update date fields if they have a value, otherwise keep existing
+                    if (!empty($value)) {
+                        $stock->$key = $value;
+                    }
+                } else {
+                    // For other fields, update normally (empty strings are allowed)
+                    $stock->$key = $value;
+                }
+            }
             $stock->save();
 
             // Refresh from DB (in case of casts/defaults)
@@ -562,72 +572,70 @@ class InventoryController extends Controller
 
     public function getStockByItemCode($itemCode)
     {
-        $stock = StocksReference::excludeHeader()->where('COL 1', $itemCode)->first();
+        $stock = StockPrice::where('item_code', $itemCode)->first();
         
         if (!$stock) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item not found'
+                'message' => 'Item not found in inventory'
             ], 404);
         }
         
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $stock->id ?? null,
-                'item_code' => $stock['COL 1'] ?? '',
-                'generic_name' => $stock['COL 2'] ?? '',
-                'brand_name' => $stock['COL 3'] ?? '',
-                'price' => $stock['COL 4'] ?? '',
-                'additional_info' => $stock['COL 5'] ?? '',
+                'id' => $stock->id,
+                'item_code' => $stock->item_code,
+                'generic_name' => $stock->generic_name ?? '',
+                'brand_name' => $stock->brand_name ?? '',
+                'price' => $stock->price,
+                'quantity' => $stock->quantity,
             ]
         ]);
     }
 
     /**
-     * Add or update stock from an approved pharmacy order.
+     * Process/encode an approved pharmacy order by deducting from existing stock.
      */
     public function addStockFromOrder(Request $request)
     {
         $data = $request->validate([
             'order_id' => ['required', 'integer', 'exists:stock_orders,id'],
             'item_code' => ['required', 'string', 'max:100'],
-            'generic_name' => ['nullable', 'string', 'max:255'],
-            'brand_name' => ['nullable', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'reorder_level' => ['nullable', 'integer', 'min:0'],
-            'expiry_date' => ['nullable', 'date'],
-            'supplier' => ['nullable', 'string', 'max:255'],
-            'batch_number' => ['nullable', 'string', 'max:100'],
-            'date_received' => ['nullable', 'date'],
-            'non_perishable' => ['nullable', 'string'],
         ]);
 
-        // If non-perishable is checked, expiry date should be null
-        if ($request->has('non_perishable') && $request->non_perishable === 'on') {
-            $data['expiry_date'] = null;
-        }
-
         try {
+            // Find the existing stock
             $stock = StockPrice::where('item_code', $data['item_code'])->first();
 
-            if ($stock) {
-                // Update existing stock
-                $stock->quantity = ($stock->quantity ?? 0) + intval($data['quantity']);
-                $stock->price = $data['price']; // Update price from the order/form
-                $stock->reorder_level = $data['reorder_level'] ?? $stock->reorder_level;
-                $stock->expiry_date = $data['expiry_date'] ?? $stock->expiry_date;
-                $stock->supplier = $data['supplier'] ?? $stock->supplier;
-                $stock->batch_number = $data['batch_number'] ?? $stock->batch_number;
-                $stock->date_received = $data['date_received'] ?? now();
-                $stock->save();
-                $message = 'Stock updated successfully from Order #' . $data['order_id'] . '. Added ' . $data['quantity'] . ' units.';
-            } else {
-                // Create new stock entry
-                $stock = StockPrice::create($data);
-                $message = 'New stock item created successfully from Order #' . $data['order_id'] . ' with ' . $data['quantity'] . ' units.';
+            if (!$stock) {
+                return response()->json([
+                    'ok' => false, 
+                    'message' => 'Stock item not found in inventory.'
+                ], 404);
             }
+
+            // Check if there's enough stock
+            if ($stock->quantity < $data['quantity']) {
+                return response()->json([
+                    'ok' => false, 
+                    'message' => 'Insufficient stock. Available: ' . $stock->quantity . ', Requested: ' . $data['quantity']
+                ], 400);
+            }
+
+            // Deduct the requested quantity
+            $stock->quantity -= intval($data['quantity']);
+            $stock->save();
+
+            // Update the order status to completed
+            $order = StockOrder::find($data['order_id']);
+            if ($order) {
+                $order->status = 'completed';
+                $order->save();
+            }
+
+            $message = 'Order #' . $data['order_id'] . ' processed successfully. Deducted ' . $data['quantity'] . ' units from stock. Remaining: ' . $stock->quantity;
 
             return response()->json([
                 'ok' => true, 
@@ -636,10 +644,10 @@ class InventoryController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Add stock from order error: ' . $e->getMessage());
+            \Log::error('Process pharmacy order error: ' . $e->getMessage());
             return response()->json([
                 'ok' => false, 
-                'message' => 'Failed to add stock from order: ' . $e->getMessage()
+                'message' => 'Failed to process order: ' . $e->getMessage()
             ], 500);
         }
     }

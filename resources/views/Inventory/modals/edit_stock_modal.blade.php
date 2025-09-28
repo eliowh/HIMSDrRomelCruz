@@ -22,7 +22,7 @@
                 </div>
                 <div class="form-group">
                     <label>Price</label>
-                    <input id="edit-price" name="price" type="number" step="1.00" min="0" onchange="formatDecimal(this, 2)" />
+                    <input id="edit-price" name="price" type="number" step="0.01" min="0" placeholder="0.00" onchange="formatDecimal(this, 2)" />
                 </div>
             </div>
 
@@ -88,7 +88,10 @@ function closeEditStockModal(){
 document.getElementById('editStockForm').addEventListener('submit', function(e){
     e.preventDefault();
     const id = document.getElementById('edit-id').value;
-    if (!id) return alert('Missing id');
+    if (!id) {
+        showError('Missing stock ID', 'Validation Error');
+        return;
+    }
 
     const payload = {
         item_code: document.getElementById('edit-item_code').value,
@@ -117,12 +120,12 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
         const ct = (res.headers.get('content-type')||'').toLowerCase();
         if (!res.ok) {
             let msg = txt; if (ct.includes('application/json')) { try{ msg = JSON.parse(txt).message || txt; }catch(e){} }
-            alert('Update failed: ' + JSON.stringify(msg));
+            showError('Update failed: ' + JSON.stringify(msg), 'Update Error');
             return;
         }
         if (ct.includes('application/json')) {
             let j = null;
-            try { j = JSON.parse(txt); } catch(e){ console.error('Invalid JSON', txt); alert('Invalid server response'); return; }
+            try { j = JSON.parse(txt); } catch(e){ console.error('Invalid JSON', txt); showError('Invalid server response', 'Server Error'); return; }
 
             // If validation errors or not ok, show details
             if (!j.ok) {
@@ -130,11 +133,11 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
                 if (j.errors) {
                     const msgs = [];
                     for (const k in j.errors) { if (Array.isArray(j.errors[k])) msgs.push(j.errors[k].join(', ')); }
-                    alert('Update failed: ' + msgs.join(' / '));
+                    showError('Update failed: ' + msgs.join(' / '), 'Validation Error');
                     console.warn('Validation errors', j.errors);
                     return;
                 }
-                alert('Update failed: ' + (j.message || JSON.stringify(j)));
+                showError(j.message || 'Update failed', 'Update Error');
                 console.warn('Update failed payload', j);
                 return;
             }
@@ -180,14 +183,14 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
             }
 
             closeEditStockModal();
-            alert('Updated');
+            showSuccess('Stock updated successfully!', 'Stock Updated');
             return;
         } else {
             // Non-JSON response: reload to reflect changes
             console.warn('Non-JSON response, reloading');
             location.reload();
         }
-    }).catch(e => { console.error(e); alert('Update failed: ' + e.message); })
+    }).catch(e => { console.error(e); showError('Update failed: ' + e.message, 'Network Error'); })
     .finally(()=>{ submitBtn.textContent = orig; submitBtn.disabled = false; });
 });
 

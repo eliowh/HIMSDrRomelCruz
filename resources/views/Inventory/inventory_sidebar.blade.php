@@ -42,19 +42,10 @@
         </ul>
         <form action="{{ url('/logout') }}" method="POST" id="inventory-logout-form" class="logout-form">
             @csrf
-            <button type="button" class="sidebar-btn" onclick="confirmLogout()">
+            <button type="button" class="sidebar-btn" onclick="confirmLogout('inventory-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>
             </button>
         </form>
-        
-        <script>
-            function confirmLogout() {
-                if (confirm('Are you sure you want to logout?')) {
-                    localStorage.clear();
-                    document.getElementById('inventory-logout-form').submit();
-                }
-            }
-        </script>
     </nav>
 </div>
 
@@ -123,3 +114,5 @@
         }
     });
 </script>
+@include('Inventory.modals.notification_system')
+@include('shared.logout_modal')

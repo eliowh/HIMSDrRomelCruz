@@ -1,12 +1,6 @@
 @php
     $nurseName = auth()->user()->name ?? 'Nurse';
 @endphp
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nurse Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/nursecss/nurse.css')}}">
-</head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
@@ -53,19 +47,10 @@
         </ul>
         <form action="{{ url('/logout') }}" method="POST" id="nurse-logout-form" class="logout-form">
             @csrf
-            <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout()">
-                <span class="icon">🚪</span> <span class="text">Log Out</span>
+            <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout('nurse-logout-form')">
+                <span class="icon">🚪</span> <span class="text">Logout</span>
             </button>
         </form>
-        
-        <script>
-            function confirmLogout() {
-                if (confirm('Are you sure you want to logout?')) {
-                    localStorage.clear();
-                    document.getElementById('nurse-logout-form').submit();
-                }
-            }
-        </script>
     </nav>
 </div>
 
@@ -212,3 +197,4 @@
         });
     });
 </script>
+@include('shared.logout_modal')

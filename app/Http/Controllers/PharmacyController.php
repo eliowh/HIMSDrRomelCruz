@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\StockOrder;
-use App\Models\StocksReference;
+use App\Models\StockPrice;
 
 class PharmacyController extends Controller
 {
@@ -243,33 +243,35 @@ class PharmacyController extends Controller
         $search = $request->get('search', '');
         $type = $request->get('type', 'all'); // 'item_code', 'generic_name', 'brand_name', or 'all'
         
-        $query = StocksReference::excludeHeader();
+        $query = StockPrice::where('quantity', '>', 0); // Only show items in stock
         
         if ($search) {
             switch ($type) {
                 case 'item_code':
-                    $query->where('COL 1', 'like', '%' . $search . '%');
+                    $query->where('item_code', 'like', '%' . $search . '%');
                     break;
                 case 'generic_name':
-                    $query->hasGenericName()
-                          ->where('COL 2', 'like', '%' . $search . '%');
+                    $query->whereNotNull('generic_name')
+                          ->where('generic_name', '!=', '')
+                          ->where('generic_name', 'like', '%' . $search . '%');
                     break;
                 case 'brand_name':
-                    $query->hasBrandName()
-                          ->where('COL 3', 'like', '%' . $search . '%');
+                    $query->whereNotNull('brand_name')
+                          ->where('brand_name', '!=', '')
+                          ->where('brand_name', 'like', '%' . $search . '%');
                     break;
                 default:
                     $query->where(function($q) use ($search) {
-                        $q->where('COL 1', 'like', '%' . $search . '%')
+                        $q->where('item_code', 'like', '%' . $search . '%')
                           ->orWhere(function($subQ) use ($search) {
-                              $subQ->where('COL 2', '!=', '')
-                                   ->whereNotNull('COL 2')
-                                   ->where('COL 2', 'like', '%' . $search . '%');
+                              $subQ->whereNotNull('generic_name')
+                                   ->where('generic_name', '!=', '')
+                                   ->where('generic_name', 'like', '%' . $search . '%');
                           })
                           ->orWhere(function($subQ) use ($search) {
-                              $subQ->where('COL 3', '!=', '')
-                                   ->whereNotNull('COL 3')
-                                   ->where('COL 3', 'like', '%' . $search . '%');
+                              $subQ->whereNotNull('brand_name')
+                                   ->where('brand_name', '!=', '')
+                                   ->where('brand_name', 'like', '%' . $search . '%');
                           });
                     });
             }
@@ -281,12 +283,12 @@ class PharmacyController extends Controller
             'success' => true,
             'data' => $stocks->map(function($stock) {
                 return [
-                    'id' => $stock->id ?? null,
-                    'item_code' => $stock['COL 1'] ?? '',
-                    'generic_name' => $stock['COL 2'] ?? '',
-                    'brand_name' => $stock['COL 3'] ?? '',
-                    'price' => $stock['COL 4'] ?? '',
-                    'additional_info' => $stock['COL 5'] ?? '',
+                    'id' => $stock->id,
+                    'item_code' => $stock->item_code,
+                    'generic_name' => $stock->generic_name ?? '',
+                    'brand_name' => $stock->brand_name ?? '',
+                    'price' => $stock->price,
+                    'quantity_available' => $stock->quantity,
                 ];
             })
         ]);
@@ -294,24 +296,26 @@ class PharmacyController extends Controller
 
     public function getStockByItemCode($itemCode)
     {
-        $stock = StocksReference::excludeHeader()->where('COL 1', $itemCode)->first();
+        $stock = StockPrice::where('item_code', $itemCode)
+                          ->where('quantity', '>', 0)
+                          ->first();
         
         if (!$stock) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item not found'
+                'message' => 'Item not found or out of stock'
             ], 404);
         }
         
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $stock->id ?? null,
-                'item_code' => $stock['COL 1'] ?? '',
-                'generic_name' => $stock['COL 2'] ?? '',
-                'brand_name' => $stock['COL 3'] ?? '',
-                'price' => $stock['COL 4'] ?? '',
-                'additional_info' => $stock['COL 5'] ?? '',
+                'id' => $stock->id,
+                'item_code' => $stock->item_code,
+                'generic_name' => $stock->generic_name ?? '',
+                'brand_name' => $stock->brand_name ?? '',
+                'price' => $stock->price,
+                'quantity_available' => $stock->quantity,
             ]
         ]);
     }

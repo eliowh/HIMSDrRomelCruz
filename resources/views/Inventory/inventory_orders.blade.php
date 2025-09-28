@@ -154,74 +154,70 @@
     <script>
         function toggleDropdown(orderId) {
             const dropdown = document.getElementById(`dropdown-${orderId}`);
-            const button = dropdown.previousElementSibling;
             
-            // Close all other dropdowns and restore them
-            document.querySelectorAll('.dropdown-content').forEach(dd => {
+            // Close all other dropdowns first
+            document.querySelectorAll('.dropdown-content.show').forEach(dd => {
                 if (dd.id !== `dropdown-${orderId}`) {
                     dd.classList.remove('show');
-                    // Restore dropdown to its original parent if it was moved
-                    const originalParent = document.getElementById(dd.dataset.originalParent);
-                    if (originalParent && dd.parentElement !== originalParent) {
-                        originalParent.appendChild(dd);
-                        dd.style.position = '';
-                        dd.style.top = '';
-                        dd.style.left = '';
-                        dd.style.right = '';
-                    }
+                    // Reset any positioning styles
+                    dd.style.position = '';
+                    dd.style.top = '';
+                    dd.style.left = '';
+                    dd.style.right = '';
+                    dd.style.bottom = '';
                 }
             });
-            
+
+            // Toggle the current dropdown
             if (dropdown.classList.contains('show')) {
-                // Hide dropdown and restore to original position
                 dropdown.classList.remove('show');
-                const originalParent = document.getElementById(dropdown.dataset.originalParent);
-                if (originalParent && dropdown.parentElement !== originalParent) {
-                    originalParent.appendChild(dropdown);
-                    dropdown.style.position = '';
-                    dropdown.style.top = '';
-                    dropdown.style.left = '';
-                    dropdown.style.right = '';
-                }
+                // Reset positioning styles
+                dropdown.style.position = '';
+                dropdown.style.top = '';
+                dropdown.style.left = '';
+                dropdown.style.right = '';
+                dropdown.style.bottom = '';
             } else {
-                // Store original parent before moving
-                const originalParent = dropdown.parentElement;
-                if (!dropdown.dataset.originalParent) {
-                    originalParent.id = originalParent.id || `action-container-${orderId}`;
-                    dropdown.dataset.originalParent = originalParent.id;
-                }
-                
-                // Move dropdown to main-content to avoid any container constraints
-                const mainContent = document.querySelector('.main-content');
-                mainContent.appendChild(dropdown);
-                
-                // Get button position relative to viewport
+                const button = dropdown.previousElementSibling;
                 const buttonRect = button.getBoundingClientRect();
-                const dropdownHeight = 160; // Estimated dropdown height
+                const dropdownRect = dropdown.getBoundingClientRect();
                 const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
                 
-                // Position dropdown
+                // Calculate if dropdown would go off-screen
+                const spaceBelow = viewportHeight - buttonRect.bottom;
+                const spaceAbove = buttonRect.top;
+                const spaceRight = viewportWidth - buttonRect.right;
+                
+                // Position dropdown without moving it in the DOM
                 dropdown.style.position = 'fixed';
                 dropdown.style.zIndex = '9999';
-                dropdown.style.right = 'auto';
                 
-                // Check if there's enough space below
-                if (buttonRect.bottom + dropdownHeight > viewportHeight && buttonRect.top > dropdownHeight) {
-                    // Show above button
-                    dropdown.style.top = (buttonRect.top - dropdownHeight) + 'px';
-                } else {
-                    // Show below button
+                // Vertical positioning
+                if (spaceBelow >= 160 || spaceBelow > spaceAbove) {
+                    // Show below
                     dropdown.style.top = buttonRect.bottom + 'px';
+                    dropdown.style.bottom = 'auto';
+                } else {
+                    // Show above
+                    dropdown.style.bottom = (viewportHeight - buttonRect.top) + 'px';
+                    dropdown.style.top = 'auto';
                 }
                 
-                // Align right edge of dropdown with right edge of button
-                dropdown.style.left = (buttonRect.right - 160) + 'px'; // 160px is min-width of dropdown
+                // Horizontal positioning
+                if (spaceRight >= 160) {
+                    // Align with right edge of button
+                    dropdown.style.left = (buttonRect.right - 160) + 'px';
+                    dropdown.style.right = 'auto';
+                } else {
+                    // Align with left edge if not enough space on the right
+                    dropdown.style.right = (viewportWidth - buttonRect.right) + 'px';
+                    dropdown.style.left = 'auto';
+                }
                 
                 dropdown.classList.add('show');
             }
-        }
-
-        function viewOrderDetails(orderId) {
+        }        function viewOrderDetails(orderId) {
             document.getElementById(`dropdown-${orderId}`).classList.remove('show');
             
             // Find the order data from the table
@@ -311,30 +307,33 @@
             document.getElementById(`dropdown-${orderId}`).classList.remove('show');
             
             const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-            if(confirm(`Are you sure you want to ${statusText.toLowerCase()} this order?`)) {
-                fetch(`/inventory/orders/${orderId}/update-status`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ status: status })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        alert(`Order ${statusText.toLowerCase()} successfully!`);
-                        location.reload();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error updating order status');
-                });
-            }
+            showConfirm(`Are you sure you want to ${statusText.toLowerCase()} this order?`, 'Confirm Status Change', function(confirmed) {
+                if (confirmed) {
+                    fetch(`/inventory/orders/${orderId}/update-status`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ status: status })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.success) {
+                            showSuccess(`Order ${statusText.toLowerCase()} successfully!`, 'Status Updated', function() {
+                                location.reload();
+                            });
+                        } else {
+                            showError(data.message || 'Failed to update order status', 'Update Failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showError('Error updating order status. Please try again.', 'Network Error');
+                    });
+                }
+            });
         }
 
         function openEncodeModal(orderId, itemCode, genericName, brandName, quantity, price) {
@@ -343,7 +342,40 @@
             document.getElementById('encode-generic_name').value = genericName;
             document.getElementById('encode-brand_name').value = brandName;
             document.getElementById('encode-quantity').value = quantity;
-            document.getElementById('encode-price').value = price;
+
+            // Fetch current stock availability
+            fetch(`/inventory/stocks-reference/${itemCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const availableQty = data.data.quantity || 0;
+                        document.getElementById('available-quantity').value = `${availableQty} units available`;
+                        
+                        // Show warning if insufficient stock
+                        const stockAvailability = document.getElementById('stock-availability');
+                        if (availableQty < quantity) {
+                            stockAvailability.innerHTML = `
+                                <label style="color: #dc3545;">Available in Stock (Insufficient!)</label>
+                                <input id="available-quantity" type="text" readonly style="background: #f8d7da; color: #721c24; font-weight: bold;" value="${availableQty} units available (Need ${quantity})" />
+                            `;
+                        } else {
+                            stockAvailability.innerHTML = `
+                                <label>Available in Stock</label>
+                                <input id="available-quantity" type="text" readonly style="background: #d4edda; color: #155724; font-weight: bold;" value="${availableQty} units available" />
+                            `;
+                        }
+                    } else {
+                        document.getElementById('available-quantity').value = 'Item not found in stock';
+                        document.getElementById('stock-availability').innerHTML = `
+                            <label style="color: #dc3545;">Available in Stock (Not Found!)</label>
+                            <input id="available-quantity" type="text" readonly style="background: #f8d7da; color: #721c24; font-weight: bold;" value="Item not found in inventory" />
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking stock:', error);
+                    document.getElementById('available-quantity').value = 'Error checking stock';
+                });
 
             const modal = document.getElementById('encodeStockModal');
             modal.style.display = 'flex';
@@ -380,29 +412,23 @@
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    alert(data.message || 'Stock encoded successfully!');
                     closeEncodeStockModal();
-                    // Optionally, mark the order as completed
-                    updateOrderStatus(formData.get('order_id'), 'completed');
+                    showSuccess(data.message || 'Order processed successfully!', 'Order Processed', function() {
+                        // Refresh the page to show updated order status
+                        window.location.reload();
+                    });
                 } else {
-                    alert('Error: ' + (data.message || 'Failed to encode stock'));
+                    showError(data.message || 'Failed to process order', 'Processing Error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error encoding stock. Please try again.');
+                showError('Error processing order. Please try again.', 'Network Error');
             })
             .finally(() => {
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             });
-        });
-
-        document.getElementById('encode-non-perishable').addEventListener('change', function() {
-            document.getElementById('encode-expiry-date').disabled = this.checked;
-            if (this.checked) {
-                document.getElementById('encode-expiry-date').value = '';
-            }
         });
 
         // Close dropdowns when clicking outside
@@ -414,7 +440,5 @@
             }
         });
     </script>
-
-
 </body>
 </html>

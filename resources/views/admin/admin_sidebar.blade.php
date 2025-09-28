@@ -53,20 +53,11 @@
             <li>
                 <form action="{{ url('/logout') }}" method="POST" id="logout-form" class="logout-form">
                     @csrf
-                    <button type="button" class="sidebar-btn" onclick="confirmLogout()">
+                    <button type="button" class="sidebar-btn" onclick="confirmLogout('logout-form')">
                         <span class="icon">🚪</span> <span class="text">Log Out</span>
                     </button>
                 </form>
             </li>
-
-            <script>
-                function confirmLogout() {
-                    if (confirm('Are you sure you want to logout?')) {
-                        localStorage.clear();
-                        document.getElementById('logout-form').submit();
-                    }
-                }
-            </script>
         </ul>
     </nav>
 </div>
@@ -176,3 +167,4 @@
         });
     });
 </script>
+@include('shared.logout_modal')

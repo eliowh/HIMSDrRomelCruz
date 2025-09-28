@@ -282,8 +282,17 @@ class UserController extends Controller
     }
 
     public function logout(){
+        // Clear the session and logout
         auth()->logout();
-        return redirect('/login');
+        
+        // Invalidate the session
+        request()->session()->invalidate();
+        
+        // Regenerate the CSRF token
+        request()->session()->regenerateToken();
+        
+        // Redirect to logout success page
+        return view('logout_success');
     }
 
 }

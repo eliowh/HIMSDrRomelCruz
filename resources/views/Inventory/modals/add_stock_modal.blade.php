@@ -245,21 +245,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const price = parseFloat(formData.get('price') || 0);
         
         if (!itemCode || itemCode.trim() === '') {
-            alert('Please enter an item code');
+            showError('Please enter an item code', 'Validation Error');
             submitBtn.textContent = originalText; 
             submitBtn.disabled = false; 
             return;
         }
         
         if (!quantity || quantity <= 0) {
-            alert('Please enter a valid quantity');
+            showError('Please enter a valid quantity', 'Validation Error');
             submitBtn.textContent = originalText; 
             submitBtn.disabled = false; 
             return;
         }
         
         if (!price || price <= 0) {
-            alert('Please enter a valid price');
+            showError('Please enter a valid price', 'Validation Error');
             submitBtn.textContent = originalText; 
             submitBtn.disabled = false; 
             return;
@@ -276,16 +276,17 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.ok) {
-                alert(data.message || 'Stock added successfully!');
                 closeAddStockModal();
-                location.reload();
+                showSuccess(data.message || 'Stock added successfully!', 'Stock Added', function() {
+                    location.reload();
+                });
             } else {
-                alert('Error: ' + (data.message || 'Failed to add stock'));
+                showError(data.message || 'Failed to add stock', 'Add Stock Error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error adding stock. Please try again.');
+            showError('Error adding stock. Please try again.', 'Network Error');
         })
         .finally(() => {
             submitBtn.textContent = originalText; 

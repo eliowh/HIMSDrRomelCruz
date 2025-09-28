@@ -141,6 +141,7 @@
     <!-- Include modals from separate files -->
     @include('Inventory.modals.edit_stock_modal')
     @include('Inventory.modals.add_stock_modal')
+    @include('Inventory.modals.notification_system')
     @include('Inventory.modals.inventory_scripts')
 
 

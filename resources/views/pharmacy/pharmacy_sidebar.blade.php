@@ -35,19 +35,10 @@
         </ul>
         <form action="{{ url('/logout') }}" method="POST" id="pharmacy-logout-form" class="logout-form">
             @csrf
-            <button type="button" class="sidebar-btn" onclick="confirmLogout()">
+            <button type="button" class="sidebar-btn" onclick="confirmLogout('pharmacy-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>
             </button>
         </form>
-        
-        <script>
-            function confirmLogout() {
-                if (confirm('Are you sure you want to logout?')) {
-                    localStorage.clear();
-                    document.getElementById('pharmacy-logout-form').submit();
-                }
-            }
-        </script>
     </nav>
 </div>
 
@@ -156,3 +147,4 @@
         });
     });
 </script>
+@include('shared.logout_modal')

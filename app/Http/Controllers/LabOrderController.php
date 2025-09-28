@@ -17,14 +17,23 @@ class LabOrderController extends Controller
             ->orderBy('requested_at', 'desc');
             
         // Apply status filter if provided
-        $status = $request->input('status');
-        if ($status && in_array($status, ['pending', 'in_progress', 'completed', 'cancelled'])) {
+        $status = $request->input('status', 'all');
+        if ($status && $status !== 'all' && in_array($status, ['pending', 'in_progress', 'completed', 'cancelled'])) {
             $query->where('status', $status);
         }
         
         $orders = $query->paginate(10);
 
-        return view('labtech.labtech_orders', compact('orders'));
+        // Calculate status counts for filter tabs
+        $statusCounts = [
+            'all' => LabOrder::count(),
+            'pending' => LabOrder::where('status', 'pending')->count(),
+            'in_progress' => LabOrder::where('status', 'in_progress')->count(),
+            'completed' => LabOrder::where('status', 'completed')->count(),
+            'cancelled' => LabOrder::where('status', 'cancelled')->count(),
+        ];
+
+        return view('labtech.labtech_orders', compact('orders', 'status', 'statusCounts'));
     }
 
     public function store(Request $request)

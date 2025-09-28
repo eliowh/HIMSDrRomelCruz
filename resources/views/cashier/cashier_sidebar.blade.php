@@ -41,19 +41,10 @@
         </ul>
         <form action="{{ url('/logout') }}" method="POST" id="cashier-logout-form" class="logout-form">
             @csrf
-            <button type="button" class="sidebar-btn" onclick="confirmLogout()">
+            <button type="button" class="sidebar-btn" onclick="confirmLogout('cashier-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Log Out</span>
             </button>
         </form>
-        
-        <script>
-            function confirmLogout() {
-                if (confirm('Are you sure you want to logout?')) {
-                    localStorage.clear();
-                    document.getElementById('cashier-logout-form').submit();
-                }
-            }
-        </script>
     </nav>
 </div>
 
@@ -162,3 +153,4 @@
         });
     });
 </script>
+@include('shared.logout_modal')

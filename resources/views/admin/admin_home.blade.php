@@ -220,6 +220,6 @@
             const modal = document.getElementById('addRoomModal');
             if (modal) modal.style.display = 'none';
         }
-        </script>
+        </script>        
     </body>
 </html>
