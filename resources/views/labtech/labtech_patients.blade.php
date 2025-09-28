@@ -230,6 +230,9 @@
                 document.getElementById('testHistoryEmpty').style.display = 'none';
                 document.getElementById('testHistoryList').style.display = 'none';
                 
+                // Add modal-open class to body to prevent layout shifts
+                document.body.classList.add('modal-open');
+                
                 // Show the modal
                 testHistoryModal.classList.add('show');
                 
@@ -239,6 +242,8 @@
             
             function closeTestHistoryModal() {
                 testHistoryModal.classList.remove('show');
+                // Remove modal-open class from body
+                document.body.classList.remove('modal-open');
             }
             
             function fetchPatientTestHistory(patientId) {
@@ -327,11 +332,6 @@
                             ` : ''}
                         </div>
                         <div class="test-actions">
-                            ${test.status === 'completed' && test.results_pdf_path ? `
-                                <button class="btn view-pdf-btn" onclick="viewTestPdf(${test.id})">
-                                    <i class="fas fa-file-pdf"></i> View Results
-                                </button>
-                            ` : ''}
                             <button class="btn view-btn" onclick="viewTestDetails(${test.id})">
                                 Details
                             </button>
@@ -342,14 +342,37 @@
                 });
             }
             
-            // Function to view test PDF (to be implemented in the controller)
-            function viewTestPdf(testId) {
-                window.open(`/labtech/orders/view-pdf/${testId}`, '_blank');
+            // Function to view test details - opens the lab orders page and highlights the specific order
+            window.viewTestDetails = function(testId) {
+                // Store the test ID to highlight in sessionStorage
+                sessionStorage.setItem('highlightTestId', testId);
+                // Navigate to lab orders page
+                window.location.href = '{{ route("labtech.orders") }}';
             }
-            
-            // Function to view test details (to be implemented in the controller)
-            function viewTestDetails(testId) {
-                window.location.href = `/labtech/orders?highlight=${testId}`;
+
+            // Function to view test PDF results
+            window.viewTestPdf = function(testId) {
+                // First check if the PDF exists
+                fetch(`/labtech/orders/check-pdf/${testId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.pdf_exists) {
+                        // Open PDF in new tab
+                        window.open(`/labtech/orders/view-pdf/${testId}`, '_blank');
+                    } else {
+                        alert('PDF results not available for this test.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking PDF:', error);
+                    // Try to open anyway as fallback
+                    window.open(`/labtech/orders/view-pdf/${testId}`, '_blank');
+                });
             }
             
             // Event listeners for the test history button and modal
@@ -364,6 +387,9 @@
                     closeTestHistoryModal();
                 }
             });
+            
+            // Make closeTestHistoryModal globally accessible for the modal close button
+            window.closeTestHistoryModal = closeTestHistoryModal;
         });
     </script>
 </body>

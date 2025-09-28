@@ -181,4 +181,55 @@ class LabOrderController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check if PDF results exist for a lab order
+     */
+    public function checkPdf($orderId)
+    {
+        try {
+            $order = LabOrder::findOrFail($orderId);
+            
+            $pdfExists = false;
+            if ($order->results_pdf_path && Storage::exists($order->results_pdf_path)) {
+                $pdfExists = true;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'pdf_exists' => $pdfExists,
+                'pdf_path' => $order->results_pdf_path
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error checking PDF for order ' . $orderId . ': ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking PDF availability'
+            ], 500);
+        }
+    }
+
+    /**
+     * View PDF results for a lab order
+     */
+    public function viewPdf($orderId)
+    {
+        try {
+            $order = LabOrder::findOrFail($orderId);
+            
+            if (!$order->results_pdf_path || !Storage::exists($order->results_pdf_path)) {
+                abort(404, 'PDF results not found');
+            }
+            
+            $pdfContent = Storage::get($order->results_pdf_path);
+            
+            return response($pdfContent)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'inline; filename="test_results_' . $orderId . '.pdf"');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error viewing PDF for order ' . $orderId . ': ' . $e->getMessage());
+            abort(500, 'Error loading PDF results');
+        }
+    }
 }

@@ -157,6 +157,8 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     // Patient Management
     Route::get('/labtech/patients', [PatientController::class, 'labtechPatients'])->name('labtech.patients');
     Route::get('/labtech/patients/{patient}/test-history', [LabOrderController::class, 'getPatientTestHistory'])->name('labtech.patient.testHistory');
+    Route::get('/labtech/orders/{orderId}/check-pdf', [LabOrderController::class, 'checkPdf'])->name('labtech.order.checkPdf');
+    Route::get('/labtech/orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('labtech.order.viewPdf');
     
     // Account Management
     Route::get('/labtech/account', function () {

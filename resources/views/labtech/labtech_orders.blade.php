@@ -23,11 +23,21 @@
             <h2>Lab Orders</h2>
             <!-- Filter Tabs -->
             <div class="filter-tabs">
-                <button class="tab-btn active" data-status="all">All Orders</button>
-                <button class="tab-btn" data-status="pending">Pending</button>
-                <button class="tab-btn" data-status="in_progress">In Progress</button>
-                <button class="tab-btn" data-status="completed">Completed</button>
-                <button class="tab-btn" data-status="cancelled">Cancelled</button>
+                <button class="tab-btn {{ $status === 'all' ? 'active' : '' }}" data-status="all">
+                    All Orders <span class="count-badge">{{ $statusCounts['all'] }}</span>
+                </button>
+                <button class="tab-btn {{ $status === 'pending' ? 'active' : '' }}" data-status="pending">
+                    Pending <span class="count-badge">{{ $statusCounts['pending'] }}</span>
+                </button>
+                <button class="tab-btn {{ $status === 'in_progress' ? 'active' : '' }}" data-status="in_progress">
+                    In Progress <span class="count-badge">{{ $statusCounts['in_progress'] }}</span>
+                </button>
+                <button class="tab-btn {{ $status === 'completed' ? 'active' : '' }}" data-status="completed">
+                    Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
+                </button>
+                <button class="tab-btn {{ $status === 'cancelled' ? 'active' : '' }}" data-status="cancelled">
+                    Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
+                </button>
             </div>
 
             <div class="labtech-card">
@@ -275,33 +285,29 @@
             }
         }
 
-        // Tab filtering with server-side pagination
+        // Tab filtering with loading indicator
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const status = this.dataset.status;
                 
                 // Only redirect if status changed
                 if (status !== currentStatus) {
-                    currentStatus = status;
-                    
-                    // Update active tab
-                    document.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
-                    this.classList.add('active');
-                    
+                    // Add loading state
+                    this.disabled = true;
+                    this.innerHTML = this.innerHTML.replace('</span>', '</span> <i class="fas fa-spinner fa-spin"></i>');
+
                     // Build the new URL - reset to page 1 when changing tabs
                     const currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.delete('page'); // Reset to page 1
                     
                     if(status === 'all') {
-                        // Remove status parameter for "All" tab
                         currentUrl.searchParams.delete('status');
-                        // Reload the page instead of just pushing state to ensure proper pagination
-                        window.location.href = currentUrl.toString();
                     } else {
                         currentUrl.searchParams.set('status', status);
-                        // Reload the page instead of just pushing state to ensure proper pagination
-                        window.location.href = currentUrl.toString();
                     }
+                    
+                    // Navigate to the new URL
+                    window.location.href = currentUrl.toString();
                 }
             });
         });
@@ -729,6 +735,42 @@
                 });
             }
         }
+
+        // Check for highlight parameter on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const highlightTestId = sessionStorage.getItem('highlightTestId');
+            if (highlightTestId) {
+                // Clear the highlight ID from session storage
+                sessionStorage.removeItem('highlightTestId');
+                
+                // Find and highlight the order row
+                const orderRows = document.querySelectorAll('.order-row');
+                orderRows.forEach(row => {
+                    const orderIdCell = row.querySelector('.order-id');
+                    if (orderIdCell) {
+                        const orderId = orderIdCell.getAttribute('data-value');
+                        if (orderId == highlightTestId) {
+                            // Highlight the row
+                            row.style.backgroundColor = '#fff3cd';
+                            row.style.border = '2px solid #ffc107';
+                            row.style.boxShadow = '0 0 10px rgba(255, 193, 7, 0.5)';
+                            
+                            // Scroll to the row
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Remove highlight after 5 seconds
+                            setTimeout(() => {
+                                row.style.backgroundColor = '';
+                                row.style.border = '';
+                                row.style.boxShadow = '';
+                            }, 5000);
+                            
+                            return;
+                        }
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

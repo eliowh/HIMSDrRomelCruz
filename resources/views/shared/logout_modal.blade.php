@@ -1,4 +1,6 @@
 <!-- Universal Logout Confirmation Modal -->
+<!-- Ensure Font Awesome is available for the modal -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <div id="logoutModal" class="logout-modal-overlay" style="display: none;">
     <div class="logout-modal">
         <div class="logout-modal-header">
@@ -13,10 +15,10 @@
         </div>
         <div class="logout-modal-footer">
             <button id="confirmLogoutBtn" class="btn-logout-confirm">
-                <i class="fas fa-check"></i> Yes, Logout
+                <i class="fas fa-check" aria-hidden="true"></i> Yes, Logout
             </button>
             <button id="cancelLogoutBtn" class="btn-logout-cancel">
-                <i class="fas fa-times"></i> Cancel
+                <i class="fas fa-times" aria-hidden="true"></i> Cancel
             </button>
         </div>
     </div>
@@ -59,6 +61,14 @@
     font-size: 48px;
     margin-bottom: 15px;
     opacity: 0.9;
+}
+
+/* Ensure icons in buttons are always displayed */
+.logout-modal-footer .fas {
+    display: inline-block !important;
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-style: normal !important;
 }
 
 .logout-modal-header h3 {
@@ -126,6 +136,17 @@
 .btn-logout-cancel:hover {
     background: #545b62;
     transform: translateY(-1px);
+}
+
+/* Additional icon styles to ensure they display correctly */
+.btn-logout-confirm i.fas.fa-check, 
+.btn-logout-cancel i.fas.fa-times {
+    font-size: 14px;
+    line-height: 1;
+    width: 14px;
+    height: 14px;
+    text-align: center;
+    vertical-align: middle;
 }
 
 /* Animations */
@@ -204,11 +225,23 @@ window.LogoutModal = {
         const body = modal.querySelector('.logout-modal-body');
         
         modal.classList.add('logging-out');
-        body.innerHTML = `
-            <div class="logout-spinner"></div>
-            <p>Logging you out...</p>
-            <p class="logout-warning">Please wait while we securely log you out.</p>
-        `;
+        
+        // Create elements instead of using innerHTML for better reliability
+        body.innerHTML = ''; // Clear existing content
+        
+        const spinner = document.createElement('div');
+        spinner.className = 'logout-spinner';
+        
+        const message = document.createElement('p');
+        message.textContent = 'Logging you out...';
+        
+        const warning = document.createElement('p');
+        warning.className = 'logout-warning';
+        warning.textContent = 'Please wait while we securely log you out.';
+        
+        body.appendChild(spinner);
+        body.appendChild(message);
+        body.appendChild(warning);
         
         // Clear localStorage and submit form
         localStorage.clear();

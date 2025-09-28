@@ -46,6 +46,7 @@ body {
     width: 100%;
     min-height: 100vh;
     margin-top: 100px;
+    position: relative;
 }
 .sidebar {
     width: 260px;
@@ -59,9 +60,11 @@ body {
     margin-bottom: 20px;
     margin-left: 20px;
     flex-grow: 0;
+    flex-shrink: 0;
     z-index: 10;
     max-height: 98vh;
     transition: width 0.3s ease;
+    position: relative;
 }
 .sidebar.collapsed {
     width: 60px;
@@ -302,6 +305,20 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    overflow-y: auto;
+}
+
+/* Prevent body scroll and layout shifts when modal is open */
+body.modal-open {
+    overflow: hidden;
+    padding-right: 0;
+}
+
+/* Ensure sidebar stays fixed when modal opens */
+.modal.show ~ .labtech-layout .sidebar,
+.modal.show + * .sidebar {
+    position: relative;
+    flex-shrink: 0;
 }
 
 .modal.show {
@@ -1148,4 +1165,48 @@ th.sortable:hover {
 #cancelReasonModal .complete-btn:hover {
     background-color: #c82333;
     border-color: #bd2130;
+}
+
+/* Filter Tabs Styles */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: 2px solid #367F2B;
+    background: white;
+    color: #367F2B;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn.active, .tab-btn:hover {
+    background: #367F2B;
+    color: white;
+}
+
+.count-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: inherit;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 16px;
+    text-align: center;
+}
+
+.tab-btn.active .count-badge,
+.tab-btn:hover .count-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
 }

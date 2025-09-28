@@ -50,9 +50,6 @@
         </div>
         
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeTestHistoryModal()">
-                <i class="fas fa-times"></i> Close
-            </button>
             <button class="btn btn-primary" onclick="printTestHistory()" id="printHistoryBtn" style="display:none;">
                 <i class="fas fa-print"></i> Print History
             </button>
