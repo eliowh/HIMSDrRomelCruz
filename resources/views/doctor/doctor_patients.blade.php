@@ -1,8 +1,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Records</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">                                <td class="patient-age">
+                                    @php
+                                        $ageYears = $patient->date_of_birth ? intval(\Carbon\Carbon::parse($patient->date_of_birth)->diffInYears(now())) : null;
+                                    @endphp
+                                    {{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}
+                                </td>title>Patient Records</title>
     <link rel="stylesheet" href="{{url('css/doctorcss/doctor.css')}}">
     <link rel="stylesheet" href="{{url('css/pagination.css')}}">
 </head>
@@ -123,7 +127,12 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="patient-age">{{ $patient->age }} years</td>
+                                <td class="patient-age">
+                                    @php
+                                        $ageYears = $patient->date_of_birth ? \\Carbon\\Carbon::parse($patient->date_of_birth)->diffInYears(now()) : null;
+                                    @endphp
+                                    {{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}
+                                </td>
                                 <td class="patient-gender">{{ $patient->gender }}</td>
                                 <td class="patient-room">
                                     @if($patient->room_number)

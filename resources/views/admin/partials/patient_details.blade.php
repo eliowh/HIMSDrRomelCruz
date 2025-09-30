@@ -16,7 +16,22 @@
             </div>
             <div class="info-row">
                 <span class="label">Age:</span>
-                <span class="value">{{ $patient->age ?? 'N/A' }} years old</span>
+                @php
+                    $age = 'N/A';
+                    if ($patient->date_of_birth) {
+                        $dob = \Carbon\Carbon::parse($patient->date_of_birth);
+                        $diff = $dob->diff(now());
+                        $parts = [];
+                        if ($diff->y) { $parts[] = $diff->y . 'y'; }
+                        if ($diff->m) { $parts[] = $diff->m . 'm'; }
+                        if ($diff->d && $diff->y === 0) { $parts[] = $diff->d . 'd'; }
+                        $age = $parts ? implode(' ', $parts) : '0y';
+                    }
+                @endphp
+                    @php
+                        $ageYears = $patient->date_of_birth ? \Carbon\Carbon::parse($patient->date_of_birth)->diffInYears(now()) : null;
+                    @endphp
+                    <span class="value">{{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}</span>
             </div>
             <div class="info-row">
                 <span class="label">Gender:</span>

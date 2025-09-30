@@ -35,32 +35,10 @@
                 </div>
                 <div class="form-group">
                     <label for="age_display">Age</label>
-                    <input type="text" id="age_display" name="age_display" 
-                           value="@php
-                               $age = '';
-                               if($patient->age_years) {
-                                   $age = $patient->age_years . 'y';
-                                   if($patient->age_months) {
-                                       $age .= ' ' . $patient->age_months . 'm';
-                                   }
-                                   if($patient->age_days && !$patient->age_years) {
-                                       $age .= ' ' . $patient->age_days . 'd';
-                                   }
-                               } elseif($patient->age_months) {
-                                   $age = $patient->age_months . 'm';
-                                   if($patient->age_days) {
-                                       $age .= ' ' . $patient->age_days . 'd';
-                                   }
-                               } elseif($patient->age_days) {
-                                   $age = $patient->age_days . 'd';
-                               } elseif($patient->age) {
-                                   $age = $patient->age . ' years';
-                               } else {
-                                   $age = 'N/A';
-                               }
-                               echo $age;
-                           @endphp" 
-                           class="form-input readonly" readonly>
+                    @php
+                        $ageYears = $patient->date_of_birth ? intval(\Carbon\Carbon::parse($patient->date_of_birth)->diffInYears(now())) : null;
+                    @endphp
+                    <input type="text" id="age_display" name="age_display" value="{{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}" class="form-input readonly" readonly>
                 </div>
             </div>
             

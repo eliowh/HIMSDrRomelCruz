@@ -837,15 +837,14 @@ class AdminController extends Controller
 
     private function generatePatientDetailsHTML($patient)
     {
-        // Calculate age display
+        // Calculate age display (years only) from date_of_birth
         $ageDisplay = 'N/A';
-        if ($patient->age_years || $patient->age_months || $patient->age_days) {
-            $ageDisplay = ($patient->age_years ?? 0) . ' years';
-            if ($patient->age_months) {
-                $ageDisplay .= ', ' . $patient->age_months . ' months';
-            }
-            if ($patient->age_days) {
-                $ageDisplay .= ', ' . $patient->age_days . ' days';
+        if (!empty($patient->date_of_birth)) {
+            try {
+                $dob = \Carbon\Carbon::parse($patient->date_of_birth);
+                $ageDisplay = intval($dob->diffInYears(now())) . ' years';
+            } catch (\Exception $e) {
+                $ageDisplay = 'N/A';
             }
         }
 

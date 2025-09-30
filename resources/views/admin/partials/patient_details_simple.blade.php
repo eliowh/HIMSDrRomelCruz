@@ -4,7 +4,10 @@
     <p><strong>Name:</strong> {{ ($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') }}</p>
     <p><strong>Status:</strong> {{ ucfirst($patient->status ?? 'active') }}</p>
     <p><strong>Room:</strong> {{ $patient->room_no ?? 'Not assigned' }}</p>
-    <p><strong>Age:</strong> {{ $patient->age ?? 'N/A' }}</p>
+    @php
+        $ageYears = $patient->date_of_birth ? intval(\Carbon\Carbon::parse($patient->date_of_birth)->diffInYears(now())) : null;
+    @endphp
+    <p><strong>Age:</strong> {{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}</p>
     <p><strong>Created:</strong> {{ $patient->created_at ?? 'N/A' }}</p>
 </div>
 

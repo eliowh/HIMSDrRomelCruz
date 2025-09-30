@@ -23,7 +23,7 @@
                     
                     <div class="form-group">
                         <label for="edit_date_of_birth">Date of Birth</label>
-                        <input id="edit_date_of_birth" name="date_of_birth" type="date" />
+                        <input id="edit_date_of_birth" name="date_of_birth" type="date" readonly style="background-color: #f5f5f5; color: #666;" />
                     </div>
                     
                     <div class="form-group">

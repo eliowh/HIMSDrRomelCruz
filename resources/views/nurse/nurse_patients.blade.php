@@ -44,7 +44,10 @@
                                 <td class="col-name">{{ $p->last_name }}, {{ $p->first_name }}{{ $p->middle_name ? ' '.$p->middle_name : '' }}</td>
                                 <td class="col-dob">
                                     {{ $p->date_of_birth ? $p->date_of_birth->format('Y-m-d') : '-' }}<br>
-                                    <small class="text-muted">{{ $p->age_years ?? '-' }}y {{ $p->age_months ?? '-' }}m {{ $p->age_days ?? '-' }}d</small>
+                                    @php
+                                        $ageYears = $p->date_of_birth ? intval($p->date_of_birth->diffInYears(now())) : null;
+                                    @endphp
+                                    <small class="text-muted">{{ $ageYears !== null ? $ageYears.' years' : '-' }}</small>
                                 </td>
                                 <td class="col-location">{{ $p->barangay ? $p->barangay.',' : '' }} {{ $p->city }}, {{ $p->province }}</td>
                                 <td class="col-natl">{{ $p->nationality }}</td>
@@ -122,10 +125,18 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('md-patient_no').textContent = or(patient.patient_no);
         document.getElementById('md-name').textContent = or([patient.last_name, patient.first_name, patient.middle_name].filter(Boolean).join(', '));
         document.getElementById('md-dob').textContent = or(patient.date_of_birth);
-        const years = patient.age_years ?? '-';
-        const months = patient.age_months ?? '-';
-        const days = patient.age_days ?? '-';
-        document.getElementById('md-age').textContent = `${years}y ${months}m ${days}d`;
+        // Compute age (years) from date_of_birth
+        const dob = patient.date_of_birth ? new Date(patient.date_of_birth) : null;
+        const now = new Date();
+        let ageText = '-';
+        if (dob && !isNaN(dob.getTime())) {
+            let years = now.getFullYear() - dob.getFullYear();
+            const m = now.getMonth() - dob.getMonth();
+            const d = now.getDate() - dob.getDate();
+            if (m < 0 || (m === 0 && d < 0)) years -= 1;
+            ageText = years + ' years';
+        }
+        document.getElementById('md-age').textContent = ageText;
         document.getElementById('md-location').textContent = or((patient.barangay ? patient.barangay + ', ' : '') + or(patient.city) + ', ' + or(patient.province));
         document.getElementById('md-nationality').textContent = or(patient.nationality);
         document.getElementById('md-room_no').textContent = or(patient.room_no);
@@ -177,24 +188,41 @@ document.addEventListener('DOMContentLoaded', function () {
     function openEditModal(patient){
         const form = document.getElementById('editPatientForm');
         form.patient_no = patient.patient_no;
-        form.elements['first_name'].value = patient.first_name || '';
-        form.elements['last_name'].value = patient.last_name || '';
-        form.elements['middle_name'].value = patient.middle_name || '';
-        form.elements['date_of_birth'].value = patient.date_of_birth ? patient.date_of_birth.split(' ')[0] : '';
-        form.elements['province'].value = patient.province || '';
-        form.elements['city'].value = patient.city || '';
-        form.elements['barangay'].value = patient.barangay || '';
-        form.elements['nationality'].value = patient.nationality || '';
-        form.elements['room_no'].value = patient.room_no || '';
-        form.elements['admission_type'].value = patient.admission_type || '';
-        form.elements['service'].value = patient.service || '';
-        form.elements['doctor_name'].value = patient.doctor_name || '';
-        form.elements['doctor_type'].value = patient.doctor_type || '';
-        form.elements['admission_diagnosis'].value = patient.admission_diagnosis || '';
+        
+        // Use getElementById for modal fields with edit_ prefix
+        document.getElementById('edit_first_name').value = patient.first_name || '';
+        document.getElementById('edit_last_name').value = patient.last_name || '';
+        document.getElementById('edit_middle_name').value = patient.middle_name || '';
+        // Handle date_of_birth - it may come as ISO string or date object
+        let dobValue = '';
+        if (patient.date_of_birth) {
+            try {
+                // If it's an ISO string, parse it and format for input[type="date"]
+                const dobDate = new Date(patient.date_of_birth);
+                if (!isNaN(dobDate.getTime())) {
+                    dobValue = dobDate.toISOString().split('T')[0];
+                }
+            } catch (e) {
+                // Fallback: try splitting if it's already in YYYY-MM-DD format
+                dobValue = patient.date_of_birth.split(' ')[0];
+            }
+        }
+        document.getElementById('edit_date_of_birth').value = dobValue;
+        document.getElementById('edit_province').value = patient.province || '';
+        document.getElementById('edit_city').value = patient.city || '';
+        document.getElementById('edit_barangay').value = patient.barangay || '';
+        document.getElementById('edit_nationality').value = patient.nationality || '';
+        document.getElementById('edit_room_no').value = patient.room_no || '';
+        document.getElementById('edit_admission_type').value = patient.admission_type || '';
+        document.getElementById('edit_service').value = patient.service || '';
+        document.getElementById('edit_doctor_name').value = patient.doctor_name || '';
+        document.getElementById('edit_doctor_type').value = patient.doctor_type || '';
+        document.getElementById('edit_admission_diagnosis').value = patient.admission_diagnosis || '';
         
         // Set the admission diagnosis description if available
-        if (form.elements['admission_diagnosis_description']) {
-            form.elements['admission_diagnosis_description'].value = patient.admission_diagnosis_description || '';
+        const diagDescField = document.getElementById('edit_admission_diagnosis_description');
+        if (diagDescField) {
+            diagDescField.value = patient.admission_diagnosis_description || '';
         }
         
         modal.classList.add('open');

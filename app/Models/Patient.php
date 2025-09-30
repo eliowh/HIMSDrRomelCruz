@@ -3,49 +3,41 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Patient extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'patient_no',
         'first_name',
         'middle_name',
         'last_name',
         'date_of_birth',
-        'age_years',
-        'age_months',
-        'age_days',
         'province',
         'city',
         'barangay',
         'nationality',
+        // admission fields
         'room_no',
         'admission_type',
         'service',
         'doctor_name',
         'doctor_type',
         'admission_diagnosis',
-        'status',
-        'room_number',
-        'primary_diagnosis',
-        'blood_type',
-        'phone',
-        'email',
-        'emergency_contact',
-        'allergies',
-        'medications',
-        'medical_history',
-        'admission_date',
+    ];
+
+    protected $appends = [
+        'age',
+        'age_years',
+        'age_months',
+        'age_days',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
-        'admission_date' => 'datetime',
-        'allergies' => 'array',
-        'medications' => 'array',
-        'medical_history' => 'array',
     ];
 
     protected static function booted()
@@ -79,32 +71,31 @@ class Patient extends Model
      */
     public function getAgeAttribute(): int
     {
-        return $this->date_of_birth->diffInYears(now());
+        return $this->date_of_birth ? $this->date_of_birth->diffInYears(now()) : 0;
     }
 
     /**
-     * The doctors that belong to the patient.
+     * Computed granular age parts from date_of_birth
      */
-    public function doctors(): BelongsToMany
+    public function getAgeYearsAttribute(): ?int
     {
-        return $this->belongsToMany(User::class, 'doctor_patient', 'patient_id', 'doctor_id')
-                    ->where('role', 'doctor');
+        if (!$this->date_of_birth) return null;
+        $diff = $this->date_of_birth->diff(now());
+        return $diff->y;
     }
 
-    /**
-     * Scope a query to only include active patients.
-     */
-    public function scopeActive($query)
+    public function getAgeMonthsAttribute(): ?int
     {
-        return $query->where('status', '!=', 'discharged');
+        if (!$this->date_of_birth) return null;
+        $diff = $this->date_of_birth->diff(now());
+        return $diff->m;
     }
 
-    /**
-     * Scope a query to only include patients by status.
-     */
-    public function scopeByStatus($query, $status)
+    public function getAgeDaysAttribute(): ?int
     {
-        return $query->where('status', $status);
+        if (!$this->date_of_birth) return null;
+        $diff = $this->date_of_birth->diff(now());
+        return $diff->d;
     }
 }
 

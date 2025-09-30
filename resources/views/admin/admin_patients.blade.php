@@ -60,7 +60,7 @@
                                     <span class="sort-indicator">↕</span>
                                 @endif
                             </th>
-                            <th>Age</th>
+                            <th>DOB / Age</th>
                             <th class="sortable" data-sort="room_no">
                                 Room
                                 @if(request('sort') == 'room_no')
@@ -101,27 +101,16 @@
                             <td>{{ ($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') }}</td>
                             <td>
                                 @php
-                                    $age = '';
-                                    if($patient->age_years) {
-                                        $age = $patient->age_years . 'y';
-                                        if($patient->age_months) {
-                                            $age .= ' ' . $patient->age_months . 'm';
-                                        }
-                                        if($patient->age_days && !$patient->age_years) {
-                                            $age .= ' ' . $patient->age_days . 'd';
-                                        }
-                                    } elseif($patient->age_months) {
-                                        $age = $patient->age_months . 'm';
-                                        if($patient->age_days) {
-                                            $age .= ' ' . $patient->age_days . 'd';
-                                        }
-                                    } elseif($patient->age_days) {
-                                        $age = $patient->age_days . 'd';
-                                    } else {
-                                        $age = 'N/A';
+                                    $dobStr = $patient->date_of_birth ? \Carbon\Carbon::parse($patient->date_of_birth)->format('Y-m-d') : 'N/A';
+                                    $age = 'N/A';
+                                    if ($patient->date_of_birth) {
+                                        $dob = \Carbon\Carbon::parse($patient->date_of_birth);
+                                        $ageYears = intval($dob->diffInYears(now()));
+                                        $age = $ageYears . ' years';
                                     }
                                 @endphp
-                                {{ $age }}
+                                {{ $dobStr }}<br>
+                                <small class="text-muted">{{ $age }}</small>
                             </td>
                             <td>{{ $patient->room_no ?? 'N/A' }}</td>
                             <td>

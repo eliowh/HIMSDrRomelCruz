@@ -55,7 +55,10 @@
                                             <td class="col-name">{{ $p->last_name }}, {{ $p->first_name }}{{ $p->middle_name ? ' '.$p->middle_name : '' }}</td>
                                             <td class="col-dob">
                                                 {{ $p->date_of_birth ? $p->date_of_birth->format('Y-m-d') : '-' }}<br>
-                                                <small class="text-muted">{{ $p->age_years ?? '-' }}y {{ $p->age_months ?? '-' }}m {{ $p->age_days ?? '-' }}d</small>
+                                                @php
+                                                    $ageYears = $p->date_of_birth ? intval($p->date_of_birth->diffInYears(now())) : null;
+                                                @endphp
+                                                <small class="text-muted">{{ $ageYears !== null ? $ageYears.' years' : '-' }}</small>
                                             </td>
                                             <td class="col-location">{{ $p->barangay ? $p->barangay.',' : '' }} {{ $p->city }}, {{ $p->province }}</td>
                                             <td class="col-actions">
@@ -150,10 +153,18 @@
                 document.getElementById('md-patient_no').textContent = or(patient.patient_no);
                 document.getElementById('md-name').textContent = or([patient.last_name, patient.first_name, patient.middle_name].filter(Boolean).join(', '));
                 document.getElementById('md-dob').textContent = or(patient.date_of_birth);
-                const years = patient.age_years ?? '-';
-                const months = patient.age_months ?? '-';
-                const days = patient.age_days ?? '-';
-                document.getElementById('md-age').textContent = `${years}y ${months}m ${days}d`;
+                // Compute age (years) from DOB
+                const dob = patient.date_of_birth ? new Date(patient.date_of_birth) : null;
+                const now = new Date();
+                let ageText = '-';
+                if (dob && !isNaN(dob.getTime())) {
+                    let years = now.getFullYear() - dob.getFullYear();
+                    const m = now.getMonth() - dob.getMonth();
+                    const d = now.getDate() - dob.getDate();
+                    if (m < 0 || (m === 0 && d < 0)) years -= 1;
+                    ageText = years + ' years';
+                }
+                document.getElementById('md-age').textContent = ageText;
                 document.getElementById('md-location').textContent = or((patient.barangay ? patient.barangay + ', ' : '') + or(patient.city) + ', ' + or(patient.province));
                 document.getElementById('md-nationality').textContent = or(patient.nationality);
                 document.getElementById('md-room_no').textContent = or(patient.room_no);

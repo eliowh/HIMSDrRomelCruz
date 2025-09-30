@@ -35,18 +35,7 @@
         <label>Date of Birth</label>
         <input type="date" name="date_of_birth" value="{{ old('date_of_birth') }}">
 
-        <div class="form-row">
-            <div class="form-col">
-                <label>Age</label>
-                <div class="age-inputs">
-                    <div class="age-item">
-                        <label class="small-label">(years)</label>
-                        <input type="number" name="age_years" min="0" value="{{ old('age_years') }}">
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
+        <!-- Age removed; age will be computed from date_of_birth -->
 
         <label>Province</label>
         <select name="province" required>
