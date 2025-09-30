@@ -215,7 +215,17 @@ function selectSuggestion(inputElement, value, stockData) {
     document.getElementById('item_code_input').value = stockData.item_code || '';
     document.getElementById('generic_name_input').value = stockData.generic_name || '';
     document.getElementById('brand_name_input').value = stockData.brand_name || '';
-    document.getElementById('price_input').value = stockData.price || '';
+    
+    // Handle price with comma parsing
+    const priceInput = document.getElementById('price_input');
+    if (stockData.price !== null && stockData.price !== undefined && stockData.price !== '') {
+        // Remove commas and parse as float to handle prices like "1,060.00"
+        const cleanPrice = String(stockData.price).replace(/,/g, '');
+        const parsedPrice = parseFloat(cleanPrice);
+        priceInput.value = isNaN(parsedPrice) ? '' : parsedPrice.toFixed(2);
+    } else {
+        priceInput.value = '';
+    }
 }
 
 function hideSuggestions(inputElement) {

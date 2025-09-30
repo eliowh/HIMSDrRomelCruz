@@ -167,7 +167,14 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
                             tds[0].textContent = j.stock.item_code || '';
                             tds[1].textContent = j.stock.generic_name || '';
                             tds[2].textContent = j.stock.brand_name || '';
-                            tds[3].textContent = (j.stock.price !== null && j.stock.price !== undefined && j.stock.price !== '') ? parseFloat(j.stock.price).toFixed(2) : '-';
+                            // Handle price display with comma parsing
+                            if (j.stock.price !== null && j.stock.price !== undefined && j.stock.price !== '') {
+                                const cleanPrice = String(j.stock.price).replace(/,/g, '');
+                                const parsedPrice = parseFloat(cleanPrice);
+                                tds[3].textContent = isNaN(parsedPrice) ? '-' : '₱' + parsedPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            } else {
+                                tds[3].textContent = '-';
+                            }
                             tds[4].textContent = j.stock.quantity ?? 0;
                         }
                         updated = true;

@@ -23,8 +23,11 @@
         
         // Set price only if brand is also selected or there's only one result
         const priceInput = document.querySelector('input[name="price"]');
-        if (priceInput && it.price !== null && it.price !== undefined) {
-            priceInput.value = it.price;
+        if (priceInput && it.price !== null && it.price !== undefined && it.price !== '') {
+            // Remove commas and parse as float to handle prices like "1,060.00"
+            const cleanPrice = String(it.price).replace(/,/g, '');
+            const parsedPrice = parseFloat(cleanPrice);
+            priceInput.value = isNaN(parsedPrice) ? '' : parsedPrice.toFixed(2);
         }
         
         // Only clear quantity - we want to preserve other fields for auto-completion
@@ -96,7 +99,10 @@
                     // Set price if available
                     const priceInput = document.querySelector('input[name="price"]');
                     if (selected.dataset.price && priceInput) {
-                        priceInput.value = selected.dataset.price;
+                        // Remove commas and parse as float to handle prices like "1,060.00"
+                        const cleanPrice = String(selected.dataset.price).replace(/,/g, '');
+                        const parsedPrice = parseFloat(cleanPrice);
+                        priceInput.value = isNaN(parsedPrice) ? '' : parsedPrice.toFixed(2);
                     }
                 };
                 
@@ -134,7 +140,14 @@ document.addEventListener('DOMContentLoaded', function(){
         document.getElementById('md-item_code').textContent = or(stock.item_code);
         document.getElementById('md-generic_name').textContent = or(stock.generic_name);
         document.getElementById('md-brand_name').textContent = or(stock.brand_name);
-        document.getElementById('md-price').textContent = stock.price !== null ? parseFloat(stock.price).toFixed(2) : '-';
+        // Handle price display with comma parsing
+        if (stock.price !== null && stock.price !== undefined && stock.price !== '') {
+            const cleanPrice = String(stock.price).replace(/,/g, '');
+            const parsedPrice = parseFloat(cleanPrice);
+            document.getElementById('md-price').textContent = isNaN(parsedPrice) ? '-' : '₱' + parsedPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        } else {
+            document.getElementById('md-price').textContent = '-';
+        }
         document.getElementById('md-quantity').textContent = or(stock.quantity ?? 0);
         document.getElementById('md-reorder_level').textContent = or(stock.reorder_level);
         document.getElementById('md-expiry_date').textContent = or(stock.expiry_date);
@@ -179,7 +192,14 @@ document.addEventListener('DOMContentLoaded', function(){
             document.getElementById('edit-item_code').value = s.item_code || '';
             document.getElementById('edit-generic_name').value = s.generic_name || '';
             document.getElementById('edit-brand_name').value = s.brand_name || '';
-            document.getElementById('edit-price').value = s.price || '';
+            // Handle price with comma parsing for edit form
+            if (s.price !== null && s.price !== undefined && s.price !== '') {
+                const cleanPrice = String(s.price).replace(/,/g, '');
+                const parsedPrice = parseFloat(cleanPrice);
+                document.getElementById('edit-price').value = isNaN(parsedPrice) ? '' : parsedPrice.toFixed(2);
+            } else {
+                document.getElementById('edit-price').value = '';
+            }
             document.getElementById('edit-quantity').value = s.quantity || 0;
             document.getElementById('edit-reorder_level').value = s.reorder_level || '';
             document.getElementById('edit-expiry_date').value = s.expiry_date || '';

@@ -121,10 +121,6 @@
                                             <button class="btn pharmacy-btn-danger btn-sm" onclick="cancelOrder({{ $order->id }})">
                                                 <i class="fas fa-times"></i> Cancel
                                             </button>
-                                        @elseif($order->status === 'approved')
-                                            <button class="btn pharmacy-btn-warning btn-sm" onclick="cancelOrder({{ $order->id }})">
-                                                <i class="fas fa-times"></i> Cancel
-                                            </button>
                                         @endif
                                         
                                         <button class="btn pharmacy-btn-info btn-sm" onclick="viewOrder({{ $order->id }})">
