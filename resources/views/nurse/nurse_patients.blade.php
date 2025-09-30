@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('savePatientBtn').addEventListener('click', function(e){
         e.preventDefault(); const form = document.getElementById('editPatientForm');
         const patient_no = form.patient_no;
-        if(!patient_no) return alert('No patient selected');
+        if(!patient_no) { nurseError('Selection Error', 'No patient selected'); return; }
         const data = new FormData(form);
         const token = _csrf();
         // PHP doesn't parse multipart/form-data for PUT; use POST with _method override so Laravel receives fields
@@ -268,17 +268,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             // non-json but ok response
             location.reload();
-        }).catch(e=>{ console.error(e); alert('Update failed: ' + e.message); });
+        }).catch(e=>{ console.error(e); nurseError('Update Failed', e.message); });
     });
 
     // wire edit button to open modal with currently selected patient
     btnEdit.addEventListener('click', function(){
         const patientNo = document.getElementById('md-patient_no').textContent;
-        if(!patientNo || patientNo === '-') return alert('No patient selected');
+        if(!patientNo || patientNo === '-') { nurseError('Selection Error', 'No patient selected'); return; }
         // find the row with that patient_no
         const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
-        if(!row) return alert('Patient not found');
-        try{ const patient = JSON.parse(row.getAttribute('data-patient')); openEditModal(patient); }catch(e){ console.error(e); alert('Failed to open edit modal'); }
+        if(!row) { nurseError('Search Error', 'Patient not found'); return; }
+        try{ const patient = JSON.parse(row.getAttribute('data-patient')); openEditModal(patient); }catch(e){ console.error(e); nurseError('Modal Error', 'Failed to open edit modal'); }
     });
 });
 
@@ -400,10 +400,10 @@ document.getElementById('labRequestForm').addEventListener('submit', function(e)
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Lab test request submitted successfully!');
+            nurseSuccess('Request Submitted', 'Lab test request submitted successfully!');
             closeLabRequestModal();
         } else {
-            alert('Error submitting request. Please try again.');
+            nurseError('Request Failed', 'Error submitting request. Please try again.');
         }
     })
     .catch(error => {
@@ -436,5 +436,7 @@ window.onclick = function(event) {
 }
 </script>
 @endpush
+
+@include('nurse.modals.notification_system')
 
 @endsection

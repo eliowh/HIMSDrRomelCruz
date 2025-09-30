@@ -15,12 +15,6 @@
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/appointments') }}"
-                   class="sidebar-btn{{ request()->is('nurse/appointments') ? ' active' : '' }}">
-                    <span class="icon">📅</span> <span class="text">Your Appointments</span>
-                </a>
-            </li>
-            <li>
                 <a href="{{ url('/nurse/patients') }}"
                    class="sidebar-btn{{ request()->is('nurse/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients List</span>
@@ -30,12 +24,6 @@
                 <a href="{{ url('/nurse/addPatients') }}" 
                    class="sidebar-btn{{ request()->is('nurse/addPatients') ? ' active' : '' }}">
                     <span class="icon">➕</span> <span class="text">Add Patient</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/nurse/schedule') }}"
-                   class="sidebar-btn{{ request()->is('nurse/schedule') ? ' active' : '' }}">
-                    <span class="icon">⏰</span> <span class="text">Schedule</span>
                 </a>
             </li>
             <li>

@@ -43,5 +43,6 @@
             </div>
         </main>
     </div>
+    @include('nurse.modals.notification_system')
 </body>
 </html>

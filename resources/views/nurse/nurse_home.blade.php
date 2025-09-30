@@ -58,21 +58,21 @@
             <div class="nurse-card">
                 <h3>Quick Actions</h3>
                 <div class="quick-actions">
-                    <button class="action-btn primary" onclick="showVitalSignsModal()">
-                        <span class="btn-icon">🩺</span>
-                        Record Vital Signs
-                    </button>
-                    <button class="action-btn secondary" onclick="showMedicationModal()">
-                        <span class="btn-icon">💊</span>
-                        Medication Administration
-                    </button>
-                    <a href="/nurse/patients" class="action-btn secondary">
+                    <a href="/nurse/patients" class="action-btn primary">
                         <span class="btn-icon">👥</span>
-                        Patient List
+                        View Patients
                     </a>
-                    <button class="action-btn secondary" onclick="showIncidentModal()">
-                        <span class="btn-icon">📝</span>
-                        Report Incident
+                    <a href="/nurse/addPatients" class="action-btn secondary">
+                        <span class="btn-icon">➕</span>
+                        Add New Patient
+                    </a>
+                    <button class="action-btn secondary" onclick="nurseNotify('info', 'Lab Request', 'Feature coming soon - Request lab tests for patients')">
+                        <span class="btn-icon">🧪</span>
+                        Lab Requests
+                    </button>
+                    <button class="action-btn secondary" onclick="nurseNotify('info', 'Vital Signs', 'Feature coming soon - Record patient vital signs')">
+                        <span class="btn-icon">🩺</span>
+                        Vital Signs
                     </button>
                 </div>
             </div>
@@ -308,17 +308,17 @@
         // Quick Action Modal Functions
         function showVitalSignsModal() {
             // This would open a modal for recording vital signs
-            alert('Vital Signs Modal - This will be implemented with a proper form for recording patient vital signs');
+            nurseNotify('info', 'Coming Soon', 'Vital Signs Modal - This will be implemented with a proper form for recording patient vital signs');
         }
 
         function showMedicationModal() {
             // This would open a modal for medication administration
-            alert('Medication Administration Modal - This will be implemented with proper medication tracking');
+            nurseNotify('info', 'Coming Soon', 'Medication Administration Modal - This will be implemented with proper medication tracking');
         }
 
         function showIncidentModal() {
             // This would open a modal for incident reporting
-            alert('Incident Report Modal - This will be implemented with incident reporting form');
+            nurseNotify('info', 'Coming Soon', 'Incident Report Modal - This will be implemented with incident reporting form');
         }
 
         // Dashboard interactions
@@ -332,14 +332,14 @@
                     const patientName = alertItem.querySelector('h4').textContent;
                     
                     if (action === 'Respond') {
-                        alert(`Responding to alert for ${patientName}`);
+                        nurseNotify('warning', 'Alert Response', `Responding to alert for ${patientName}`);
                         // Mark as responded
                         alertItem.style.opacity = '0.7';
                         this.textContent = 'Responded';
                         this.classList.remove('urgent');
                         this.classList.add('success');
                     } else if (action === 'Call Doctor') {
-                        alert(`Calling doctor for ${patientName}`);
+                        nurseNotify('info', 'Doctor Called', `Calling doctor for ${patientName}`);
                     }
                 });
             });
@@ -368,7 +368,7 @@
                     } else if (action === 'Defer') {
                         const reason = prompt('Reason for deferring medication:');
                         if (reason) {
-                            alert(`Medication deferred for ${patientName}. Reason: ${reason}`);
+                            nurseNotify('warning', 'Medication Deferred', `Medication deferred for ${patientName}. Reason: ${reason}`);
                         }
                     }
                 });
@@ -552,6 +552,8 @@
         `;
         document.head.appendChild(style);
     </script>
+
+    @include('nurse.modals.notification_system')
 
 </body>
 </html>
