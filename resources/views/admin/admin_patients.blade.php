@@ -170,12 +170,14 @@
     </div>
 
     <!-- Patient Details Modal -->
-    <div id="patientDetailsModal" class="addUserModal" style="display: none;">
-        <div class="addUserModalContent patient-details-modal">
-            <button class="addUserModalClose" onclick="closePatientDetailsModal()">&times;</button>
-            <div class="sign">Patient Information</div>
+    <div id="patientDetailsModal" class="patient-modal" style="display: none;">
+        <div class="patient-modal-content">
+            <div class="patient-modal-header">
+                <h3>Patient Details</h3>
+                <button class="patient-modal-close" onclick="closePatientDetailsModal()">&times;</button>
+            </div>
             
-            <div id="patientDetailsContent">
+            <div id="patientDetailsContent" class="patient-modal-body">
                 <!-- Patient details form will be loaded here -->
             </div>
         </div>
@@ -420,6 +422,83 @@
         }
     }
     </style>
+
+    <script>
+    // Patient modal button functions
+    window.savePatientData = function() {
+        console.log("Save button clicked");
+        const form = document.getElementById("patientForm");
+        if (!form) {
+            console.error("Form not found");
+            adminError("Form not found");
+            return;
+        }
+        
+        const formData = new FormData(form);
+        const patientId = formData.get("patient_id");
+        const saveBtn = document.querySelector(".save-btn");
+        
+        console.log("Patient ID:", patientId);
+        
+        if (!patientId) {
+            console.error("Patient ID not found");
+            adminError("Patient ID not found");
+            return;
+        }
+        
+        // Show loading state
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = "Saving...";
+        saveBtn.disabled = true;
+        
+        fetch(`/admin/patients/${patientId}/update`, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+            }
+        })
+        .then(response => {
+            console.log("Response status:", response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log("Response data:", data);
+            if (data.success) {
+                adminSuccess("Patient updated successfully!");
+                closePatientDetailsModal();
+                // Refresh the page to show updated data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                adminError("Error: " + (data.message || "Unknown error"));
+            }
+        })
+        .catch(error => {
+            console.error("JavaScript error:", error);
+            adminError("An error occurred while saving: " + error.message);
+        })
+        .finally(() => {
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
+        });
+    };
+    
+    window.closePatientDetailsModal = function() {
+        console.log("Close button clicked");
+        const modal = document.getElementById("patientDetailsModal");
+        if (modal) {
+            modal.style.display = "none";
+        } else {
+            console.error("Modal not found");
+        }
+    };
+
+    // Compatibility aliases
+    window.savePatient = window.savePatientData;
+    window.closeModal = window.closePatientDetailsModal;
+    </script>
 
     @include('admin.modals.notification_system')
 </body>
