@@ -177,6 +177,7 @@
     @include('pharmacy.modals.request_order_modal')
     @include('pharmacy.modals.edit_order_modal')
     @include('pharmacy.modals.view_order_modal')
+    @include('pharmacy.modals.notification_system')
 
     <script>
         let currentOrderId = null;
@@ -535,7 +536,7 @@
             const brandName = document.getElementById('brand_name_input').value.trim();
             
             if (!genericName && !brandName) {
-                alert('Please provide either a Generic Name or Brand Name (or both).');
+                showPharmacyWarning('Please provide either a Generic Name or Brand Name (or both).', 'Missing Information');
                 return;
             }
             
@@ -553,20 +554,21 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('Order request submitted successfully!');
-                    closeRequestOrderModal();
-                    window.location.reload();
+                    showPharmacySuccess('Your order request has been submitted successfully!', 'Order Submitted', () => {
+                        closeRequestOrderModal();
+                        window.location.reload();
+                    });
                 } else {
                     let errorMessage = result.message || 'Failed to submit order';
                     if (result.errors) {
                         const errors = Object.values(result.errors).flat();
                         errorMessage = errors.join('\n');
                     }
-                    alert('Error: ' + errorMessage);
+                    showPharmacyError(errorMessage, 'Submission Failed');
                 }
             } catch (error) {
                 console.error('Error submitting order:', error);
-                alert('Error submitting order. Please try again.');
+                showPharmacyError('Network error occurred. Please check your connection and try again.', 'Connection Error');
             }
         }
 
@@ -613,16 +615,17 @@
                 console.log('Response data:', result);
                 
                 if (result.success) {
-                    alert('Order updated successfully!');
-                    closeEditOrderModal();
-                    window.location.reload();
+                    showPharmacySuccess('Order has been updated successfully!', 'Order Updated', () => {
+                        closeEditOrderModal();
+                        window.location.reload();
+                    });
                 } else {
-                    alert('Error: ' + (result.message || 'Failed to update order'));
+                    showPharmacyError(result.message || 'Failed to update order', 'Update Failed');
                     console.error('Update failed:', result);
                 }
             } catch (error) {
                 console.error('Error updating order:', error);
-                alert('Error updating order. Please try again.');
+                showPharmacyError('Network error occurred. Please try again.', 'Connection Error');
             }
         }
 
@@ -641,9 +644,16 @@
         }
 
         async function cancelOrder(orderId) {
-            if (!confirm('Are you sure you want to cancel this order?')) {
-                return;
-            }
+            // Show confirmation dialog
+            showPharmacyConfirm('Are you sure you want to cancel this order? This action cannot be undone.', 'Confirm Cancellation', (confirmed) => {
+                if (!confirmed) return;
+                
+                // Proceed with cancellation
+                proceedWithCancellation(orderId);
+            });
+        }
+        
+        async function proceedWithCancellation(orderId) {
             
             try {
                 const response = await fetch(`/pharmacy/orders/${orderId}/cancel`, {
@@ -657,14 +667,15 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('Order cancelled successfully!');
-                    window.location.reload();
+                    showPharmacySuccess('Order has been cancelled successfully.', 'Order Cancelled', () => {
+                        window.location.reload();
+                    });
                 } else {
-                    alert('Error: ' + (result.message || 'Failed to cancel order'));
+                    showPharmacyError(result.message || 'Failed to cancel order', 'Cancellation Failed');
                 }
             } catch (error) {
                 console.error('Error cancelling order:', error);
-                alert('Error cancelling order. Please try again.');
+                showPharmacyError('Network error occurred. Please try again.', 'Connection Error');
             }
         }
 

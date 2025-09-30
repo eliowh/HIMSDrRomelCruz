@@ -114,6 +114,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @include('labtech.modals.test_history_modal')
+    @include('labtech.modals.notification_system')
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -365,7 +366,7 @@
                         // Open PDF in new tab
                         window.open(`/labtech/orders/view-pdf/${testId}`, '_blank');
                     } else {
-                        alert('PDF results not available for this test.');
+                        showLabtechWarning('PDF results are not available for this test yet.', 'PDF Not Available');
                     }
                 })
                 .catch(error => {

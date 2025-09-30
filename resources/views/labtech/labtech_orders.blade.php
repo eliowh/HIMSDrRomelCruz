@@ -178,6 +178,9 @@
     
     <!-- Cancellation Reason Modal -->
     @include('labtech.modals.cancel_reason_modal')
+    
+    <!-- Notification System -->
+    @include('labtech.modals.notification_system')
 
     <script>
         let currentOrderId = null;
@@ -203,7 +206,7 @@
                 if (reason) {
                     processCancellation(reason);
                 } else {
-                    alert('Please provide a reason for cancellation.');
+                    showLabtechWarning('Please provide a reason for cancellation.', 'Required Information');
                     document.getElementById('cancelReason').focus();
                 }
             });
@@ -326,12 +329,12 @@
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Error updating status');
+                    showLabtechError('Failed to update order status. Please try again.', 'Status Update Failed');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error updating status');
+                showLabtechError('Network error occurred. Please check your connection and try again.', 'Connection Error');
             });
         }
 
@@ -376,14 +379,16 @@
             .then(data => {
                 if (data.success) {
                     closeCompleteModal();
-                    location.reload();
+                    showLabtechSuccess('Order has been completed successfully!', 'Order Completed', () => {
+                        location.reload();
+                    });
                 } else {
-                    alert('Error completing order: ' + (data.message || 'Unknown error'));
+                    showLabtechError(data.message || 'Failed to complete order', 'Completion Failed');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error completing order. Please try again.');
+                showLabtechError('Network error occurred. Please try again.', 'Connection Error');
             })
             .finally(() => {
                 // Reset button state
@@ -440,14 +445,16 @@
             .then(data => {
                 if (data.success) {
                     closeCancelReasonModal();
-                    location.reload();
+                    showLabtechSuccess('Order has been cancelled successfully.', 'Order Cancelled', () => {
+                        location.reload();
+                    });
                 } else {
-                    alert('Error cancelling order: ' + (data.message || 'Unknown error'));
+                    showLabtechError(data.message || 'Failed to cancel order', 'Cancellation Failed');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error cancelling order. Please try again.');
+                showLabtechError('Network error occurred. Please try again.', 'Connection Error');
             })
             .finally(() => {
                 // Reset button state
@@ -469,12 +476,12 @@
                         document.getElementById('downloadPdfBtn').onclick = () => downloadPdf(orderId);
                         document.getElementById('pdfModal').classList.add('show');
                     } else {
-                        alert('PDF not available for this order');
+                        showLabtechWarning('PDF results are not available for this order yet.', 'PDF Not Available');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error loading PDF');
+                    showLabtechError('Failed to load PDF. Please try again.', 'PDF Loading Error');
                 });
         }
 
@@ -552,12 +559,12 @@
                         document.getElementById('orderDetailsContent').innerHTML = detailsHtml;
                         document.getElementById('orderDetailsModal').classList.add('show');
                     } else {
-                        alert('Error loading order details');
+                        showLabtechError('Failed to load order details. Please try again.', 'Loading Failed');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error loading order details');
+                    showLabtechError('Network error occurred while loading order details.', 'Connection Error');
                 });
         }
 
