@@ -273,6 +273,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     
     // Patient Records Management
     Route::get('/admin/patients', [AdminController::class, 'patients'])->name('admin.patients');
+    Route::get('/admin/patients/{id}/details', [AdminController::class, 'getPatientDetails'])->name('admin.patients.details');
+    Route::post('/admin/patients/{id}/update', [AdminController::class, 'updatePatient'])->name('admin.patients.update');
     Route::patch('/admin/patients/{id}/status', [AdminController::class, 'updatePatientStatus'])->name('admin.patients.update-status');
     
     // Report Management

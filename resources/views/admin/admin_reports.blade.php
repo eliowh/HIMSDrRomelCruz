@@ -233,13 +233,13 @@
             const result = await response.json();
             
             if (result.success) {
-                alert('Report generated successfully!');
+                adminSuccess('Report generated successfully!');
                 location.reload(); // Refresh to show new report
             } else {
-                alert('Error: ' + result.message);
+                adminError('Error: ' + result.message);
             }
         } catch (error) {
-            alert('An error occurred while generating the report.');
+            adminError('An error occurred while generating the report.');
             console.error('Error:', error);
         } finally {
             submitBtn.innerHTML = originalText;
@@ -256,7 +256,7 @@
             document.getElementById('modalReportBody').innerHTML = html;
             document.getElementById('reportModal').style.display = 'flex';
         } catch (error) {
-            alert('Error loading report details.');
+            adminError('Error loading report details.');
             console.error('Error:', error);
         }
     }
@@ -268,9 +268,16 @@
 
     // Delete report function
     async function deleteReport(reportId) {
-        if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
-            return;
-        }
+        adminConfirm(
+            'Are you sure you want to delete this report? This action cannot be undone.',
+            'Confirm Deletion',
+            () => performReportDeletion(reportId),
+            () => console.log('Report deletion cancelled')
+        );
+        return;
+    }
+
+    async function performReportDeletion(reportId) {
         
         try {
             const response = await fetch(`/admin/reports/${reportId}`, {
@@ -283,13 +290,13 @@
             const result = await response.json();
             
             if (result.success) {
-                alert('Report deleted successfully!');
+                adminSuccess('Report deleted successfully!');
                 location.reload();
             } else {
-                alert('Error: ' + result.message);
+                adminError('Error: ' + result.message);
             }
         } catch (error) {
-            alert('An error occurred while deleting the report.');
+            adminError('An error occurred while deleting the report.');
             console.error('Error:', error);
         }
     }
@@ -346,5 +353,6 @@
         });
     });
     </script>
+    @include('admin.modals.notification_system')
 </body>
 </html>

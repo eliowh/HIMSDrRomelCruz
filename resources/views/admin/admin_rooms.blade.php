@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Room Management</title>
+    <title>Room         if (!roomRow) {
+            adminError('Unable to find selected room.');
+            return;
+        }gement</title>
     <link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
     <link rel="stylesheet" href="{{url('css/pagination.css')}}">
 </head>
@@ -110,10 +113,22 @@
 
     <script>
     function openAddRoomModal() {
-        document.getElementById('addRoomModal').style.display = 'flex';
+        const modal = document.getElementById('addRoomModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        } else {
+            adminError('Add room modal not found. Please refresh the page.');
+        }
     }
     function closeAddRoomModal() {
-        document.getElementById('addRoomModal').style.display = 'none';
+        const modal = document.getElementById('addRoomModal');
+        if (modal) {
+            modal.style.display = 'none';
+            // Reset form if the function exists
+            if (typeof resetCreateRoomForm === 'function') {
+                resetCreateRoomForm();
+            }
+        }
     }
 
     function openEditRoomModal() {
@@ -129,27 +144,41 @@
             if (m) m.style.display = 'flex';
             else {
                 console.error('Edit modal still missing after refresh; reloading page.');
-                location.reload();
+                adminError('Edit modal is missing. The page will be reloaded to fix this issue.');
+                setTimeout(() => location.reload(), 2000);
             }
         });
     }
 
     function closeEditRoomModal() {
-        document.getElementById('editRoomModal').style.display = 'none';
-        document.getElementById('editRoomForm').reset();
+        const modal = document.getElementById('editRoomModal');
+        const form = document.getElementById('editRoomForm');
+        
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        if (form) {
+            form.reset();
+        }
         clearEditErrors();
         // Refresh the rooms table portion to ensure DOM is up-to-date and avoid stale ids
         refreshRoomsList();
     }
 
     function clearEditErrors() {
-        document.querySelectorAll('#editRoomModal .error-text').forEach(error => {
-            error.textContent = '';
-        });
-        document.querySelectorAll('#editRoomModal .form-input').forEach(input => {
-            input.classList.remove('error');
-        });
-        document.getElementById('editErrorMessage').style.display = 'none';
+        const modal = document.getElementById('editRoomModal');
+        if (modal) {
+            modal.querySelectorAll('.error-text').forEach(error => {
+                error.textContent = '';
+            });
+            modal.querySelectorAll('.form-input').forEach(input => {
+                input.classList.remove('error');
+            });
+        }
+        const errorMsg = document.getElementById('editErrorMessage');
+        if (errorMsg) {
+            errorMsg.style.display = 'none';
+        }
     }
 
     // Filter and Search Functionality - Server-side search for cross-page results
@@ -218,7 +247,7 @@
         }
         const roomName = row.getAttribute('data-room-name');
         if (!roomName) {
-            alert('Unable to determine room name.');
+            adminError('Unable to determine room name.');
             return;
         }
         editRoom(String(roomName).trim(), rowId);
@@ -274,7 +303,7 @@
                 if (!retryResponse.ok) {
                     const retryText = await retryResponse.text();
                     console.error('Retry server error response:', retryText);
-                    alert('Error loading room data: ' + (retryText || retryResponse.statusText || text));
+                    adminError('Error loading room data: ' + (retryText || retryResponse.statusText || text));
                     return;
                 }
                 response = retryResponse;
@@ -286,7 +315,7 @@
             } catch (parseErr) {
                 const text = await response.text();
                 console.error('JSON parse error, server returned:', text);
-                alert('Error parsing server response while loading room data.');
+                adminError('Error parsing server response while loading room data.');
                 return;
             }
 
@@ -299,8 +328,8 @@
                     await new Promise(r => setTimeout(r, 200));
                     editIdEl = document.getElementById('editRoomId');
                     if (!editIdEl) {
-                        alert('Edit modal is missing; reloading the page.');
-                        location.reload();
+                        adminError('Edit modal is missing. The page will be reloaded to fix this issue.');
+                        setTimeout(() => location.reload(), 2000);
                         return;
                     }
                 }
@@ -325,13 +354,13 @@
                 clearEditErrors();
                 openEditRoomModal();
             } else {
-                alert('Error loading room data: ' + result.message);
+                adminError('Error loading room data: ' + result.message);
             }
         } catch (error) {
             console.error('Error:', error);
             // Surface the error message to the user for easier debugging
             const msg = error && error.message ? error.message : String(error);
-            alert('An error occurred while loading room data: ' + msg);
+            adminError('An error occurred while loading room data: ' + msg);
         }
     }
 
@@ -340,9 +369,16 @@
     if (ddElem) ddElem.classList.remove('show');
         
         const action = newStatus === 'active' ? 'activate' : 'deactivate';
-        if (!confirm(`Are you sure you want to ${action} this room?`)) {
-            return;
-        }
+        adminConfirm(
+            `Are you sure you want to ${action} this room?`,
+            'Confirm Action',
+            () => performRoomStatusUpdate(roomId, newStatus, action),
+            () => console.log('Room status update cancelled')
+        );
+        return;
+    }
+
+    async function performRoomStatusUpdate(roomId, newStatus, action) {
         
         try {
             const response = await fetch(`/admin/rooms/${roomId}/toggle-status`, {
@@ -357,14 +393,14 @@
             const result = await response.json();
             
             if (result.success) {
-                alert(`Room ${action}d successfully!`);
-                location.reload();
+                adminSuccess(`Room ${action}d successfully!`);
+                refreshRoomsList();
             } else {
-                alert('Error: ' + result.message);
+                adminError('Error: ' + result.message);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred while updating the room status.');
+            adminError('An error occurred while updating the room status.');
         }
     }
 
@@ -424,5 +460,6 @@
         });
     });
     </script>
+    @include('admin.modals.notification_system')
 </body>
 </html>

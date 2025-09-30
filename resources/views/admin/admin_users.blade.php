@@ -294,11 +294,11 @@
                 // Open modal
                 openEditUserModal();
             } else {
-                alert('Error loading user data: ' + result.message);
+                adminError('Error loading user data: ' + result.message);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred while loading user data.');
+            adminError('An error occurred while loading user data.');
         }
     }
 
@@ -306,9 +306,16 @@
         // Close dropdown
         document.getElementById(`dropdown-${userId}`).classList.remove('show');
         
-        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            return;
-        }
+        adminConfirm(
+            'Are you sure you want to delete this user? This action cannot be undone.',
+            'Confirm Deletion',
+            () => performUserDeletion(userId),
+            () => console.log('User deletion cancelled')
+        );
+        return;
+    }
+
+    async function performUserDeletion(userId) {
         
         try {
             const response = await fetch(`/admin/users/${userId}`, {
@@ -322,14 +329,14 @@
             const result = await response.json();
             
             if (result.success) {
-                alert('User deleted successfully!');
+                adminSuccess('User deleted successfully!');
                 location.reload(); // Refresh the page to update the user list
             } else {
-                alert('Error: ' + result.message);
+                adminError('Error: ' + result.message);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred while deleting the user.');
+            adminError('An error occurred while deleting the user.');
         }
     }
 
@@ -443,5 +450,6 @@
         }
     });
     </script>
+    @include('admin.modals.notification_system')
 </body>
 </html>

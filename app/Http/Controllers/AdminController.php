@@ -704,6 +704,65 @@ class AdminController extends Controller
         }
     }
 
+    public function updatePatient(Request $request, $id)
+    {
+        try {
+            $this->verifyAdminAccess();
+
+            // Validate the input based on actual database structure
+            $validated = $request->validate([
+                'first_name' => 'required|string|max:255',
+                'middle_name' => 'nullable|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'date_of_birth' => 'nullable|date',
+                'nationality' => 'nullable|string|max:255',
+                'province' => 'nullable|string|max:255',
+                'city' => 'nullable|string|max:255',
+                'barangay' => 'nullable|string|max:255',
+                'room_no' => 'nullable|string|max:50',
+                'admission_type' => 'nullable|in:Emergency,Elective,Urgent',
+                'service' => 'nullable|in:Inpatient,Outpatient,Emergency Room',
+                'doctor_name' => 'nullable|string|max:255',
+                'doctor_type' => 'nullable|in:Attending,Consultant,Resident',
+                'admission_diagnosis' => 'nullable|string|max:1000',
+                'status' => 'nullable|in:Active,Discharged,Deceased'
+            ]);
+
+            // Update the patient record
+            $updated = \DB::table('patients')
+                ->where('id', $id)
+                ->update(array_merge($validated, [
+                    'updated_at' => now()
+                ]));
+
+            if ($updated) {
+                \Log::info("Patient {$id} updated successfully by admin");
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Patient information updated successfully.'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Patient not found or no changes made.'
+                ], 404);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Update patient error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating patient information.'
+            ], 500);
+        }
+    }
+
     public function updatePatientStatus(Request $request, $id)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
@@ -744,5 +803,411 @@ class AdminController extends Controller
             \Log::error('Update patient status error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error updating patient status.'], 500);
         }
+    }
+
+    public function getPatientDetails($id)
+    {
+        try {
+            $this->verifyAdminAccess();
+
+            \Log::info("Fetching patient details for ID: {$id}");
+
+            $patient = \DB::table('patients')->where('id', $id)->first();
+            
+            if (!$patient) {
+                \Log::warning("Patient not found with ID: {$id}");
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Patient not found.'
+                ], 404);
+            }
+
+            \Log::info("Patient found successfully");
+
+            // Generate patient details form HTML
+            $html = $this->generatePatientDetailsHTML($patient);
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Get patient details error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function generatePatientDetailsHTML($patient)
+    {
+        // Calculate age display
+        $ageDisplay = 'N/A';
+        if ($patient->age_years || $patient->age_months || $patient->age_days) {
+            $ageDisplay = ($patient->age_years ?? 0) . ' years';
+            if ($patient->age_months) {
+                $ageDisplay .= ', ' . $patient->age_months . ' months';
+            }
+            if ($patient->age_days) {
+                $ageDisplay .= ', ' . $patient->age_days . ' days';
+            }
+        }
+
+        $html = '
+        <div class="patient-details-form">
+            <div class="form-header">
+                <h3>Patient Details - ' . htmlspecialchars($patient->first_name . ' ' . $patient->last_name) . '</h3>
+                <div class="form-actions">
+                    <button type="button" id="editBtn" class="btn btn-primary">Edit</button>
+                    <button type="button" id="saveBtn" class="btn btn-success" style="display: none;">Save</button>
+                    <button type="button" id="cancelBtn" class="btn btn-secondary" style="display: none;">Cancel</button>
+                </div>
+            </div>
+            
+            <form id="patientDetailsForm" class="patient-form">
+                <input type="hidden" name="patient_id" value="' . $patient->id . '">
+                
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <h4>Personal Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Patient Number</label>
+                            <input type="text" name="patient_no" value="' . htmlspecialchars($patient->patient_no ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select name="status" disabled>
+                                <option value="Active"' . (($patient->status ?? '') === 'Active' ? ' selected' : '') . '>Active</option>
+                                <option value="Discharged"' . (($patient->status ?? '') === 'Discharged' ? ' selected' : '') . '>Discharged</option>
+                                <option value="Deceased"' . (($patient->status ?? '') === 'Deceased' ? ' selected' : '') . '>Deceased</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="first_name" value="' . htmlspecialchars($patient->first_name ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Middle Name</label>
+                            <input type="text" name="middle_name" value="' . htmlspecialchars($patient->middle_name ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="last_name" value="' . htmlspecialchars($patient->last_name ?? '') . '" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date of Birth</label>
+                            <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Age</label>
+                            <input type="text" value="' . htmlspecialchars($ageDisplay) . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Nationality</label>
+                            <input type="text" name="nationality" value="' . htmlspecialchars($patient->nationality ?? '') . '" readonly>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Address Information Section -->
+                <div class="form-section">
+                    <h4>Address Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Province</label>
+                            <input type="text" name="province" value="' . htmlspecialchars($patient->province ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city" value="' . htmlspecialchars($patient->city ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Barangay</label>
+                            <input type="text" name="barangay" value="' . htmlspecialchars($patient->barangay ?? '') . '" readonly>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Medical Information Section -->
+                <div class="form-section">
+                    <h4>Medical & Admission Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Room Number</label>
+                            <input type="text" name="room_no" value="' . htmlspecialchars($patient->room_no ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Admission Type</label>
+                            <select name="admission_type" disabled>
+                                <option value="Emergency"' . (($patient->admission_type ?? '') === 'Emergency' ? ' selected' : '') . '>Emergency</option>
+                                <option value="Elective"' . (($patient->admission_type ?? '') === 'Elective' ? ' selected' : '') . '>Elective</option>
+                                <option value="Urgent"' . (($patient->admission_type ?? '') === 'Urgent' ? ' selected' : '') . '>Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Service</label>
+                            <select name="service" disabled>
+                                <option value="Inpatient"' . (($patient->service ?? '') === 'Inpatient' ? ' selected' : '') . '>Inpatient</option>
+                                <option value="Outpatient"' . (($patient->service ?? '') === 'Outpatient' ? ' selected' : '') . '>Outpatient</option>
+                                <option value="Emergency Room"' . (($patient->service ?? '') === 'Emergency Room' ? ' selected' : '') . '>Emergency Room</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Doctor Name</label>
+                            <input type="text" name="doctor_name" value="' . htmlspecialchars($patient->doctor_name ?? '') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Doctor Type</label>
+                            <select name="doctor_type" disabled>
+                                <option value="Attending"' . (($patient->doctor_type ?? '') === 'Attending' ? ' selected' : '') . '>Attending</option>
+                                <option value="Consultant"' . (($patient->doctor_type ?? '') === 'Consultant' ? ' selected' : '') . '>Consultant</option>
+                                <option value="Resident"' . (($patient->doctor_type ?? '') === 'Resident' ? ' selected' : '') . '>Resident</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>Admission Diagnosis</label>
+                            <textarea name="admission_diagnosis" rows="3" readonly>' . htmlspecialchars($patient->admission_diagnosis ?? '') . '</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timestamps Section -->
+                <div class="form-section">
+                    <h4>Record Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Created Date</label>
+                            <input type="text" value="' . htmlspecialchars($patient->created_at ?? 'N/A') . '" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Updated</label>
+                            <input type="text" value="' . htmlspecialchars($patient->updated_at ?? 'N/A') . '" readonly>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <style>
+        .patient-details-form {
+            max-width: 100%;
+            font-family: Arial, sans-serif;
+        }
+        
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #6f42c1;
+        }
+        
+        .form-header h3 {
+            margin: 0;
+            color: #6f42c1;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        
+        .form-section h4 {
+            margin: 0 0 15px 0;
+            color: #6f42c1;
+            border-bottom: 1px solid #6f42c1;
+            padding-bottom: 5px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            flex: 1;
+        }
+        
+        .form-group.full-width {
+            flex: none;
+            width: 100%;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #f8f9fa;
+        }
+        
+        .form-group input:not([readonly]):not([disabled]),
+        .form-group select:not([disabled]),
+        .form-group textarea:not([readonly]) {
+            background-color: white;
+            border-color: #6f42c1;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: #6f42c1;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        </style>
+
+        <script>
+        document.getElementById("editBtn").addEventListener("click", function() {
+            // Enable all form fields
+            const form = document.getElementById("patientDetailsForm");
+            const inputs = form.querySelectorAll("input[readonly], select[disabled], textarea[readonly]");
+            
+            inputs.forEach(input => {
+                if (input.name !== "patient_no") { // Keep patient number readonly
+                    input.removeAttribute("readonly");
+                    input.removeAttribute("disabled");
+                }
+            });
+            
+            // Show save/cancel buttons, hide edit button
+            document.getElementById("editBtn").style.display = "none";
+            document.getElementById("saveBtn").style.display = "inline-block";
+            document.getElementById("cancelBtn").style.display = "inline-block";
+        });
+        
+        document.getElementById("cancelBtn").addEventListener("click", function() {
+            // Disable all form fields
+            const form = document.getElementById("patientDetailsForm");
+            const inputs = form.querySelectorAll("input, select, textarea");
+            
+            inputs.forEach(input => {
+                if (input.type !== "hidden") {
+                    if (input.tagName === "SELECT") {
+                        input.setAttribute("disabled", "disabled");
+                    } else {
+                        input.setAttribute("readonly", "readonly");
+                    }
+                }
+            });
+            
+            // Show edit button, hide save/cancel buttons
+            document.getElementById("editBtn").style.display = "inline-block";
+            document.getElementById("saveBtn").style.display = "none";
+            document.getElementById("cancelBtn").style.display = "none";
+        });
+        
+        document.getElementById("saveBtn").addEventListener("click", function() {
+            // Collect form data
+            const form = document.getElementById("patientDetailsForm");
+            const formData = new FormData(form);
+            const patientId = formData.get("patient_id");
+            
+            // Show loading state
+            this.textContent = "Saving...";
+            this.disabled = true;
+            
+            // Send update request
+            fetch(`/admin/patients/${patientId}/update`, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector(\'meta[name="csrf-token"]\').getAttribute("content")
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    adminSuccess("Patient details updated successfully!");
+                    
+                    // Disable all form fields
+                    const inputs = form.querySelectorAll("input, select, textarea");
+                    inputs.forEach(input => {
+                        if (input.type !== "hidden") {
+                            if (input.tagName === "SELECT") {
+                                input.setAttribute("disabled", "disabled");
+                            } else {
+                                input.setAttribute("readonly", "readonly");
+                            }
+                        }
+                    });
+                    
+                    // Show edit button, hide save/cancel buttons
+                    document.getElementById("editBtn").style.display = "inline-block";
+                    document.getElementById("saveBtn").style.display = "none";
+                    document.getElementById("cancelBtn").style.display = "none";
+                } else {
+                    adminError("Error updating patient: " + (data.message || "Unknown error"));
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                adminError("An error occurred while updating the patient details.");
+            })
+            .finally(() => {
+                // Reset button state
+                document.getElementById("saveBtn").textContent = "Save";
+                document.getElementById("saveBtn").disabled = false;
+            });
+        });
+        </script>';
+        
+        return $html;
     }
 }

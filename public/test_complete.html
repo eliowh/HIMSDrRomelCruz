@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Patient Details Test</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta name="csrf-token" content="">
+</head>
+<body>
+    <h2>Complete Patient Details Test</h2>
+    
+    <!-- Login Section -->
+    <div id="loginSection">
+        <h3>Login as Admin</h3>
+        <input type="email" id="email" placeholder="Admin Email">
+        <input type="password" id="password" placeholder="Password">
+        <button id="loginBtn">Login</button>
+    </div>
+    
+    <!-- Patient Details Section -->
+    <div id="patientSection" style="display:none;">
+        <h3>Patient Details Test</h3>
+        <button id="loadPatientBtn">Load Patient Details (ID: 1)</button>
+        <div id="patientDetails"></div>
+    </div>
+    
+    <div id="messages"></div>
+
+    <script>
+        // Get CSRF token from Laravel
+        function getCSRFToken() {
+            return fetch('/admin/home')
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const token = doc.querySelector('meta[name="csrf-token"]');
+                    return token ? token.getAttribute('content') : null;
+                })
+                .catch(() => null);
+        }
+
+        $('#loginBtn').click(function() {
+            const email = $('#email').val();
+            const password = $('#password').val();
+            
+            $.ajax({
+                url: '/login',
+                type: 'POST',
+                data: {
+                    loginemail: email,
+                    loginpassword: password,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#messages').html('<p style="color: green;">Login successful!</p>');
+                    $('#loginSection').hide();
+                    $('#patientSection').show();
+                    
+                    // Update CSRF token for future requests
+                    getCSRFToken().then(token => {
+                        if (token) {
+                            $('meta[name="csrf-token"]').attr('content', token);
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    $('#messages').html('<p style="color: red;">Login failed: ' + xhr.responseText + '</p>');
+                }
+            });
+        });
+
+        $('#loadPatientBtn').click(function() {
+            $.ajax({
+                url: '/admin/patients/1/details',
+                type: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#patientDetails').html(response.html);
+                        $('#messages').html('<p style="color: green;">Patient details loaded successfully!</p>');
+                    } else {
+                        $('#messages').html('<p style="color: red;">Error: ' + response.message + '</p>');
+                    }
+                },
+                error: function(xhr) {
+                    $('#messages').html('<p style="color: red;">Error loading patient details: ' + xhr.status + ' - ' + xhr.responseText + '</p>');
+                }
+            });
+        });
+
+        // Add basic admin notification functions
+        window.adminSuccess = function(message) {
+            $('#messages').html('<p style="color: green; font-weight: bold;">' + message + '</p>');
+        };
+
+        window.adminError = function(message) {
+            $('#messages').html('<p style="color: red; font-weight: bold;">' + message + '</p>');
+        };
+    </script>
+</body>
+</html>

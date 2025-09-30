@@ -207,10 +207,31 @@ document.getElementById('createRoomForm').addEventListener('submit', function(e)
 
 // Handle close button click
 document.querySelector('#addRoomModal .addUserModalClose').addEventListener('click', function() {
-    const form = document.getElementById('createRoomForm');
-    resetForm(form);
-    // Remove any success or error messages
-    const messages = document.querySelectorAll('#addRoomModal .alert-success, #addRoomModal .error-message');
-    messages.forEach(msg => msg.remove());
+    closeAddRoomModal();
 });
+
+// Close modal when clicking outside
+document.getElementById('addRoomModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAddRoomModal();
+    }
+});
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('addRoomModal').style.display === 'flex') {
+        closeAddRoomModal();
+    }
+});
+
+function resetCreateRoomForm() {
+    const form = document.getElementById('createRoomForm');
+    if (form) {
+        form.reset();
+        resetForm(form);
+        // Remove any success or error messages
+        const messages = document.querySelectorAll('#addRoomModal .alert-success, #addRoomModal .error-message');
+        messages.forEach(msg => msg.remove());
+    }
+}
 </script>

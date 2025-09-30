@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Patient Details</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h2>Test Patient Details API</h2>
+    <button id="testBtn">Test Patient Details (ID: 1)</button>
+    <div id="result"></div>
+
+    <script>
+        $('#testBtn').click(function() {
+            $.ajax({
+                url: 'http://127.0.0.1:8000/admin/patients/1/details',
+                type: 'GET',
+                success: function(response) {
+                    console.log('Success:', response);
+                    $('#result').html('<h3>Success!</h3><pre>' + JSON.stringify(response, null, 2) + '</pre>');
+                },
+                error: function(xhr, status, error) {
+                    console.log('Error:', xhr.responseText);
+                    $('#result').html('<h3>Error!</h3><p>Status: ' + xhr.status + '</p><p>Response: ' + xhr.responseText + '</p>');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

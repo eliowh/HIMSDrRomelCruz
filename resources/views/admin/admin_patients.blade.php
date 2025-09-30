@@ -171,24 +171,52 @@
 
     <!-- Patient Details Modal -->
     <div id="patientDetailsModal" class="addUserModal" style="display: none;">
-        <div class="addUserModalContent">
+        <div class="addUserModalContent patient-details-modal">
             <button class="addUserModalClose" onclick="closePatientDetailsModal()">&times;</button>
-            <div class="sign">Patient Details</div>
+            <div class="sign">Patient Information</div>
             
             <div id="patientDetailsContent">
-                <!-- Patient details will be loaded here -->
+                <!-- Patient details form will be loaded here -->
             </div>
         </div>
     </div>
 
     <script>
     function openPatientDetailsModal() {
-        document.getElementById('patientDetailsModal').style.display = 'flex';
+        const modal = document.getElementById('patientDetailsModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        } else {
+            adminError('Patient details modal not found. Please refresh the page.');
+        }
     }
     
     function closePatientDetailsModal() {
-        document.getElementById('patientDetailsModal').style.display = 'none';
+        const modal = document.getElementById('patientDetailsModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
     }
+
+    // Add click-outside-to-close and ESC key functionality for patient modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('patientDetailsModal');
+        if (modal) {
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closePatientDetailsModal();
+                }
+            });
+        }
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+                closePatientDetailsModal();
+            }
+        });
+    });
 
     // Filter and Search Functionality - Server-side search for cross-page results
     const statusFilter = document.getElementById('statusFilter');
@@ -290,19 +318,31 @@
     async function viewPatient(patientId) {
         document.getElementById(`dropdown-${patientId}`).classList.remove('show');
         
+        console.log('Fetching patient details for ID:', patientId);
+        
         try {
             const response = await fetch(`/admin/patients/${patientId}/details`);
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                console.error('HTTP error:', response.status, response.statusText);
+                adminError(`HTTP Error: ${response.status} - ${response.statusText}`);
+                return;
+            }
+            
             const result = await response.json();
+            console.log('Response data:', result);
             
             if (result.success) {
                 document.getElementById('patientDetailsContent').innerHTML = result.html;
                 openPatientDetailsModal();
             } else {
-                alert('Error loading patient details: ' + result.message);
+                console.error('Server error:', result);
+                adminError('Error loading patient details: ' + result.message);
             }
         } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred while loading patient details.');
+            console.error('JavaScript error:', error);
+            adminError('Network or parsing error: ' + error.message);
         }
     }
 
@@ -310,9 +350,16 @@
         document.getElementById(`dropdown-${patientId}`).classList.remove('show');
         
         const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-        if (!confirm(`Are you sure you want to mark this patient as ${statusText}?`)) {
-            return;
-        }
+        adminConfirm(
+            `Are you sure you want to mark this patient as ${statusText}?`,
+            'Confirm Status Change',
+            () => performPatientStatusUpdate(patientId, newStatus, statusText),
+            () => console.log('Patient status update cancelled')
+        );
+        return;
+    }
+
+    async function performPatientStatusUpdate(patientId, newStatus, statusText) {
         
         try {
             const response = await fetch(`/admin/patients/${patientId}/status`, {
@@ -327,14 +374,14 @@
             const result = await response.json();
             
             if (result.success) {
-                alert(`Patient status updated to ${statusText} successfully!`);
+                adminSuccess(`Patient status updated to ${statusText} successfully!`);
                 location.reload();
             } else {
-                alert('Error: ' + result.message);
+                adminError('Error: ' + result.message);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred while updating the patient status.');
+            adminError('An error occurred while updating the patient status.');
         }
     }
 
@@ -347,5 +394,33 @@
         }
     });
     </script>
+
+    <style>
+    /* Patient Details Modal Specific Styling */
+    .patient-details-modal {
+        max-width: 90vw;
+        max-height: 90vh;
+        width: 1000px;
+        overflow: hidden;
+    }
+    
+    .patient-details-modal .sign {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 25px;
+        margin: -20px -25px 20px -25px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+        .patient-details-modal {
+            width: 95vw;
+            max-height: 95vh;
+        }
+    }
+    </style>
+
+    @include('admin.modals.notification_system')
 </body>
 </html>
