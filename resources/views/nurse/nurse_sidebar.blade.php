@@ -47,6 +47,14 @@
     
     // Check localStorage on page load
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize dropdown state variables if not already set
+        if (typeof window.isDropdownOpen === 'undefined') {
+            window.isDropdownOpen = false;
+        }
+        if (typeof window.isModalOpen === 'undefined') {
+            window.isModalOpen = false;
+        }
+        
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.querySelector('.main-content');
         const isCollapsed = localStorage.getItem('nurseSidebarCollapsed') === 'true';
@@ -67,9 +75,16 @@
             // Don't adjust height during modal interactions
             if (window.isModalOpen) return;
             
+            // Don't adjust height during dropdown interactions
+            if (window.isDropdownOpen) return;
+            
             // Check if any modal is currently visible
             const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
             if (visibleModals.length > 0) return;
+            
+            // Check if any suggestion dropdowns are visible
+            const visibleDropdowns = document.querySelectorAll('.icd-suggestions[style*="display: block"], #room-suggestions[style*="display: block"], #icd10-suggestions[style*="display: block"]');
+            if (visibleDropdowns.length > 0) return;
             
             requestAnimationFrame(() => {
                 const contentHeight = mainContent.scrollHeight;
@@ -90,10 +105,15 @@
             if (isToggling) return; // Extra check
             if (window.isFiltering) return; // Don't adjust during filtering
             if (window.isModalOpen) return; // Don't adjust during modal interactions
+            if (window.isDropdownOpen) return; // Don't adjust during dropdown interactions
             
             // Check if any modal is currently visible
             const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
             if (visibleModals.length > 0) return;
+            
+            // Check if any suggestion dropdowns are visible
+            const visibleDropdowns = document.querySelectorAll('.icd-suggestions[style*="display: block"], #room-suggestions[style*="display: block"], #icd10-suggestions[style*="display: block"]');
+            if (visibleDropdowns.length > 0) return;
             
             clearTimeout(heightTimeout);
             heightTimeout = setTimeout(adjustLayoutHeight, 300);
@@ -114,16 +134,31 @@
             // Don't adjust during modal interactions
             if (window.isModalOpen) return;
             
+            // Don't adjust during dropdown interactions
+            if (window.isDropdownOpen) return;
+            
             // Check if any modal is currently visible
             const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
             if (visibleModals.length > 0) return;
             
+            // Check if any suggestion dropdowns are visible
+            const visibleDropdowns = document.querySelectorAll('.icd-suggestions[style*="display: block"], #room-suggestions[style*="display: block"], #icd10-suggestions[style*="display: block"]');
+            if (visibleDropdowns.length > 0) return;
+            
             mutations.forEach(function(mutation) {
-                // Skip mutations related to modals or modal content
+                // Skip mutations related to modals, modal content, or dropdown suggestions
                 if (mutation.target.closest('.modal') || 
                     mutation.target.classList.contains('modal') ||
                     mutation.target.id === 'labRequestModal' ||
-                    mutation.target.closest('#labRequestModal')) {
+                    mutation.target.closest('#labRequestModal') ||
+                    mutation.target.classList.contains('icd-suggestions') ||
+                    mutation.target.classList.contains('icd-suggestion') ||
+                    mutation.target.classList.contains('room-suggestion') ||
+                    mutation.target.id === 'room-suggestions' ||
+                    mutation.target.id === 'icd10-suggestions' ||
+                    mutation.target.closest('#room-suggestions') ||
+                    mutation.target.closest('#icd10-suggestions') ||
+                    mutation.target.closest('.icd-suggestions')) {
                     return;
                 }
                 

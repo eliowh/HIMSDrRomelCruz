@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="{{ url('css/nursecss/edit_patient_modal.css') }}">
+<link rel="stylesheet" href="{{ url('css/nursecss/two_column_form.css') }}">
+<link rel="stylesheet" href="{{ url('css/nursecss/suggestion_dropdowns.css') }}">
 
 <div class="patients-grid">
     <div class="list-column">
@@ -184,6 +186,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Edit modal wiring ---
     const btnEdit = document.getElementById('btnEditPatient');
     const modal = document.getElementById('editModal');
+    
+    // Check if modal exists before proceeding
+    if (!modal) {
+        console.error('Edit modal not found');
+        return;
+    }
 
     function openEditModal(patient){
         const form = document.getElementById('editPatientForm');
@@ -219,10 +227,45 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('edit_doctor_type').value = patient.doctor_type || '';
         document.getElementById('edit_admission_diagnosis').value = patient.admission_diagnosis || '';
         
-        // Set the admission diagnosis description if available
+        // Dynamically populate admission diagnosis description based on the ICD-10 code
         const diagDescField = document.getElementById('edit_admission_diagnosis_description');
-        if (diagDescField) {
-            diagDescField.value = patient.admission_diagnosis_description || '';
+        if (diagDescField && patient.admission_diagnosis) {
+            // Clear the field first
+            diagDescField.value = 'Loading description...';
+            
+            // Fetch the description from ICD-10 lookup
+            fetch('{{ route("icd10.search") }}?q=' + encodeURIComponent(patient.admission_diagnosis))
+                .then(async r => {
+                    const ct = (r.headers.get('content-type') || '').toLowerCase();
+                    const text = await r.text();
+                    
+                    if (ct.includes('application/json')) {
+                        try {
+                            const data = JSON.parse(text);
+                            if (Array.isArray(data) && data.length > 0) {
+                                // Find exact match or first result
+                                const match = data.find(item => 
+                                    item.code && item.code.toLowerCase() === patient.admission_diagnosis.toLowerCase()
+                                ) || data[0];
+                                
+                                diagDescField.value = match.description || 'Description not found';
+                            } else {
+                                diagDescField.value = 'Description not found';
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse ICD-10 description', e);
+                            diagDescField.value = 'Error loading description';
+                        }
+                    } else {
+                        diagDescField.value = 'Error loading description';
+                    }
+                })
+                .catch(e => {
+                    console.error('ICD-10 description fetch error', e);
+                    diagDescField.value = 'Error loading description';
+                });
+        } else if (diagDescField) {
+            diagDescField.value = '';
         }
         
         modal.classList.add('open');
@@ -230,16 +273,92 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function closeModal(){ 
-        modal.classList.remove('open'); 
-        modal.classList.remove('show'); 
+        if (modal) {
+            modal.classList.remove('open'); 
+            modal.classList.remove('show'); 
+        }
     }
-    modal.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeModal));
+    if (modal) {
+        modal.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeModal));
+    }
 
-    // Save button sends PUT to update
-    document.getElementById('savePatientBtn').addEventListener('click', function(e){
-        e.preventDefault(); const form = document.getElementById('editPatientForm');
+    // Save button sends PUT to update with validation
+    const saveBtn = document.getElementById('savePatientBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function(e){
+        e.preventDefault(); 
+        const form = document.getElementById('editPatientForm');
         const patient_no = form.patient_no;
         if(!patient_no) { nurseError('Selection Error', 'No patient selected'); return; }
+        
+        // Get input values for validation
+        const roomInput = document.getElementById('edit_room_no');
+        const icdInput = document.getElementById('edit_admission_diagnosis');
+        const roomValue = roomInput?.value.trim() || '';
+        const icdValue = icdInput?.value.trim() || '';
+        
+        let validationErrors = [];
+        let validationPromises = [];
+        
+        // Validate room if not empty
+        if (roomValue) {
+            const roomValidation = fetch('{{ route("rooms.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name: roomValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                if (!result.valid) {
+                    validationErrors.push('Please select a valid room from the list.');
+                }
+            })
+            .catch(e => {
+                console.error('Room validation error', e);
+                validationErrors.push('Unable to validate room. Please try again.');
+            });
+            
+            validationPromises.push(roomValidation);
+        }
+        
+        // Validate ICD if not empty
+        if (icdValue) {
+            const icdValidation = fetch('{{ route("icd10.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ code: icdValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                if (!result.valid) {
+                    validationErrors.push('Please select a valid ICD-10 code from the list.');
+                }
+            })
+            .catch(e => {
+                console.error('ICD validation error', e);
+                validationErrors.push('Unable to validate ICD-10 code. Please try again.');
+            });
+            
+            validationPromises.push(icdValidation);
+        }
+        
+        // Wait for all validations to complete
+        await Promise.all(validationPromises);
+        
+        // If there are validation errors, show them and stop submission
+        if (validationErrors.length > 0) {
+            const errorMessage = validationErrors.join(' ');
+            nurseError('Validation Error', errorMessage);
+            return;
+        }
+        
+        // If validation passes, proceed with form submission
         const data = new FormData(form);
         const token = _csrf();
         // PHP doesn't parse multipart/form-data for PUT; use POST with _method override so Laravel receives fields
@@ -263,23 +382,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if(ct.includes('application/json')){
                 const j = JSON.parse(text);
-                if(j.ok){ location.reload(); return; }
+                if(j.ok){ 
+                    nurseSuccess('Patient Updated', j.message || 'Patient information updated successfully!');
+                    setTimeout(() => location.reload(), 1500);
+                    return; 
+                }
                 throw new Error('Update failed: ' + (j.message || JSON.stringify(j)));
             }
             // non-json but ok response
-            location.reload();
+            nurseSuccess('Patient Updated', 'Patient information updated successfully!');
+            setTimeout(() => location.reload(), 1500);
         }).catch(e=>{ console.error(e); nurseError('Update Failed', e.message); });
-    });
+        });
+    }
 
     // wire edit button to open modal with currently selected patient
-    btnEdit.addEventListener('click', function(){
-        const patientNo = document.getElementById('md-patient_no').textContent;
-        if(!patientNo || patientNo === '-') { nurseError('Selection Error', 'No patient selected'); return; }
-        // find the row with that patient_no
-        const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
-        if(!row) { nurseError('Search Error', 'Patient not found'); return; }
-        try{ const patient = JSON.parse(row.getAttribute('data-patient')); openEditModal(patient); }catch(e){ console.error(e); nurseError('Modal Error', 'Failed to open edit modal'); }
-    });
+    if (btnEdit) {
+        btnEdit.addEventListener('click', function(){
+            const patientNo = document.getElementById('md-patient_no').textContent;
+            if(!patientNo || patientNo === '-') { nurseError('Selection Error', 'No patient selected'); return; }
+            // find the row with that patient_no
+            const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
+            if(!row) { nurseError('Search Error', 'Patient not found'); return; }
+            try{ const patient = JSON.parse(row.getAttribute('data-patient')); openEditModal(patient); }catch(e){ console.error(e); nurseError('Modal Error', 'Failed to open edit modal'); }
+        });
+    }
 });
 
 // Lab Request Modal Functions

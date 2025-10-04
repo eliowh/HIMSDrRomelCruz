@@ -417,6 +417,10 @@ Route::get('/procedures/category', [App\Http\Controllers\ProcedureController::cl
 // Room Search API
 Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search'])->name('rooms.search');
 
+// Validation APIs
+Route::post('/icd10/validate', [App\Http\Controllers\Icd10Controller::class, 'validate'])->name('icd10.validate');
+Route::post('/rooms/validate', [App\Http\Controllers\RoomController::class, 'validate'])->name('rooms.validate');
+
 
 
 

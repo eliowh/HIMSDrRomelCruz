@@ -1,0 +1,106 @@
+/* Suggestion items common styling for both add patient and edit patient forms */
+.icd-suggestion, .room-suggestion {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.icd-suggestion:hover, .room-suggestion:hover,
+.icd-suggestion.active, .room-suggestion.active {
+    background-color: #f0f7ff;
+}
+
+.icd-suggestion:last-child, .room-suggestion:last-child {
+    border-bottom: none;
+}
+
+.icd-suggestion .code, .room-suggestion .code {
+    font-weight: 600;
+    color: #2563eb;
+    min-width: 60px;
+}
+
+.icd-suggestion .desc, .room-suggestion .desc {
+    color: #4b5563;
+    font-size: 0.9em;
+    margin-left: 10px;
+    flex: 1;
+}
+
+/* Make the dropdowns position consistent */
+.suggestion-list, .icd-suggestions {
+    background: white;
+    border: 1px solid #ddd;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    contain: layout style;
+    margin-top: 4px;
+    z-index: 2000;
+}
+
+/* Container for suggestion input and validation */
+.input-validation-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+}
+
+/* Ensure input containers display properly in modal */
+#editModal .input-validation-container {
+    display: block;
+    width: 100%;
+}
+
+/* Ensure suggestion containers take full width */
+.suggestion-container {
+    width: 100%;
+    position: relative;
+    display: block;
+}
+
+/* Specific styles for edit modal suggestion containers */
+#editModal .suggestion-container {
+    display: block;
+    width: 100%;
+}
+
+/* Validation error styling */
+.validation-error {
+    color: #e53e3e;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 4px;
+    display: none; /* Hidden by default */
+    visibility: hidden; /* Extra assurance it's not visible */
+    height: 0; /* No height when hidden */
+    padding: 0; /* No padding when hidden */
+    border: none; /* No border when hidden */
+    overflow: hidden; /* Hide any content */
+    transition: all 0.2s ease; /* Smooth transition when shown/hidden */
+}
+
+/* Styling when error is shown */
+.validation-error.visible {
+    visibility: visible;
+    height: auto;
+    padding: 6px 10px;
+    border: 1px solid #fed7d7;
+    margin-top: 6px;
+    display: block;
+}
+
+/* Specific styles for edit modal validation errors */
+#editModal .validation-error.visible {
+    display: block;
+    width: 100%;
+}

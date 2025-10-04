@@ -5,7 +5,7 @@
         <h3>Edit Patient</h3>
         <form id="editPatientForm">
             <input type="hidden" name="_token" value="{{ csrf_token() }}" />
-                <div class="form-grid">
+                <div class="two-column-form">
                     <div class="form-group">
                         <label for="edit_first_name">First Name</label>
                         <input id="edit_first_name" name="first_name" placeholder="First name" required />
@@ -23,35 +23,56 @@
                     
                     <div class="form-group">
                         <label for="edit_date_of_birth">Date of Birth</label>
-                        <input id="edit_date_of_birth" name="date_of_birth" type="date" readonly style="background-color: #f5f5f5; color: #666;" />
+                        <input id="edit_date_of_birth" name="date_of_birth" type="date" required />
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_province">Province</label>
-                        <input id="edit_province" name="province" placeholder="Province" />
+                        <input id="edit_province" name="province" placeholder="Enter province" />
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_city">City</label>
-                        <input id="edit_city" name="city" placeholder="City" />
+                        <input id="edit_city" name="city" placeholder="Enter city" />
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_barangay">Barangay</label>
-                        <input id="edit_barangay" name="barangay" placeholder="Barangay" />
+                        <input id="edit_barangay" name="barangay" placeholder="Enter barangay" />
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_nationality">Nationality</label>
-                        <input id="edit_nationality" name="nationality" placeholder="Nationality" />
+                        <input id="edit_nationality" name="nationality" placeholder="Enter nationality" />
                     </div>
+
+                    <div class="form-divider full-width"></div>
 
                     <div class="form-group">
                         <label for="edit_room_no">Room</label>
-                        <div style="position:relative;">
-                            <input id="edit_room_no" name="room_no" placeholder="Room No" autocomplete="off" />
-                            <div id="edit_room_suggestions" class="icd-suggestions" style="position:absolute; left:0; right:0; z-index:2000; display:none;"></div>
+                        <div class="input-validation-container">
+                            <div class="suggestion-container">
+                                <input id="edit_room_no" name="room_no" placeholder="Type room name or price" autocomplete="off" />
+                                <div id="edit_room_suggestions" class="suggestion-list"></div>
+                            </div>
+                            <div id="edit_room_validation_error" class="validation-error"></div>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_admission_diagnosis">Admission Diagnosis (ICD-10)</label>
+                        <div class="input-validation-container">
+                            <div class="suggestion-container">
+                                <input id="edit_admission_diagnosis" name="admission_diagnosis" type="text" autocomplete="off" placeholder="Type ICD-10 code or disease name" />
+                                <div id="edit_icd10_suggestions" class="suggestion-list"></div>
+                            </div>
+                            <div id="edit_icd10_validation_error" class="validation-error"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="edit_admission_diagnosis_description">Admission Diagnosis Description</label>
+                        <input id="edit_admission_diagnosis_description" name="admission_diagnosis_description" type="text" placeholder="Description will appear here" readonly />
                     </div>
                     
                     <div class="form-group">
@@ -77,7 +98,7 @@
                     
                     <div class="form-group">
                         <label for="edit_doctor_name">Doctor</label>
-                        <input id="edit_doctor_name" name="doctor_name" placeholder="Doctor" />
+                        <input id="edit_doctor_name" name="doctor_name" placeholder="Enter doctor's name" />
                     </div>
                     
                     <div class="form-group">
@@ -90,23 +111,10 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="edit_admission_diagnosis">Admission Diagnosis (ICD-10)</label>
-                        <div style="position:relative;">
-                            <input id="edit_admission_diagnosis" name="admission_diagnosis" type="text" autocomplete="off" placeholder="Type ICD-10 code or disease name" />
-                            <div id="edit_icd10_suggestions" class="icd-suggestions" style="position:absolute; left:0; right:0; z-index:2000; display:none;"></div>
-                        </div>
+                    <div class="form-actions full-width">
+                        <button type="button" class="btn cancel-btn modal-close">Cancel</button>
+                        <button id="savePatientBtn" type="button" class="btn submit-btn">Save Changes</button>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_admission_diagnosis_description">Admission Diagnosis Description</label>
-                        <input id="edit_admission_diagnosis_description" name="admission_diagnosis_description" type="text" placeholder="Description will appear here" readonly />
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn cancel-btn modal-close">Cancel</button>
-                    <button id="savePatientBtn" type="button" class="btn submit-btn">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -116,6 +124,10 @@
 <!-- Add ICD-10 and Room suggestion scripts -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize validation state variables
+    let editIcdIsValid = false;
+    let editRoomIsValid = false;
+    
     // Dynamic height adjustment for modal
     function adjustModalHeight() {
         const modal = document.getElementById('editModal');
@@ -166,250 +178,392 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // ICD-10 Suggestion functionality
-    (function() {
+    // Enhanced ICD-10 autocomplete with validation
+    (function(){
         const input = document.getElementById('edit_admission_diagnosis');
         const descField = document.getElementById('edit_admission_diagnosis_description');
         const container = document.getElementById('edit_icd10_suggestions');
+        const errorDiv = document.getElementById('edit_icd10_validation_error');
         if (!input || !container) return;
         
-        let timer = null;
-        let activeIndex = -1;
+        let timer = null; 
+        let activeIndex = -1; 
         let lastItems = [];
         
-        function clearSuggestions() {
-            container.innerHTML = '';
-            container.style.display = 'none';
-            activeIndex = -1;
-            lastItems = [];
+        function clearSuggestions(){ 
+            container.innerHTML=''; 
+            container.style.display='none'; 
+            activeIndex=-1; 
+            lastItems=[];
+            // Reset dropdown state when clearing suggestions
+            window.isDropdownOpen = false;
         }
         
-        function renderSuggestions(items) {
-            lastItems = items;
-            if (!items || !items.length) {
-                clearSuggestions();
+        function renderSuggestions(items, showAll = false){ 
+            lastItems=items; 
+            if(!items||!items.length){ 
+                clearSuggestions(); 
+                return;
+            } 
+            container.innerHTML=''; 
+            
+            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 10);
+            
+            itemsToShow.forEach((it,idx)=>{ 
+                const el=document.createElement('div'); 
+                el.className='icd-suggestion'; 
+                el.dataset.index=idx; 
+                el.innerHTML = '<span class="code">'+escapeHtml(it.code)+'</span> <span class="desc">'+escapeHtml(it.description)+'</span>'; 
+                el.addEventListener('click',()=>selectItem(idx, itemsToShow)); 
+                container.appendChild(el); 
+            }); 
+            container.style.display='block'; 
+            activeIndex=-1; 
+        }
+        
+        function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
+        
+        function selectItem(idx, items = lastItems){ 
+            const item=items[idx]; 
+            if(!item) return; 
+            input.value = item.code || ''; 
+            if(descField) descField.value = item.description || ''; 
+            editIcdIsValid = true;
+            hideError();
+            clearSuggestions(); 
+            window.isModalOpen = false;
+            window.isDropdownOpen = false;
+        }
+        
+        function highlightActive(){ 
+            const nodes = container.querySelectorAll('.icd-suggestion'); 
+            nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+        }
+        
+        function showError(message) {
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                errorDiv.classList.add('visible');
+            }
+        }
+        
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+                errorDiv.classList.remove('visible');
+            }
+        }
+        
+        function validateIcdInput() {
+            const currentValue = input.value.trim();
+            if (!currentValue) {
+                editIcdIsValid = true; // Allow empty
+                hideError();
                 return;
             }
             
-            container.innerHTML = '';
-            items.forEach((it, idx) => {
-                const el = document.createElement('div');
-                el.className = 'icd-suggestion';
-                el.dataset.index = idx;
-                el.innerHTML = '<span class="code">' + escapeHtml(it.code) + '</span> <span class="desc">' + escapeHtml(it.description) + '</span>';
-                el.addEventListener('click', () => selectItem(idx));
-                container.appendChild(el);
+            // Validate against full database via server
+            fetch('{{ route("icd10.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ code: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                editIcdIsValid = result.valid || false;
+                if (!editIcdIsValid) {
+                    showError('Please select a valid ICD-10 code from the list.');
+                } else {
+                    hideError();
+                }
+            })
+            .catch(e => {
+                console.error('ICD validation error', e);
+                editIcdIsValid = false;
+                showError('Unable to validate ICD-10 code. Please try again.');
             });
-            
-            container.style.display = 'block';
-            activeIndex = -1;
         }
         
-        function escapeHtml(s) {
-            if (!s) return '';
-            return s.replace(/[&<>"']/g, (m) => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[m]));
-        }
-        
-        function selectItem(idx) {
-            const item = lastItems[idx];
-            if (!item) return;
-            input.value = item.code || item.description || '';
-            descField.value = item.description || '';
-            clearSuggestions();
-        }
-        
-        function highlightActive() {
-            const nodes = container.querySelectorAll('.icd-suggestion');
-            nodes.forEach((n, i) => n.classList.toggle('active', i === activeIndex));
-        }
-        
-        input.addEventListener('input', () => {
-            const q = input.value.trim();
-            if (timer) clearTimeout(timer);
-            if (q.length < 1) {
-                clearSuggestions();
-                return;
+        input.addEventListener('input', ()=>{
+            editIcdIsValid = false;
+            if(descField) descField.value = '';
+            clearTimeout(timer);
+            const val = input.value.trim();
+            if(!val){ 
+                clearSuggestions(); 
+                hideError();
+                return; 
             }
             
-            timer = setTimeout(() => {
-                const url = '{{ route("icd10.search") }}?q=' + encodeURIComponent(q);
-                
-                fetch(url)
-                    .then(async r => {
-                        const ct = (r.headers.get('content-type') || '').toLowerCase();
-                        const text = await r.text();
-                        
-                        if (ct.includes('application/json')) {
-                            try {
-                                const data = JSON.parse(text);
-                                renderSuggestions(Array.isArray(data) ? data : []);
-                            } catch (parseErr) {
-                                console.error('Failed to parse JSON', parseErr, text);
-                                clearSuggestions();
-                            }
-                        } else {
-                            console.warn('Non-JSON response for ICD10 search', r.status, ct, text);
-                            clearSuggestions();
+            timer = setTimeout(()=>{
+                fetch('{{ route("icd10.search") }}?q='+encodeURIComponent(val))
+                    .then(async r=>{
+                        const ct=(r.headers.get('content-type')||'').toLowerCase();
+                        const text=await r.text();
+                        if(ct.includes('application/json')){
+                            try{ 
+                                const codes = JSON.parse(text);
+                                renderSuggestions(codes);
+                            }catch(e){ console.error('ICD parse error',e); }
                         }
                     })
-                    .catch(e => {
-                        console.error('ICD10 fetch error', e);
-                        clearSuggestions();
-                    });
-            }, 250);
+                    .catch(e=>console.error('ICD fetch error',e));
+            }, 300);
         });
         
-        input.addEventListener('keydown', (e) => {
-            const nodes = container.querySelectorAll('.icd-suggestion');
-            if (!nodes.length) return;
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                activeIndex = Math.min(activeIndex + 1, nodes.length - 1);
-                highlightActive();
-                nodes[activeIndex].scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                activeIndex = Math.max(activeIndex - 1, 0);
-                highlightActive();
-                nodes[activeIndex].scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (activeIndex >= 0) selectItem(activeIndex);
-            } else if (e.key === 'Escape') {
-                clearSuggestions();
-            }
+        input.addEventListener('focus', () => {
+            window.isModalOpen = true;
+            window.isDropdownOpen = true;
         });
         
-        document.addEventListener('click', (e) => {
-            if (!container.contains(e.target) && e.target !== input) clearSuggestions();
+        input.addEventListener('keydown', (e)=>{
+            if(!lastItems.length) return;
+            if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%lastItems.length; highlightActive(); }
+            else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=activeIndex<=0?(lastItems.length-1):(activeIndex-1); highlightActive(); }
+            else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); }
+            else if(e.key==='Escape'){ clearSuggestions(); }
         });
-    })();
-    
-    // Room Suggestion functionality
-    (function() {
-        const input = document.getElementById('edit_room_no');
-        const container = document.getElementById('edit_room_suggestions');
-        if (!input || !container) return;
         
-        let timer = null;
-        let activeIndex = -1;
-        let lastItems = [];
-        
-        function escapeHtml(s) {
-            if (!s) return '';
-            return String(s).replace(/[&<>"']/g, (m) => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[m]));
-        }
-        
-        function clearSuggestions() {
-            container.innerHTML = '';
-            container.style.display = 'none';
-            activeIndex = -1;
-            lastItems = [];
-        }
-        
-        function renderSuggestions(items) {
-            lastItems = items || [];
-            if (!lastItems.length) {
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                validateIcdInput();
                 clearSuggestions();
-                return;
-            }
-            
-            container.innerHTML = '';
-            lastItems.forEach((it, idx) => {
-                const el = document.createElement('div');
-                el.className = 'icd-suggestion';
-                el.dataset.index = idx;
-                el.innerHTML = '<span class="code">' + escapeHtml(it.name) + '</span>';
-                el.addEventListener('click', () => selectItem(idx));
-                container.appendChild(el);
-            });
-            
-            container.style.display = 'block';
-            activeIndex = -1;
-        }
-        
-        function selectItem(idx) {
-            const item = lastItems[idx];
-            if (!item) return;
-            input.value = item.name || '';
-            clearSuggestions();
-        }
-        
-        function highlightActive() {
-            const nodes = container.querySelectorAll('.icd-suggestion');
-            nodes.forEach((n, i) => n.classList.toggle('active', i === activeIndex));
-        }
-        
-        input.addEventListener('input', () => {
-            const q = input.value.trim();
-            if (timer) clearTimeout(timer);
-            if (q.length < 1) {
-                clearSuggestions();
-                return;
-            }
-            
-            timer = setTimeout(() => {
-                const url = '{{ route("rooms.search") }}?q=' + encodeURIComponent(q);
-                fetch(url).then(async r => {
-                    const ct = (r.headers.get('content-type') || '').toLowerCase();
-                    const text = await r.text();
-                    if (ct.includes('application/json')) {
-                        try {
-                            const data = JSON.parse(text);
-                            renderSuggestions(Array.isArray(data) ? data : []);
-                        } catch (e) {
-                            console.error('Room parse error', e);
-                            clearSuggestions();
-                        }
-                    } else {
-                        console.warn('Non-JSON response for rooms search', r.status);
-                        clearSuggestions();
-                    }
-                }).catch(e => {
-                    console.error('Rooms fetch error', e);
-                    clearSuggestions();
-                });
+                window.isModalOpen = false;
+                window.isDropdownOpen = false;
             }, 200);
         });
         
-        input.addEventListener('keydown', (e) => {
-            const nodes = container.querySelectorAll('.icd-suggestion');
-            if (!nodes.length) return;
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                activeIndex = Math.min(activeIndex + 1, nodes.length - 1);
-                highlightActive();
-                nodes[activeIndex].scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                activeIndex = Math.max(activeIndex - 1, 0);
-                highlightActive();
-                nodes[activeIndex].scrollIntoView({ block: 'nearest' });
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (activeIndex >= 0) selectItem(activeIndex);
-            } else if (e.key === 'Escape') {
+        document.addEventListener('click',(e)=>{ 
+            if(!container.contains(e.target) && e.target !== input) {
                 clearSuggestions();
+                // Reset dropdown state when clicking outside
+                window.isDropdownOpen = false;
+                window.isModalOpen = false;
             }
         });
+    })();
+    
+    // Enhanced room autocomplete with validation
+    (function(){
+        const input = document.getElementById('edit_room_no');
+        const container = document.getElementById('edit_room_suggestions');
+        const errorDiv = document.getElementById('edit_room_validation_error');
+        if (!input || !container) return;
         
-        document.addEventListener('click', (e) => {
-            if (!container.contains(e.target) && e.target !== input) clearSuggestions();
+        let timer = null;
+        let activeIndex = -1;
+        let lastItems = [];
+
+        function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        
+        function clearSuggestions(){ 
+            container.innerHTML=''; 
+            container.style.display='none'; 
+            activeIndex=-1; 
+            lastItems=[];
+            // Reset dropdown state when clearing suggestions
+            window.isDropdownOpen = false;
+        }
+        
+        function renderSuggestions(items, showAll = false){ 
+            lastItems = items || []; 
+            if(!lastItems.length){ clearSuggestions(); return; } 
+            container.innerHTML = ''; 
+            
+            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 10);
+
+            itemsToShow.forEach((it,idx)=>{ 
+                const el=document.createElement('div'); 
+                el.className='room-suggestion'; 
+                el.dataset.index=idx; 
+                el.innerHTML = '<span class="code">'+escapeHtml(it.name)+'</span>' + (it.price ? ' <span class="desc">₱'+escapeHtml(it.price)+'</span>' : '');
+                el.addEventListener('click',()=>selectItem(idx, itemsToShow)); 
+                container.appendChild(el); 
+            }); 
+            container.style.display='block'; 
+            activeIndex=-1; 
+        }
+        
+        function selectItem(idx, items = lastItems){ 
+            const item=items[idx]; 
+            if(!item) return; 
+            input.value = item.name || ''; 
+            editRoomIsValid = true;
+            hideError();
+            clearSuggestions(); 
+            window.isModalOpen = false;
+            window.isDropdownOpen = false;
+        }
+        
+        function highlightActive(){ 
+            const nodes = container.querySelectorAll('.room-suggestion'); 
+            nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+        }
+
+        function showError(message) {
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('visible');
+            }
+        }
+        
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.classList.remove('visible');
+            }
+        }
+
+        function validateRoomInput() {
+            const currentValue = input.value.trim();
+            if (!currentValue) {
+                editRoomIsValid = true; // Allow empty
+                hideError();
+                return;
+            }
+            
+            // Validate against full database via server
+            fetch('{{ route("rooms.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                editRoomIsValid = result.valid || false;
+                if (!editRoomIsValid) {
+                    showError('Please select a valid room from the list.');
+                } else {
+                    hideError();
+                }
+            })
+            .catch(e => {
+                console.error('Room validation error', e);
+                editRoomIsValid = false;
+                showError('Unable to validate room. Please try again.');
+            });
+        }
+
+        input.addEventListener('input', ()=>{
+            editRoomIsValid = false;
+            clearTimeout(timer);
+            const val = input.value.trim();
+            if(!val){ clearSuggestions(); hideError(); return; }
+            
+            timer = setTimeout(()=>{
+                fetch('{{ route("rooms.search") }}?q='+encodeURIComponent(val))
+                    .then(async r=>{
+                        const ct=(r.headers.get('content-type')||'').toLowerCase();
+                        const text=await r.text();
+                        if(ct.includes('application/json')){
+                            try{ 
+                                const rooms = JSON.parse(text);
+                                renderSuggestions(rooms); // Show filtered results
+                            }catch(e){ console.error('Room parse error',e); }
+                        }
+                    })
+                    .catch(e=>console.error('Room fetch error',e));
+            }, 300);
+        });
+
+        input.addEventListener('focus', () => {
+            window.isModalOpen = true;
+            window.isDropdownOpen = true;
+        });
+
+        input.addEventListener('keydown', (e)=>{
+            if(!lastItems.length) return;
+            if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%lastItems.length; highlightActive(); }
+            else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=activeIndex<=0?(lastItems.length-1):(activeIndex-1); highlightActive(); }
+            else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); }
+            else if(e.key==='Escape'){ clearSuggestions(); }
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                validateRoomInput();
+                clearSuggestions();
+                window.isModalOpen = false;
+                window.isDropdownOpen = false;
+            }, 200);
+        });
+
+        document.addEventListener('click',(e)=>{ 
+            if(!container.contains(e.target) && e.target !== input) {
+                clearSuggestions();
+                // Reset dropdown state when clicking outside
+                window.isDropdownOpen = false;
+                window.isModalOpen = false;
+            }
         });
     })();
 });
 </script>
+
+<style>
+/* Room and ICD suggestions styling */
+.room-suggestion, .icd-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+.room-suggestion:hover, .icd-suggestion:hover,
+.room-suggestion.active, .icd-suggestion.active {
+    background-color: #f0f8ff;
+}
+.room-suggestion .code, .icd-suggestion .code {
+    font-weight: bold;
+    color: #2c5f2d;
+}
+.room-suggestion .desc, .icd-suggestion .desc {
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+/* ICD suggestions styling */
+.icd-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+.icd-suggestion:hover,
+.icd-suggestion.active {
+    background-color: #f0f8ff;
+}
+.icd-suggestion .code {
+    font-weight: bold;
+    color: #0066cc;
+}
+.icd-suggestion .desc {
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+/* Ensure suggestion dropdowns don't affect layout */
+.icd-suggestions,
+#edit_room_suggestions,
+#edit_icd10_suggestions {
+    position: absolute !important;
+    z-index: 9999 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 4px !important;
+    contain: layout style !important;
+}
+
+/* Prevent suggestion containers from triggering layout recalculations */
+.icd-suggestions *,
+#edit_room_suggestions *,
+#edit_icd10_suggestions * {
+    contain: layout style !important;
+}
+</style>

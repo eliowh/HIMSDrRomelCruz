@@ -3,7 +3,7 @@
 /* Modal specific overrides for dynamic sizing */
 #editModal .modal-content {
     width: 95%;
-    max-width: 500px; /* Narrower width for vertical layout */
+    max-width: 920px; /* Match width of nurse-card in add patient form */
     max-height: 90vh; /* Limit height to 90% of viewport height */
     display: flex;
     flex-direction: column;
@@ -16,17 +16,23 @@
     max-height: calc(90vh - 70px); /* Account for modal header */
 }
 
-/* Vertical layout - single column */
-#editPatientForm > div {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+/* Adjust modal for smaller screens */
+@media (max-width: 768px) {
+    #editModal .modal-content {
+        max-width: 500px; /* Narrower width for vertical layout */
+    }
+}
+
+/* Ensure form groups display as blocks */
+#editModal .form-group {
+    display: block;
     width: 100%;
 }
 
-/* Form layout */
-#editPatientForm .form-group {
-    margin-bottom: 16px;
+#editModal .two-column-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 20px;
     width: 100%;
 }
 
@@ -35,6 +41,13 @@
     margin-bottom: 6px;
     font-weight: 600;
     color: #374151;
+}
+
+#editPatientForm input,
+#editPatientForm select,
+#editPatientForm textarea {
+    display: block;
+    width: 100%;
     font-size: 0.95rem;
 }
 
