@@ -4,8 +4,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Users Management</title>
-    <link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
-    <link rel="stylesheet" href="{{url('css/pagination.css')}}">
+    <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
+    <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
 </head>
 <body>
     @php

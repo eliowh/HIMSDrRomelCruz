@@ -7,8 +7,8 @@
                                     @endphp
                                     {{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}
                                 </td>title>Patient Records</title>
-    <link rel="stylesheet" href="{{url('css/doctorcss/doctor.css')}}">
-    <link rel="stylesheet" href="{{url('css/pagination.css')}}">
+    <link rel="stylesheet" href="{{asset('css/doctorcss/doctor.css')}}">
+    <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
 </head>
 <body>
     @php

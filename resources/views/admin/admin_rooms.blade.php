@@ -8,8 +8,8 @@
             adminError('Unable to find selected room.');
             return;
         }gement</title>
-    <link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
-    <link rel="stylesheet" href="{{url('css/pagination.css')}}">
+    <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
+    <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
 </head>
 <body>
     @php
