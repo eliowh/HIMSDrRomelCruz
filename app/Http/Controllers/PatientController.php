@@ -62,11 +62,15 @@ class PatientController extends Controller
             // admission fields
             'room_no' => 'nullable|string|max:50',
             'admission_type' => 'nullable|string|max:100',
-            'service' => 'nullable|string|max:100',
             'doctor_name' => 'nullable|string|max:191',
             'doctor_type' => 'nullable|string|max:100',
             'admission_diagnosis' => 'nullable|string|max:2000',
         ]);
+
+        // If the form uses admission_type to represent service, map it to service column for backward compatibility
+        if (!empty($data['admission_type']) && empty($data['service'])) {
+            $data['service'] = $data['admission_type'];
+        }
 
         $patient = Patient::create($data);
 
@@ -93,11 +97,15 @@ class PatientController extends Controller
             'nationality' => 'nullable|string|max:191',
             'room_no' => 'nullable|string|max:50',
             'admission_type' => 'nullable|string|max:100',
-            'service' => 'nullable|string|max:100',
             'doctor_name' => 'nullable|string|max:191',
             'doctor_type' => 'nullable|string|max:100',
             'admission_diagnosis' => 'nullable|string|max:2000',
         ]);
+
+        // Maintain backward compatibility: if service is not provided, copy admission_type into service
+        if (!empty($data['admission_type']) && empty($data['service'])) {
+            $data['service'] = $data['admission_type'];
+        }
 
         $patient->update($data);
 

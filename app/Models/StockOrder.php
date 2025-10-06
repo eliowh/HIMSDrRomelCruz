@@ -17,6 +17,7 @@ class StockOrder extends Model
         'brand_name',
         'quantity',
         'unit_price',
+        'source',
         'total_price',
         'status',
         'notes',

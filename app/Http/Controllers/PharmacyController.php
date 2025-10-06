@@ -365,4 +365,70 @@ class PharmacyController extends Controller
             'lowStockCount'
         ));
     }
+
+    /**
+     * Show nurse-submitted medicine requests for pharmacy staff
+     */
+    public function nurseRequests(Request $request)
+    {
+        // Show pharmacy staff the orders submitted by nurses
+        $query = StockOrder::with('user')
+            ->orderBy('requested_at', 'desc')
+            ->where('source', 'nurse');
+
+        $orders = $query->paginate(15)->appends($request->query());
+
+        $statusCounts = [
+            'all' => StockOrder::where('source', 'nurse')->count(),
+            'pending' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_PENDING)->count(),
+            'approved' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_APPROVED)->count(),
+            'completed' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_COMPLETED)->count(),
+            'cancelled' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_CANCELLED)->count(),
+        ];
+
+        return view('pharmacy.pharmacy_requests', compact('orders', 'statusCounts'));
+    }
+
+    /**
+     * Store a nurse-submitted pharmacy order
+     */
+    public function storeNurseRequest(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'patient_id' => 'required|exists:patients,id',
+            'item_code' => 'nullable|string',
+            'generic_name' => 'nullable|string',
+            'brand_name' => 'nullable|string',
+            'quantity' => 'required|integer|min:1',
+            'unit_price' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $stockOrder = new StockOrder([
+                'user_id' => auth()->id(),
+                'item_code' => $request->item_code ?: null,
+                'generic_name' => $request->generic_name ?: null,
+                'brand_name' => $request->brand_name ?: null,
+                'quantity' => $request->quantity,
+                'unit_price' => $request->unit_price ?: 0,
+                'notes' => $request->notes ?: null,
+                'requested_at' => now(),
+                'status' => StockOrder::STATUS_PENDING,
+            ]);
+
+            // mark source as nurse so pharmacy can filter
+            $stockOrder->source = 'nurse';
+            $stockOrder->calculateTotalPrice();
+            $stockOrder->save();
+
+            return response()->json(['success' => true, 'message' => 'Request submitted to pharmacy', 'order' => $stockOrder]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to submit request: ' . $e->getMessage()], 500);
+        }
+    }
 }
