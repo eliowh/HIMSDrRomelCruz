@@ -5,12 +5,10 @@
 @section('content')
 @php $patients = $patients ?? collect(); $q = $q ?? ''; @endphp
 
-    <link rel="stylesheet" href="{{ url('css/nursecss/nurse_patients.css') }}">
-    <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Fallback for production -->
+    <link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{{ url('css/nursecss/edit_patient_modal.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/two_column_form.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/suggestion_dropdowns.css') }}">
 
 <div class="patients-grid">
     <div class="list-column">

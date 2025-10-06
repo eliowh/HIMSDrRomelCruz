@@ -1,10 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-<link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients_fixes.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/two_column_form.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/suggestion_dropdowns.css') }}">
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Fallback for production -->
+    <link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
 <div class="nurse-card">
     <h3>Add Patient</h3>
 

@@ -1,3 +1,32 @@
+/* Import all CSS files */
+@import './nursecss/nurse.css';
+@import './nursecss/nurse_addPatients.css';
+@import './nursecss/nurse_addPatients_fixes.css';
+@import './nursecss/nurse_patients.css';
+@import './nursecss/two_column_form.css';
+@import './nursecss/suggestion_dropdowns.css';
+@import './nursecss/edit_patient_modal.css';
+
+@import './pharmacycss/pharmacy.css';
+
+@import './labtechcss/labtech.css';
+
+@import './inventorycss/inventory.css';
+@import './inventorycss/add_stock_modal.css';
+@import './inventorycss/inventory_reports.css';
+@import './inventorycss/inventory_orders.css';
+
+@import './admincss/admin.css';
+
+@import './doctorcss/doctor.css';
+
+@import './cashiercss/cashier.css';
+
+@import './forgotPass.css';
+@import './pagination.css';
+@import './error_403.css';
+@import './resetPass.css';
+
 body {
     margin: 0;
     padding: 0;

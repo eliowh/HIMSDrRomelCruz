@@ -1,0 +1,159 @@
+/* Edit Patient Modal Styles */
+
+/* Modal specific overrides for dynamic sizing */
+#editModal .modal-content {
+    width: 95%;
+    max-width: 920px; /* Match width of nurse-card in add patient form */
+    max-height: 90vh; /* Limit height to 90% of viewport height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Hide overflow in the container */
+}
+
+#editModal .modal-content form {
+    overflow-y: auto; /* Enable scrolling for the form */
+    padding: 20px 24px 24px;
+    max-height: calc(90vh - 70px); /* Account for modal header */
+}
+
+/* Adjust modal for smaller screens */
+@media (max-width: 768px) {
+    #editModal .modal-content {
+        max-width: 500px; /* Narrower width for vertical layout */
+    }
+}
+
+/* Ensure form groups display as blocks */
+#editModal .form-group {
+    display: block;
+    width: 100%;
+}
+
+#editModal .two-column-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 20px;
+    width: 100%;
+}
+
+#editPatientForm label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #374151;
+}
+
+#editPatientForm input,
+#editPatientForm select,
+#editPatientForm textarea {
+    display: block;
+    width: 100%;
+    font-size: 0.95rem;
+}
+
+#editPatientForm input,
+#editPatientForm select,
+#editPatientForm textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+#editPatientForm input:focus,
+#editPatientForm select:focus,
+#editPatientForm textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+#editPatientForm textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* ICD-10 suggestions */
+.icd-suggestions {
+    background: #fff;
+    border: 1px solid #ddd;
+    max-height: 240px;
+    overflow: auto;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.icd-suggestion {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.icd-suggestion:last-child {
+    border-bottom: none;
+}
+
+.icd-suggestion:hover,
+.icd-suggestion.active {
+    background: #f0f7f1;
+}
+
+.icd-suggestion .code {
+    font-weight: 700;
+    color: #1a4931;
+    margin-right: 8px;
+}
+
+.icd-suggestion .desc {
+    color: #333;
+    font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #editPatientForm > div {
+        grid-template-columns: 1fr; /* Single column on smaller screens */
+    }
+    
+    #editModal .modal-content {
+        width: 95%;
+        max-width: 95%;
+        max-height: 95vh;
+    }
+    
+    #editModal .modal-content form {
+        max-height: calc(95vh - 70px);
+        padding: 16px;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+    #editModal .modal-content {
+        width: 98%;
+        border-radius: 8px;
+    }
+    
+    #editPatientForm .form-group {
+        margin-bottom: 12px;
+    }
+    
+    #editPatientForm label {
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+    
+    #editPatientForm input,
+    #editPatientForm select,
+    #editPatientForm textarea {
+        padding: 8px 10px;
+    }
+    
+    .form-actions {
+        padding-top: 12px;
+        margin-top: 16px;
+    }
+}

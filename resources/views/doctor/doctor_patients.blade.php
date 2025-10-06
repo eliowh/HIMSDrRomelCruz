@@ -7,8 +7,9 @@
                                     @endphp
                                     {{ $ageYears !== null ? $ageYears.' years' : 'N/A' }}
                                 </td>title>Patient Records</title>
-    <link rel="stylesheet" href="{{url('css/doctorcss/doctor.css')}}">
-    <link rel="stylesheet" href="{{url('css/pagination.css')}}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Fallback for production -->
+    <link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
 </head>
 <body>
     @php

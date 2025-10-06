@@ -1,4 +1,6 @@
-<link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+<!-- Fallback for production -->
+<link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
 <div id="addRoomModal" class="addUserModal">
     <div class="addUserModalContent">
         <button onclick="closeAddRoomModal()" class="addUserModalClose">&times;</button>
