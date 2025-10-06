@@ -421,6 +421,57 @@ Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search
 Route::post('/icd10/validate', [App\Http\Controllers\Icd10Controller::class, 'validate'])->name('icd10.validate');
 Route::post('/rooms/validate', [App\Http\Controllers\RoomController::class, 'validate'])->name('rooms.validate');
 
+/*
+|--------------------------------------------------------------------------
+| ASSET FALLBACK ROUTES (FOR RAILWAY DEPLOYMENT)
+|--------------------------------------------------------------------------
+| These routes serve static assets when the web server fails to serve them
+| This is a fallback for Railway deployment issues with static files
+|
+*/
+
+// Fallback route for CSS files
+Route::get('/css/{file}', function ($file) {
+    $path = public_path('css/' . $file);
+    
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'text/css',
+            'Cache-Control' => 'public, max-age=31536000'
+        ]);
+    }
+    
+    abort(404);
+})->where('file', '.*\.css$');
+
+// Fallback route for nested CSS files
+Route::get('/css/{folder}/{file}', function ($folder, $file) {
+    $path = public_path('css/' . $folder . '/' . $file);
+    
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'text/css',
+            'Cache-Control' => 'public, max-age=31536000'
+        ]);
+    }
+    
+    abort(404);
+})->where('file', '.*\.css$');
+
+// Fallback route for JS files
+Route::get('/js/{file}', function ($file) {
+    $path = public_path('js/' . $file);
+    
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'application/javascript',
+            'Cache-Control' => 'public, max-age=31536000'
+        ]);
+    }
+    
+    abort(404);
+})->where('file', '.*\.js$');
+
 
 
 
