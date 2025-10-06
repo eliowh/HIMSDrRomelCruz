@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy - Nurse Requests</title>
-    <link rel="stylesheet" href="{{ url('css/pharmacycss/pharmacy.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>

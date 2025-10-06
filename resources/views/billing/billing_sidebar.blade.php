@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing Dashboard</title>
-    <link rel="stylesheet" href="{{ url('css/billingcss/billing.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/billingcss/billing.css') }}">
 </head>
 <div class="sidebar" id="billing-sidebar">
     <div class="logo">
@@ -15,25 +15,25 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/billing/home') }}"
+                <a href="{{ asset('/billing/home') }}"
                    class="sidebar-btn{{ request()->is('billing/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/billing/invoices') }}"
+                <a href="{{ asset('/billing/invoices') }}"
                    class="sidebar-btn{{ request()->is('billing/invoices') ? ' active' : '' }}">
                     <span class="icon">💳</span> <span class="text">Invoices</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/billing/payments') }}"
+                <a href="{{ asset('/billing/payments') }}"
                    class="sidebar-btn{{ request()->is('billing/payments') ? ' active' : '' }}">
                     <span class="icon">💰</span> <span class="text">Payments</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/billing/account') }}"
+                <a href="{{ asset('/billing/account') }}"
                    class="sidebar-btn{{ request()->is('billing/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>
