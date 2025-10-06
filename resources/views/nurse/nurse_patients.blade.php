@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="{{ asset('css/nursecss/edit_patient_modal.css') }}">
 <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
 <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
-
+<link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
@@ -55,7 +55,8 @@
                                 <td class="col-natl">{{ $p->nationality }}</td>
                                 <td class="col-actions">
                                     <button type="button" class="btn view-btn js-open-patient">View</button>
-                                    <button type="button" class="request-btn btn" onclick="openLabRequestModal({{ $p->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $p->patient_no }}')">Request</button>
+                                    <button type="button" class="request-btn btn" onclick="openLabRequestModal({{ $p->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $p->patient_no }}')">Request Lab</button>
+                                    <button type="button" class="request-btn btn" onclick="openMedicineRequestModal({{ $p->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $p->patient_no }}')">Request Medicine</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -105,6 +106,7 @@
 </div>
 
 @include('nurse.modals.lab_request_modal')
+@include('nurse.modals.medicine_request_modal')
 @include('nurse.modals.edit_patient_modal')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">

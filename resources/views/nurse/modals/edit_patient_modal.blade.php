@@ -78,36 +78,47 @@
                     <div class="form-group">
                         <label for="edit_admission_type">Admission Type</label>
                         <select id="edit_admission_type" name="admission_type" required>
-                            <option value="" disabled selected>-- Select --</option>
-                            <option value="Emergency">Emergency</option>
-                            <option value="Elective">Elective</option>
-                            <option value="Transfer">Transfer</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_service">Service</label>
-                        <select id="edit_service" name="service" required>
                             <option value="" disabled selected>-- Select Service --</option>
                             <option value="Inpatient">Inpatient</option>
                             <option value="Outpatient">Outpatient</option>
-                            <option value="Surgery">Surgery</option>
+                            <!-- Surgery option removed per request -->
                             <option value="Emergency">Emergency</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_doctor_name">Doctor</label>
-                        <input id="edit_doctor_name" name="doctor_name" placeholder="Enter doctor's name" />
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <div class="input-validation-container" style="flex:1;">
+                                <div class="suggestion-container">
+                                    <input id="edit_doctor_input" type="text" autocomplete="off" placeholder="Type doctor name or select" />
+                                    <div id="edit-doctor-suggestions" class="suggestion-list"></div>
+                                </div>
+                                <div id="edit-doctor-validation-error" class="validation-error"></div>
+                                <input type="hidden" id="edit_doctor_name" name="doctor_name" />
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_doctor_type">Doctor Type</label>
                         <select id="edit_doctor_type" name="doctor_type" required>
                             <option value="" disabled selected>-- Select --</option>
-                            <option value="Consultant">Consultant</option>
-                            <option value="Resident">Resident</option>
-                            <option value="Intern">Intern</option>
+                            <option value="PHYSICIAN">PHYSICIAN</option>
+                            <option value="SURGEON / ROD">SURGEON / ROD</option>
+                            <option value="PHYSICIAN / ROD">PHYSICIAN / ROD</option>
+                            <option value="ANESTHESIOLOGIST">ANESTHESIOLOGIST</option>
+                            <option value="GASTROENTEROLOGIST">GASTROENTEROLOGIST</option>
+                            <option value="NEUROLOGIST">NEUROLOGIST</option>
+                            <option value="ONCOLOGIST">ONCOLOGIST</option>
+                            <option value="OPHTHALMOLOGIST">OPHTHALMOLOGIST</option>
+                            <option value="ORTHOPAEDIC">ORTHOPAEDIC</option>
+                            <option value="OB-GYN / SURGEON">OB-GYN / SURGEON</option>
+                            <option value="PEDIATRICIAN">PEDIATRICIAN</option>
+                            <option value="INFECTIOUS MED.">INFECTIOUS MED.</option>
+                            <option value="UROLOGIST">UROLOGIST</option>
+                            <option value="ENT">ENT</option>
+                            <option value="NEPHROLOGIST">NEPHROLOGIST</option>
                         </select>
                     </div>
                     
@@ -503,6 +514,68 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     })();
+
+    // Doctor selection mapping for edit modal
+    const editDoctorMap = {
+        "Maria Rhiana R. Uy, MD": "PHYSICIAN / ROD",
+        "Americus Rocina, MD": "PHYSICIAN",
+        "Jaime S. Antonio, MD": "SURGEON / ROD",
+        "Fritzie Ann F. Oaferina, MD": "SURGEON / ROD",
+        "Rex Karl S. Teoxon, MD": "SURGEON / ROD",
+        "Jose Emiliano T. Gatchalian, MD": "SURGEON",
+        "Rafael M. Cruz, MD": "ANESTHESIOLOGIST",
+        "Lord Chris Angelo Bordador, MD": "ANESTHESIOLOGIST",
+        "Moel A. Diaz, MD": "ANESTHESIOLOGIST",
+        "Jonathan Rie Hinojales Jr.,MD": "ANESTHESIOLOGIST",
+        "Maharlika Filipino Oaferina, MD": "ANESTHESIOLOGIST",
+        "Lloyd S. Torres, MD": "GASTROENTEROLOGIST",
+        "Ronnie C. Lao, MD": "NEUROLOGIST",
+        "Ana Lea V. Lava, MD": "ONCOLOGIST",
+        "Ronaldo Mathias A. Noche, MD": "OPHTHALMOLOGIST",
+        "Rotchelle D.Pugh, MD": "OPHTHALMOLOGIST",
+        "Ceasar Anthony S. Bautista, MD": "ORTHOPAEDIC",
+        "Daverie T. De Jesus, MD": "ORTHOPAEDIC",
+        "Mary Rose DL. Matheo, MD": "OB-GYN / SURGEON",
+        "Rebecca Q. Ramos, MD": "PEDIATRICIAN",
+        "Ronald C. Añosa, MD": "PEDIATRICIAN",
+        "Marivie Del Rosario, MD": "PEDIATRICIAN",
+        "Grace P. Retuerma, MD": "INFECTIOUS MED.",
+        "Maewain M. Bautista, MD": "UROLOGIST",
+        "Maria Pamela E. Pahati, MD": "UROLOGIST",
+        "Maria B. Conanan, MD": "ENT",
+        "Serah Kae Laquindanum, MD": "NEPHROLOGIST",
+        "Mara B. Tugade, MD": "NEPHROLOGIST"
+    };
+
+    const editDoctorSelect = document.getElementById('edit_doctor_select');
+    const editDoctorName = document.getElementById('edit_doctor_name');
+    const editDoctorType = document.getElementById('edit_doctor_type');
+    if (editDoctorSelect && editDoctorName && editDoctorType) {
+        editDoctorSelect.addEventListener('change', function() {
+            const name = this.value;
+            editDoctorName.value = name;
+            const dtype = editDoctorMap[name] || '';
+            if (dtype) editDoctorType.value = dtype;
+        });
+    }
+
+    // Autosuggest for edit modal (remote doctors search)
+    (function(){
+        const input = document.getElementById('edit_doctor_input');
+        const container = document.getElementById('edit-doctor-suggestions');
+        const hiddenName = document.getElementById('edit_doctor_name');
+        const typeSelect = document.getElementById('edit_doctor_type');
+        if (!input || !container) return;
+
+        let timer=null, activeIndex=-1, lastItems=[];
+        function clearSuggestions(){ container.innerHTML=''; container.style.display='none'; activeIndex=-1; lastItems=[]; }
+        function renderSuggestions(items){ lastItems = items || []; if(!lastItems.length){ clearSuggestions(); return; } container.innerHTML=''; lastItems.slice(0,20).forEach((it,idx)=>{ const el=document.createElement('div'); el.className='icd-suggestion'; el.dataset.index=idx; el.textContent = it.name + (it.type ? (' — '+it.type) : ''); el.addEventListener('click', ()=> selectItem(idx)); container.appendChild(el);} ); container.style.display='block'; activeIndex=-1; }
+        function selectItem(idx){ const it = lastItems[idx]; if(!it) return; hiddenName.value = it.name || ''; if(typeSelect && it.type) typeSelect.value = it.type; input.value = it.name || ''; clearSuggestions(); }
+        input.addEventListener('input', ()=>{ clearTimeout(timer); const q = input.value.trim(); if(!q){ clearSuggestions(); return;} timer = setTimeout(()=>{ fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q)).then(r=>r.json()).then(data=>renderSuggestions(data||[])).catch(e=>console.error('Doctor fetch error', e)); }, 250); });
+        input.addEventListener('keydown', (e)=>{ const nodes = container.querySelectorAll('div'); if(!nodes.length) return; if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%nodes.length; nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); } else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=activeIndex<=0?(nodes.length-1):(activeIndex-1); nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); } else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); } else if(e.key==='Escape'){ clearSuggestions(); } });
+        input.addEventListener('blur', ()=> setTimeout(clearSuggestions, 200));
+    })();
+
 });
 </script>
 

@@ -27,6 +27,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ asset('/pharmacy/requests') }}"
+                   class="sidebar-btn{{ request()->is('pharmacy/requests') ? ' active' : '' }}">
+                    <span class="icon">🧾</span> <span class="text">Requests</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ asset('/pharmacy/account') }}"
                    class="sidebar-btn{{ request()->is('pharmacy/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>

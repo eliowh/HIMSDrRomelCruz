@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_addPatients_fixes.css') }}">
 <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
 <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
+<link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
 <div class="nurse-card">
     <h3>Add Patient</h3>
 
@@ -52,18 +53,12 @@
 
             <div class="form-group">
                 <label for="province">Province</label>
-                <select id="province" name="province" required>
-                    <option value="Bulacan" {{ old('province','Bulacan')=='Bulacan' ? 'selected':'' }}>Bulacan</option>
-                    <!-- add others if needed -->
-                </select>
+                <input id="province" type="text" name="province" placeholder="Enter province" value="{{ old('province') }}">
             </div>
 
             <div class="form-group">
                 <label for="city">City</label>
-                <select id="city" name="city" required>
-                    <option value="Malolos City" {{ old('city','Malolos City')=='Malolos City' ? 'selected':'' }}>Malolos City</option>
-                    <!-- add others if needed -->
-                </select>
+                <input id="city" type="text" name="city" placeholder="Enter city" value="{{ old('city') }}">
             </div>
 
             <div class="form-group">
@@ -111,44 +106,51 @@
 
             <div class="form-group">
                 <label for="doctor_name">Doctor</label>
-                <input id="doctor_name" type="text" name="doctor_name" placeholder="Enter doctor's name" value="{{ old('doctor_name') }}">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <div class="input-validation-container" style="flex:1;">
+                        <div class="suggestion-container">
+                            <input id="doctor_name" name="doctor_name" type="text" autocomplete="off" placeholder="Type doctor name or select" value="{{ old('doctor_name') }}" style="flex:1;">
+                            <div id="doctor-suggestions" class="suggestion-list"></div>
+                        </div>
+                        <div id="doctor-validation-error" class="validation-error"></div>
+                    </div>
+                </div>
             </div>
             
             <div class="form-group">
                 <label for="doctor_type">Doctor Type</label>
                 <select id="doctor_type" name="doctor_type" required>
                     <option value="" disabled {{ old('doctor_type')=='' ? 'selected':'' }}>-- Select --</option>
-                    <option value="Consultant" {{ old('doctor_type')=='Consultant' ? 'selected':'' }}>Consultant</option>
-                    <option value="Resident" {{ old('doctor_type')=='Resident' ? 'selected':'' }}>Resident</option>
-                    <option value="Intern" {{ old('doctor_type')=='Intern' ? 'selected':'' }}>Intern</option>
+                    <option value="PHYSICIAN" {{ old('doctor_type')=='PHYSICIAN' ? 'selected':'' }}>PHYSICIAN</option>
+                    <option value="SURGEON / ROD" {{ old('doctor_type')=='SURGEON / ROD' ? 'selected':'' }}>SURGEON / ROD</option>
+                    <option value="PHYSICIAN / ROD" {{ old('doctor_type')=='PHYSICIAN / ROD' ? 'selected':'' }}>PHYSICIAN / ROD</option>
+                    <option value="ANESTHESIOLOGIST" {{ old('doctor_type')=='ANESTHESIOLOGIST' ? 'selected':'' }}>ANESTHESIOLOGIST</option>
+                    <option value="GASTROENTEROLOGIST" {{ old('doctor_type')=='GASTROENTEROLOGIST' ? 'selected':'' }}>GASTROENTEROLOGIST</option>
+                    <option value="NEUROLOGIST" {{ old('doctor_type')=='NEUROLOGIST' ? 'selected':'' }}>NEUROLOGIST</option>
+                    <option value="ONCOLOGIST" {{ old('doctor_type')=='ONCOLOGIST' ? 'selected':'' }}>ONCOLOGIST</option>
+                    <option value="OPHTHALMOLOGIST" {{ old('doctor_type')=='OPHTHALMOLOGIST' ? 'selected':'' }}>OPHTHALMOLOGIST</option>
+                    <option value="ORTHOPAEDIC" {{ old('doctor_type')=='ORTHOPAEDIC' ? 'selected':'' }}>ORTHOPAEDIC</option>
+                    <option value="OB-GYN / SURGEON" {{ old('doctor_type')=='OB-GYN / SURGEON' ? 'selected':'' }}>OB-GYN / SURGEON</option>
+                    <option value="PEDIATRICIAN" {{ old('doctor_type')=='PEDIATRICIAN' ? 'selected':'' }}>PEDIATRICIAN</option>
+                    <option value="INFECTIOUS MED." {{ old('doctor_type')=='INFECTIOUS MED.' ? 'selected':'' }}>INFECTIOUS MED.</option>
+                    <option value="UROLOGIST" {{ old('doctor_type')=='UROLOGIST' ? 'selected':'' }}>UROLOGIST</option>
+                    <option value="ENT" {{ old('doctor_type')=='ENT' ? 'selected':'' }}>ENT</option>
+                    <option value="NEPHROLOGIST" {{ old('doctor_type')=='NEPHROLOGIST' ? 'selected':'' }}>NEPHROLOGIST</option>
                 </select>
             </div>
             
             <div class="form-group">
                 <label for="admission_type">Admission Type</label>
                 <select id="admission_type" name="admission_type" required>
-                    <option value="" disabled {{ old('admission_type')=='' ? 'selected':'' }}>-- Select --</option>
+                    <option value="" disabled {{ old('admission_type')=='' ? 'selected':'' }}>-- Select Service --</option>
+                    <option value="Inpatient" {{ old('admission_type')=='Inpatient' ? 'selected':'' }}>Inpatient</option>
+                    <option value="Outpatient" {{ old('admission_type')=='Outpatient' ? 'selected':'' }}>Outpatient</option>
                     <option value="Emergency" {{ old('admission_type')=='Emergency' ? 'selected':'' }}>Emergency</option>
-                    <option value="Elective" {{ old('admission_type')=='Elective' ? 'selected':'' }}>Elective</option>
-                    <option value="Transfer" {{ old('admission_type')=='Transfer' ? 'selected':'' }}>Transfer</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="service">Service</label>
-                <select id="service" name="service" required>
-                    <option value="" disabled {{ old('service')=='' ? 'selected':'' }}>-- Select Service --</option>
-                    <option value="Inpatient" {{ old('service')=='Inpatient' ? 'selected':'' }}>Inpatient</option>
-                    <option value="Outpatient" {{ old('service')=='Outpatient' ? 'selected':'' }}>Outpatient</option>
-                    <option value="Surgery" {{ old('service')=='Surgery' ? 'selected':'' }}>Surgery</option>
-                    <option value="Emergency" {{ old('service')=='Emergency' ? 'selected':'' }}>Emergency</option>
                 </select>
             </div>
             <!-- END: Admission fields -->
             
-            <div class="form-group full-width">
-                <p style="font-size:0.9em;color:#666">Patient No will be assigned automatically (starts at 250001).</p>
-            </div>
+            
             
                         <div class="form-actions full-width">
                 <button type="submit" class="btn submit-btn">Admit</button>
@@ -234,24 +236,27 @@ document.addEventListener('DOMContentLoaded', function() {
         function showError(message) {
             if (errorDiv) {
                 errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
                 errorDiv.classList.add('visible');
             }
         }
-        
+
         function hideError() {
             if (errorDiv) {
+                errorDiv.textContent = '';
+                errorDiv.style.display = 'none';
                 errorDiv.classList.remove('visible');
             }
         }
-        
+
         function validateIcdInput() {
             const currentValue = input.value.trim();
             if (!currentValue) {
-                icdIsValid = true; // Or false if required, true allows empty
+                icdIsValid = true; // Allow empty
                 hideError();
                 return;
             }
-            
+
             // Validate against full database via server
             fetch('{{ route("icd10.validate") }}', {
                 method: 'POST',
@@ -275,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Fallback to local validation if server fails
                 icdIsValid = allCodes.some(c => c.code === currentValue);
                 if (!icdIsValid) {
-                    showError('Please select a valid ICD-10 code from the list.');
+                    showError('Unable to validate ICD-10 code. Please try again.');
                 } else {
                     hideError();
                 }
@@ -283,49 +288,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function loadAllCodes(showSuggestions = false) {
+            // Avoid re-fetching if we already have the master list
+            if (allCodes.length > 0) {
+                if (showSuggestions) {
+                    renderSuggestions(allCodes, true);
+                }
+                return;
+            }
             fetch('{{ route("icd10.search") }}?q=')
                 .then(async r => {
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     const text = await r.text();
-                    
                     if (ct.includes('application/json')) {
                         try {
-                            allCodes = JSON.parse(text);
+                            allCodes = JSON.parse(text); // Store the definitive list
+                            window.allCodes = allCodes; // Make it globally accessible for validation fallback
                             if (showSuggestions) {
-                                renderSuggestions(allCodes.slice(0, 50), true);
+                                renderSuggestions(allCodes, true);
                             }
                         } catch(e) { console.error('ICD parse error', e); }
                     }
                 })
                 .catch(e => console.error('ICD fetch error', e));
         }
-        
-        input.addEventListener('input', ()=>{
-            icdIsValid = false;
-            if(descField) descField.value = '';
-            clearTimeout(timer);
-            const val = input.value.trim();
-            if(!val){ 
-                clearSuggestions(); 
-                hideError();
-                return; 
-            }
-            
-            timer = setTimeout(()=>{
-                fetch('{{ route("icd10.search") }}?q='+encodeURIComponent(val))
-                    .then(async r=>{
-                        const ct=(r.headers.get('content-type')||'').toLowerCase();
-                        const text=await r.text();
-                        if(ct.includes('application/json')){
-                            try{ 
-                                const codes = JSON.parse(text);
-                                renderSuggestions(codes);
-                            }catch(e){ console.error('ICD parse error',e); }
-                        }
-                    })
-                    .catch(e=>console.error('ICD fetch error',e));
-            }, 300);
-        });
         
         input.addEventListener('focus', () => {
             window.isModalOpen = true;
@@ -585,6 +570,169 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAllRooms(false);
     })();
 
+    // Doctor autosuggest (remote) - mirrors ICD-10 behavior
+    (function(){
+        const input = document.getElementById('doctor_name');
+        const container = document.getElementById('doctor-suggestions');
+        const errorDiv = document.getElementById('doctor-validation-error');
+        const typeSelect = document.getElementById('doctor_type');
+        if (!input || !container) return;
+
+        let timer = null;
+        let activeIndex = -1;
+        let lastItems = [];
+        let masterDoctorList = []; // definitive list cached on first load
+
+        function clearSuggestions(){ container.innerHTML=''; container.style.display='none'; activeIndex=-1; lastItems=[]; window.isDropdownOpen = false; }
+
+        function renderSuggestions(items, showAll = false){
+            lastItems = items || [];
+            if(!lastItems.length){ clearSuggestions(); return; }
+            container.innerHTML = '';
+
+            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 30);
+            itemsToShow.forEach((it, idx)=>{
+                const el = document.createElement('div');
+                el.className = 'icd-suggestion';
+                el.dataset.index = idx;
+                el.innerHTML = '<span class="code">'+escapeHtml(it.name)+'</span>' + (it.type ? (' <span class="desc">'+escapeHtml(it.type)+'</span>') : '');
+                el.addEventListener('click', ()=> selectItem(idx, itemsToShow));
+                container.appendChild(el);
+            });
+            // If we are showing a truncated list and the master list exists, show a footer to view all
+            if (!showAll && lastItems.length > itemsToShow.length) {
+                const footer = document.createElement('div');
+                footer.className = 'icd-suggestion footer-suggestion';
+                footer.style.fontWeight = '600';
+                footer.style.textAlign = 'center';
+                footer.style.background = '#fff';
+                footer.style.cursor = 'pointer';
+                footer.textContent = 'Show all results';
+                footer.addEventListener('click', () => renderSuggestions(masterDoctorList, true));
+                container.appendChild(footer);
+            }
+            container.style.display = 'block';
+            activeIndex = -1;
+            window.isDropdownOpen = true;
+        }
+
+        function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"]/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+        function selectItem(idx, items = lastItems){
+            const item = items[idx]; if(!item) return;
+            input.value = item.name || '';
+            if (typeSelect && item.type) typeSelect.value = item.type;
+            clearSuggestions();
+        }
+
+        function loadAllDoctors(showSuggestions = false){
+            if (masterDoctorList.length > 0) {
+                if (showSuggestions) renderSuggestions(masterDoctorList, true);
+                return;
+            }
+            fetch('{{ route("doctors.search") }}?q=')
+                .then(async r => {
+                    const ct = (r.headers.get('content-type') || '').toLowerCase();
+                    const text = await r.text();
+                    if (ct.includes('application/json')) {
+                        try {
+                            masterDoctorList = JSON.parse(text);
+                            if (showSuggestions) renderSuggestions(masterDoctorList, true);
+                        } catch(e) { console.error('Doctors parse error', e); }
+                    }
+                })
+                .catch(e => console.error('Doctors fetch error', e));
+        }
+
+        function validateDoctorInput(){
+            const currentValue = input.value.trim();
+            if (!currentValue) { hideDoctorError(); return Promise.resolve(true); }
+
+            return fetch('{{ route("doctors.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                if (result.valid) {
+                    if (typeSelect && result.type) typeSelect.value = result.type;
+                    hideDoctorError();
+                    return true;
+                }
+                // fallback to client-side master list
+                const found = masterDoctorList.some(d => d.name === currentValue);
+                if (found) { hideDoctorError(); return true; }
+                showDoctorError('Please select a valid doctor from the list.');
+                return false;
+            })
+            .catch(e => {
+                console.error('Doctor validation error', e);
+                const found = masterDoctorList.some(d => d.name === currentValue);
+                if (found) { hideDoctorError(); return true; }
+                showDoctorError('Unable to validate doctor. Please try again.');
+                return false;
+            });
+        }
+
+        function showDoctorError(msg){ if (errorDiv) { errorDiv.textContent = msg; errorDiv.classList.add('visible'); errorDiv.style.display='block'; } }
+        function hideDoctorError(){ if (errorDiv) { errorDiv.textContent = ''; errorDiv.classList.remove('visible'); errorDiv.style.display='none'; } }
+
+        input.addEventListener('input', ()=>{
+            clearTimeout(timer);
+            const q = input.value.trim();
+            if(!q){ clearSuggestions(); return; }
+            timer = setTimeout(()=>{
+                fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q))
+                    .then(r => r.json())
+                    .then(data => renderSuggestions(data || []))
+                    .catch(e => console.error('Doctor fetch error', e));
+            }, 250);
+        });
+
+        input.addEventListener('focus', ()=>{
+            window.isModalOpen = true;
+            window.isDropdownOpen = true;
+            const q = input.value.trim();
+            if (!q) {
+                // show master list (cached) if available, otherwise fetch and show
+                if (masterDoctorList.length > 0) renderSuggestions(masterDoctorList.slice(0,50), true);
+                else loadAllDoctors(true);
+            } else {
+                // perform a quick filtered search to show relevant suggestions
+                fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q))
+                    .then(r => r.json())
+                    .then(data => renderSuggestions(data || []))
+                    .catch(e => console.error('Doctor fetch error', e));
+            }
+        });
+
+        input.addEventListener('keydown', (e)=>{
+            const nodes = container.querySelectorAll('div');
+            if(!nodes.length) return;
+            if(e.key === 'ArrowDown'){ e.preventDefault(); activeIndex = (activeIndex+1) % nodes.length; nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); }
+            else if(e.key === 'ArrowUp'){ e.preventDefault(); activeIndex = activeIndex<=0 ? nodes.length-1 : activeIndex-1; nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); }
+            else if(e.key === 'Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); }
+            else if(e.key === 'Escape'){ clearSuggestions(); }
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                validateDoctorInput().then(()=>{
+                    clearSuggestions();
+                    window.isModalOpen = false;
+                    window.isDropdownOpen = false;
+                });
+            }, 200);
+        });
+
+        // load master list on init for better UX
+        loadAllDoctors(false);
+    })();
+
     // Form validation before submission
     const form = document.querySelector('form[action*="/nurse/addPatients"]');
     if (form) {
@@ -665,6 +813,8 @@ document.addEventListener('DOMContentLoaded', function() {
             form.submit();
         });
     }
+
+        // doctorMap and legacy select removed; autosuggest will populate doctor_name and doctor_type via remote search
 });
 </script>
 <style>
@@ -751,6 +901,52 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 0.9em;
     margin-left: 10px;
 }
+
+/* Ensure suggestion container is placed correctly relative to input */
+.suggestion-container { position: relative; }
+
+/* Suggestion dropdown visual (scrollable, elevated, rounded) */
+.suggestion-list {
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    z-index: 99999 !important;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.icd-suggestion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+}
+.icd-suggestion .code {
+    font-weight: 700;
+    color: #0b5ed7;
+    margin-right: 12px;
+}
+.icd-suggestion .desc {
+    color: #374151;
+    font-size: 0.95em;
+    margin-left: 12px;
+    flex: 1;
+    text-align: left;
+}
+
+.icd-suggestion.footer-suggestion {
+    border-top: 1px solid #eee;
+    background: #ffffff;
+}
+
+/* Make sure the dropdown doesn't get clipped by parent overflow */
+.suggestion-list::-webkit-scrollbar { width: 10px; }
+.suggestion-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
 
 /* Ensure suggestion dropdowns don't affect layout */
 .suggestion-list,

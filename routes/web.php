@@ -131,6 +131,66 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
         return view('nurse.nurse_account');
     });
     Route::post('/account/send-reset-email', [App\Http\Controllers\UserController::class, 'sendAccountResetEmail'])->name('account.sendResetEmail');
+    // Doctors autosuggest (used by nurse forms)
+    Route::get('/doctors/search', function (\Illuminate\Http\Request $request) {
+        $q = $request->query('q', '');
+        // doctorslist columns are named with spaces (e.g. 'COL 1', 'COL 2') - alias them to name/type for frontend
+        $matches = \DB::table('doctorslist')
+            ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+            ->whereRaw('`COL 1` like ?', ["%{$q}%"])
+            ->orderByRaw('`COL 1`')
+            ->limit(50)
+            ->get();
+        return response()->json($matches);
+    })->name('doctors.search');
+
+    // Doctors validation endpoint used by autosuggest (validates an exact name)
+    Route::post('/doctors/validate', function (\Illuminate\Http\Request $request) {
+        $name = trim((string)$request->input('name', ''));
+        if (!$name) {
+            return response()->json(['valid' => false]);
+        }
+
+        // 1) Try exact case-insensitive match
+        $match = \DB::table('doctorslist')
+            ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+            ->whereRaw('LOWER(`COL 1`) = ?', [strtolower($name)])
+            ->first();
+
+        // 2) If not found, try punctuation-insensitive normalized match
+        if (! $match) {
+            $normalized = strtolower(preg_replace('/[^\p{L}\p{N}\s]/u', '', $name));
+            $all = \DB::table('doctorslist')->selectRaw('`COL 1` as `name`, `COL 2` as `type`')->get();
+            foreach ($all as $d) {
+                $dnormalized = strtolower(preg_replace('/[^\p{L}\p{N}\s]/u', '', $d->name));
+                if ($dnormalized === $normalized) {
+                    $match = $d;
+                    break;
+                }
+            }
+        }
+
+        // 3) Fallback: if a single LIKE candidate exists, accept it
+        if (! $match) {
+            $candidates = \DB::table('doctorslist')
+                ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+                ->whereRaw('`COL 1` like ?', ["%{$name}%"])
+                ->limit(5)
+                ->get();
+            if ($candidates->count() === 1) {
+                $match = $candidates->first();
+            }
+        }
+
+        if ($match) {
+            return response()->json(['valid' => true, 'type' => $match->type]);
+        }
+
+        return response()->json(['valid' => false]);
+    })->name('doctors.validate');
+
+    // Allow nurses to query stocks reference for medicine autosuggest in nurse modal
+    Route::get('/nurse/pharmacy/stocks-reference', [PharmacyController::class, 'getStocksReference'])->name('nurse.pharmacy.stocks.reference');
 });
 
 /*
@@ -176,6 +236,8 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
 
 Route::middleware(['auth', 'role:nurse'])->group(function () {
     Route::post('/lab-orders', [LabOrderController::class, 'store'])->name('lab-orders.store');
+    // Nurse -> Pharmacy medicine request endpoint (submit request to pharmacy)
+    Route::post('/nurse/pharmacy-orders', [App\Http\Controllers\PharmacyController::class, 'storeNurseRequest'])->name('nurse.pharmacy.store');
 });
 
 /*
@@ -357,6 +419,9 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
     Route::get('/pharmacy/account', function () {
         return view('pharmacy.pharmacy_account');
     })->name('pharmacy.account');
+
+    // Nurse-submitted medicine requests (new tab)
+    Route::get('/pharmacy/requests', [App\Http\Controllers\PharmacyController::class, 'nurseRequests'])->name('pharmacy.requests');
 });
 
 /*
