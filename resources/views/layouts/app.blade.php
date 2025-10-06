@@ -7,9 +7,8 @@
     <title>@yield('title','HIMS Nurse')</title>
 
     {{-- main styles used by nurse pages --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <!-- Fallback for production -->
-    <link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{ url('css/nursecss/nurse.css') }}">
+    <link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
 </head>
 <body>
     {{-- Add top navigation/header (DR. Romel Cruz Hospital + user info) --}}

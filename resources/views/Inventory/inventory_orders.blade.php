@@ -4,9 +4,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Inventory Orders</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <!-- Fallback for production -->
-    <link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{ url('css/inventorycss/inventory.css') }}">
+    <link rel="stylesheet" href="{{ url('css/inventorycss/inventory_orders.css') }}">
+    <link rel="stylesheet" href="{{ url('css/inventorycss/add_stock_modal.css') }}">
+    <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>

@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Dashboard</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <!-- Fallback for production -->
-    <link rel="stylesheet" href="{{ secure_asset('css/app.css') }}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{url('css/pharmacycss/pharmacy.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
