@@ -13,9 +13,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Only seed admin user
+        // Seed admin and role-based accounts
         $this->call([
             AdminSeeder::class,
+            AccountSeeder::class,
         ]);
     }
 }

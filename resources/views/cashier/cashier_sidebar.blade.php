@@ -15,25 +15,25 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/cashier/home') }}"
+                <a href="{{ asset('/cashier/home') }}"
                    class="sidebar-btn{{ request()->is('cashier/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/cashier/billing') }}"
+                <a href="{{ asset('/cashier/billing') }}"
                    class="sidebar-btn{{ request()->is('cashier/billing') ? ' active' : '' }}">
                     <span class="icon">💰</span> <span class="text">Billing</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/cashier/transactions') }}"
+                <a href="{{ asset('/cashier/transactions') }}"
                    class="sidebar-btn{{ request()->is('cashier/transactions') ? ' active' : '' }}">
                     <span class="icon">📋</span> <span class="text">Transactions</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/cashier/account') }}"
+                <a href="{{ asset('/cashier/account') }}"
                    class="sidebar-btn{{ request()->is('cashier/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>

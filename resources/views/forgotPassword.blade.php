@@ -25,7 +25,7 @@
                         <input type="email" placeholder="Enter your email address" name="email" class="eField" required>
                     </div>
                     <button type="submit" class="submitBtn">Send Reset Link</button>
-                    <a href="{{ url('/login') }}" class="back-link">
+                    <a href="{{ asset('/login') }}" class="back-link">
                         ← Back to Login
                     </a>
                 </form>

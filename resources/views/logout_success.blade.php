@@ -242,7 +242,7 @@
                     <i class="fas fa-sign-in-alt"></i>
                     Login Again
                 </a>
-                <a href="{{ url('/') }}" class="btn btn-secondary">
+                <a href="{{ asset('/') }}" class="btn btn-secondary">
                     <i class="fas fa-home"></i>
                     Home Page
                 </a>

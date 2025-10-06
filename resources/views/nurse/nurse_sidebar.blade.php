@@ -9,25 +9,25 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/nurse/home') }}"
+                <a href="{{ asset('/nurse/home') }}"
                    class="sidebar-btn{{ request()->is('nurse/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/patients') }}"
+                <a href="{{ asset('/nurse/patients') }}"
                    class="sidebar-btn{{ request()->is('nurse/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/addPatients') }}" 
+                <a href="{{ asset('/nurse/addPatients') }}" 
                    class="sidebar-btn{{ request()->is('nurse/addPatients') ? ' active' : '' }}">
                     <span class="icon">➕</span> <span class="text">Add Patient</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/account') }}"
+                <a href="{{ asset('/nurse/account') }}"
                    class="sidebar-btn{{ request()->is('nurse/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>

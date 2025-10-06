@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients_fixes.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/two_column_form.css') }}">
-<link rel="stylesheet" href="{{ url('css/nursecss/suggestion_dropdowns.css') }}">
+<link rel="stylesheet" href="{{ asset('css/nursecss/nurse_addPatients.css') }}">
+<link rel="stylesheet" href="{{ asset('css/nursecss/nurse_addPatients_fixes.css') }}">
+<link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
+<link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
 <div class="nurse-card">
     <h3>Add Patient</h3>
 

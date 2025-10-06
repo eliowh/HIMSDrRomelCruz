@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Panel</title>
-    <link rel="stylesheet" href="{{ url('css/inventorycss/inventory.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/inventorycss/inventory.css') }}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -15,27 +15,27 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/inventory/home') }}" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
+                <a href="{{ asset('/inventory/home') }}" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/inventory/stocks') }}" class="sidebar-btn{{ request()->is('inventory/stocks') ? ' active' : '' }}">
+                <a href="{{ asset('/inventory/stocks') }}" class="sidebar-btn{{ request()->is('inventory/stocks') ? ' active' : '' }}">
                     <span class="icon">📦</span> <span class="text">Stocks</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/inventory/orders') }}" class="sidebar-btn{{ request()->is('inventory/orders') ? ' active' : '' }}">
+                <a href="{{ asset('/inventory/orders') }}" class="sidebar-btn{{ request()->is('inventory/orders') ? ' active' : '' }}">
                     <span class="icon">📝</span> <span class="text">Orders</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/inventory/reports') }}" class="sidebar-btn{{ request()->is('inventory/reports') ? ' active' : '' }}">
+                <a href="{{ asset('/inventory/reports') }}" class="sidebar-btn{{ request()->is('inventory/reports') ? ' active' : '' }}">
                     <span class="icon">📊</span> <span class="text">Reports</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/inventory/account') }}" class="sidebar-btn{{ request()->is('inventory/account') ? ' active' : '' }}">
+                <a href="{{ asset('/inventory/account') }}" class="sidebar-btn{{ request()->is('inventory/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>
             </li>

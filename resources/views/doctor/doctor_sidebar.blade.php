@@ -15,31 +15,31 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/doctor/home') }}"
+                <a href="{{ asset('/doctor/home') }}"
                    class="sidebar-btn{{ request()->is('doctor/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/appointments') }}"
+                <a href="{{ asset('/doctor/appointments') }}"
                    class="sidebar-btn{{ request()->is('doctor/appointments') ? ' active' : '' }}">
                     <span class="icon">📅</span> <span class="text">Appointments</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/patients') }}"
+                <a href="{{ asset('/doctor/patients') }}"
                    class="sidebar-btn{{ request()->is('doctor/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/schedule') }}"
+                <a href="{{ asset('/doctor/schedule') }}"
                    class="sidebar-btn{{ request()->is('doctor/schedule') ? ' active' : '' }}">
                     <span class="icon">⏰</span> <span class="text">Schedule</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/account') }}"
+                <a href="{{ asset('/doctor/account') }}"
                    class="sidebar-btn{{ request()->is('doctor/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>

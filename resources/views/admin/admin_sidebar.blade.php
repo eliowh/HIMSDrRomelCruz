@@ -15,37 +15,37 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/admin/home') }}"
+                <a href="{{ asset('/admin/home') }}"
                    class="sidebar-btn{{ request()->is('admin/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/users') }}"
+                <a href="{{ asset('/admin/users') }}"
                    class="sidebar-btn{{ request()->is('admin/users') ? ' active' : '' }}">
                     <span class="icon">👤</span> <span class="text">Users Management</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/rooms') }}"
+                <a href="{{ asset('/admin/rooms') }}"
                    class="sidebar-btn{{ request()->is('admin/rooms') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Room Management</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/patients') }}"
+                <a href="{{ asset('/admin/patients') }}"
                    class="sidebar-btn{{ request()->is('admin/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patient Records</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/reports') }}"
+                <a href="{{ asset('/admin/reports') }}"
                    class="sidebar-btn{{ request()->is('admin/reports') ? ' active' : '' }}">
                     <span class="icon">📊</span> <span class="text">Reports</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/account') }}"
+                <a href="{{ asset('/admin/account') }}"
                    class="sidebar-btn{{ request()->is('admin/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>

@@ -3,8 +3,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Dashboard</title>
-    <link rel="stylesheet" href="{{ url('css/inventorycss/inventory.css') }}">
-    <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/inventorycss/inventory.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -212,16 +212,16 @@
             <div class="inventory-card">
                 <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
                 <div class="quick-actions">
-                    <a href="{{ url('/inventory/stocks') }}" class="action-btn primary">
+                    <a href="{{ asset('/inventory/stocks') }}" class="action-btn primary">
                         <i class="fas fa-boxes"></i> Manage Stocks
                     </a>
-                    <a href="{{ url('/inventory/orders') }}" class="action-btn secondary">
+                    <a href="{{ asset('/inventory/orders') }}" class="action-btn secondary">
                         <i class="fas fa-shopping-cart"></i> View Orders
                     </a>
-                    <a href="{{ url('/inventory/reports') }}" class="action-btn secondary">
+                    <a href="{{ asset('/inventory/reports') }}" class="action-btn secondary">
                         <i class="fas fa-chart-bar"></i> View Reports
                     </a>
-                    <a href="{{ url('/inventory/account') }}" class="action-btn secondary">
+                    <a href="{{ asset('/inventory/account') }}" class="action-btn secondary">
                         <i class="fas fa-user-cog"></i> Account Settings
                     </a>
                 </div>

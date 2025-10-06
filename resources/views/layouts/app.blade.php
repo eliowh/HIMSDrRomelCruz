@@ -7,8 +7,8 @@
     <title>@yield('title','HIMS Nurse')</title>
 
     {{-- main styles used by nurse pages --}}
-    <link rel="stylesheet" href="{{ url('css/nursecss/nurse.css') }}">
-    <link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/nurse.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_addPatients.css') }}">
 </head>
 <body>
     {{-- Add top navigation/header (DR. Romel Cruz Hospital + user info) --}}

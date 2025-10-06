@@ -15,25 +15,25 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/labtech/home') }}"
+                <a href="{{ asset('/labtech/home') }}"
                    class="sidebar-btn{{ request()->is('labtech/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/labtech/orders') }}"
+                <a href="{{ asset('/labtech/orders') }}"
                    class="sidebar-btn{{ request()->is('labtech/orders') ? ' active' : '' }}">
                     <span class="icon">🧪</span> <span class="text">Orders</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/labtech/patients') }}"
+                <a href="{{ asset('/labtech/patients') }}"
                    class="sidebar-btn{{ request()->is('labtech/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/labtech/account') }}"
+                <a href="{{ asset('/labtech/account') }}"
                    class="sidebar-btn{{ request()->is('labtech/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>

@@ -15,19 +15,19 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/pharmacy/home') }}"
+                <a href="{{ asset('/pharmacy/home') }}"
                    class="sidebar-btn{{ request()->is('pharmacy/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/pharmacy/orders') }}"
+                <a href="{{ asset('/pharmacy/orders') }}"
                    class="sidebar-btn{{ request()->is('pharmacy/orders') ? ' active' : '' }}">
                     <span class="icon">💊</span> <span class="text">Orders</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/pharmacy/account') }}"
+                <a href="{{ asset('/pharmacy/account') }}"
                    class="sidebar-btn{{ request()->is('pharmacy/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>
