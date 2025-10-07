@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
     <title>Reports</title>
     <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
     <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
