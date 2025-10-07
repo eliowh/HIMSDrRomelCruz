@@ -27,7 +27,7 @@
         </script>
     @endif
 
-    <form action="{{ url('/nurse/addPatients') }}" method="POST">
+    <form action="/nurse/addPatients" method="POST">
         @csrf
 
         <div class="two-column-form">

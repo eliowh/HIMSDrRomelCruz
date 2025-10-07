@@ -33,7 +33,7 @@
                 </a>
             </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="nurse-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="nurse-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout('nurse-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>

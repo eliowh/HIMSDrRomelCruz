@@ -45,7 +45,7 @@
                 </a>
             </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="pharmacy-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="pharmacy-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn" onclick="confirmLogout('pharmacy-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>
