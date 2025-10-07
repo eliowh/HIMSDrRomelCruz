@@ -560,6 +560,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             console.log('Opening edit modal for patient:', patient);
+            console.log('Doctor name from patient data:', patient.doctor_name);
             
             const form = document.getElementById('editPatientForm');
             if (!form) {
@@ -604,9 +605,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Note: edit_service field doesn't exist in the modal, so we skip it
             // safeSetValue('edit_service', patient.service);
             
-            // Set both the visible doctor input and hidden doctor name field
-            safeSetValue('edit_doctor_input', patient.doctor_name);
-            safeSetValue('edit_doctor_name', patient.doctor_name);
             safeSetValue('edit_doctor_type', patient.doctor_type);
             safeSetValue('edit_admission_diagnosis', patient.admission_diagnosis);
         
@@ -651,10 +649,16 @@ document.addEventListener('DOMContentLoaded', function () {
             diagDescField.value = '';
         }
         
-        // Initialize doctor field to ensure suggestions are hidden
+        // Initialize doctor field to ensure suggestions are hidden - but this clears the field!
         if (typeof window.initializeDoctorField === 'function') {
             window.initializeDoctorField();
         }
+        
+        // Set doctor fields AFTER initialization to prevent them from being cleared
+        console.log('Setting doctor input with value:', patient.doctor_name);
+        const doctorInputSet = safeSetValue('edit_doctor_input', patient.doctor_name);
+        const doctorNameSet = safeSetValue('edit_doctor_name', patient.doctor_name);
+        console.log('Doctor input set success:', doctorInputSet, 'Doctor name set success:', doctorNameSet);
         
         modal.classList.add('open');
         modal.classList.add('show');
