@@ -5,7 +5,7 @@
         <h3>Complete Lab Order</h3>
         <form id="completeForm" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="results">Test Results:</label>
+                <label for="results">Note:</label>
                 <textarea id="results" name="results" rows="4" placeholder="Enter test results summary or notes..."></textarea>
             </div>
             

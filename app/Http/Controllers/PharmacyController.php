@@ -541,10 +541,13 @@ class PharmacyController extends Controller
 
     public function dispenseRequest($id)
     {
+        \Log::info("Dispense request started for ID: {$id}");
+        
         try {
             DB::beginTransaction();
 
             $request = PharmacyRequest::findOrFail($id);
+            \Log::info("Found request: {$request->id}, Status: {$request->status}");
             
             if ($request->status !== PharmacyRequest::STATUS_PENDING) {
                 return response()->json([
@@ -566,9 +569,14 @@ class PharmacyController extends Controller
             }
             
             if (!$pharmacyStock || $pharmacyStock->quantity < $request->quantity) {
+                $availableQty = $pharmacyStock ? $pharmacyStock->quantity : 0;
+                $medicineName = $request->generic_name ?: ($request->brand_name ?: $request->item_code);
+                
+                \Log::info("Insufficient stock - Medicine: {$medicineName}, Available: {$availableQty}, Required: {$request->quantity}");
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Insufficient stock available for dispensing. Available: ' . ($pharmacyStock ? $pharmacyStock->quantity : 0) . ', Required: ' . $request->quantity
+                    'message' => "Insufficient stock for {$medicineName}. Available: {$availableQty} units, Required: {$request->quantity} units. Please check inventory or reduce quantity."
                 ], 400);
             }
 

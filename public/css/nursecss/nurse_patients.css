@@ -669,3 +669,249 @@ input[type="checkbox"] {
 .checkbox-label-group {
     justify-content: flex-start;
 }
+
+/* Patient Details Sections - moved from inline styles */
+.details-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.details-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.section-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 10px 0;
+    padding: 5px 0;
+    border-bottom: 2px solid #3498db;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.medicine-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.medicine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.medicine-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.medicine-quantity {
+    background: #28a745;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.medicine-details {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.medicine-price {
+    font-weight: 600;
+    color: #17a2b8;
+    margin-bottom: 2px;
+}
+
+.medicine-meta {
+    color: #888;
+    font-style: italic;
+}
+
+.medicine-notes {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.loading-medicines, .no-medicines, .error-medicines {
+    padding: 12px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.loading-medicines {
+    color: #007bff;
+}
+
+.error-medicines {
+    color: #dc3545;
+    background: #f8d7da;
+}
+
+.no-medicines {
+    color: #6c757d;
+}
+
+.view-more-medicines {
+    padding: 10px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.view-medicine-summary-btn {
+    background: #fff;
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-medicine-summary-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+.lab-result-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border-left: 4px solid #17a2b8;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.lab-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.lab-result-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.lab-result-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.lab-result-status.completed {
+    background: #28a745;
+    color: white;
+}
+
+.lab-result-status.in-progress {
+    background: #ffc107;
+    color: #212529;
+}
+
+.lab-result-status.pending {
+    background: #6c757d;
+    color: white;
+}
+
+.lab-result-details {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.lab-result-meta {
+    color: #888;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.lab-result-priority {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.lab-result-priority.high {
+    color: #dc3545;
+}
+
+.lab-result-priority.medium {
+    color: #ffc107;
+}
+
+.lab-result-priority.low {
+    color: #28a745;
+}
+
+.view-pdf-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-pdf-btn:hover {
+    background: #c82333;
+}
+
+.loading-lab-results, .no-lab-results, .error-lab-results {
+    padding: 12px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.loading-lab-results {
+    color: #007bff;
+}
+
+.error-lab-results {
+    color: #dc3545;
+    background: #f8d7da;
+}
+
+.no-lab-results {
+    color: #6c757d;
+}
+
+.patient-details dt {
+    font-weight: 600;
+    color: #555;
+}
+
+.patient-details dd {
+    color: #333;
+    margin-bottom: 8px;
+}

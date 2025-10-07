@@ -23,9 +23,6 @@
             <h2>Lab Orders</h2>
             <!-- Filter Tabs -->
             <div class="filter-tabs">
-                <button class="tab-btn {{ $status === 'all' ? 'active' : '' }}" data-status="all">
-                    All Orders <span class="count-badge">{{ $statusCounts['all'] }}</span>
-                </button>
                 <button class="tab-btn {{ $status === 'pending' ? 'active' : '' }}" data-status="pending">
                     Pending <span class="count-badge">{{ $statusCounts['pending'] }}</span>
                 </button>
@@ -98,11 +95,11 @@
                                     <td class="actions">
                                         @if($order->status === 'pending')
                                             <button class="btn start-btn" onclick="updateStatus({{ $order->id }}, 'in_progress')">
-                                                Start
+                                                Confirm
                                             </button>
                                         @elseif($order->status === 'in_progress')
                                             <button class="btn complete-btn" onclick="showCompleteModal({{ $order->id }})">
-                                                Complete
+                                                Proceed
                                             </button>
                                             <button class="btn cancel-btn" onclick="cancelOrder({{ $order->id }})">
                                                 Cancel
@@ -185,7 +182,7 @@
     <script>
         let currentOrderId = null;
         let currentSort = { column: null, direction: 'asc' };
-        let currentStatus = 'all';
+        let currentStatus = 'pending';
 
         // Initialize on document ready
         document.addEventListener('DOMContentLoaded', function() {
@@ -215,11 +212,11 @@
         // Function to initialize the view based on the URL parameters
         function initializeFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            let statusParam = urlParams.has('status') ? urlParams.get('status') : 'all';
+            let statusParam = urlParams.has('status') ? urlParams.get('status') : 'pending';
             
             // Validate status parameter
-            if(!['pending', 'in_progress', 'completed', 'cancelled', 'all'].includes(statusParam)) {
-                statusParam = 'all';
+            if(!['pending', 'in_progress', 'completed', 'cancelled'].includes(statusParam)) {
+                statusParam = 'pending';
             }
             
             currentStatus = statusParam;
@@ -246,10 +243,8 @@
                 if (link.href) {
                     const linkUrl = new URL(link.href);
                     
-                    // If we have a status filter and it's not already in the link
-                    if (currentStatus !== 'all') {
-                        linkUrl.searchParams.set('status', currentStatus);
-                    }
+                    // Add status parameter to pagination links
+                    linkUrl.searchParams.set('status', currentStatus);
                     
                     link.href = linkUrl.toString();
                 }
@@ -278,9 +273,7 @@
                         
                         // Set the page and maintain current status
                         currentUrl.searchParams.set('page', page);
-                        if (currentStatus !== 'all') {
-                            currentUrl.searchParams.set('status', currentStatus);
-                        }
+                        currentUrl.searchParams.set('status', currentStatus);
                         
                         window.location.href = currentUrl.toString();
                     };
@@ -302,12 +295,7 @@
                     // Build the new URL - reset to page 1 when changing tabs
                     const currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.delete('page'); // Reset to page 1
-                    
-                    if(status === 'all') {
-                        currentUrl.searchParams.delete('status');
-                    } else {
-                        currentUrl.searchParams.set('status', status);
-                    }
+                    currentUrl.searchParams.set('status', status);
                     
                     // Navigate to the new URL
                     window.location.href = currentUrl.toString();
@@ -693,7 +681,7 @@
             
             // Filter the rows
             rows.forEach(row => {
-                if(status === 'all' || row.dataset.status === status) {
+                if(row.dataset.status === status) {
                     row.style.display = '';
                     visibleCount++;
                 } else {
@@ -702,7 +690,7 @@
             });
             
             // Show empty state placeholder if needed
-            if(visibleCount === 0 && status !== 'all') {
+            if(visibleCount === 0) {
                 const emptyStateId = `empty-${status.replace('_', '-')}`;
                 const emptyState = document.getElementById(emptyStateId);
                 
@@ -732,15 +720,8 @@
         
         // Function to check if we need to display empty states
         function checkEmptyStates() {
-            // If we have a status filter active, run filterByStatus to show/hide appropriate content
-            if(currentStatus !== 'all') {
-                filterByStatus(currentStatus);
-            } else {
-                // For 'all' status, just make sure we hide empty state placeholders
-                document.querySelectorAll('.empty-state-placeholder').forEach(placeholder => {
-                    placeholder.style.display = 'none';
-                });
-            }
+            // Run filterByStatus to show/hide appropriate content based on current status
+            filterByStatus(currentStatus);
         }
 
         // Check for highlight parameter on page load
