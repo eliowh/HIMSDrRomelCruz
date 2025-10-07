@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const q = medSearch.value.trim();
         if(!q) { clearSuggestions(); return; }
         timer = setTimeout(()=>{
-            fetch('{{ route("nurse.pharmacy.stocks.reference") }}?search='+encodeURIComponent(q))
+            fetch('/nurse/pharmacy/stocks-reference?search='+encodeURIComponent(q))
                 .then(r=>r.json())
                 .then(j=>{
                     // Accept either {success:true,data:[]} or direct array

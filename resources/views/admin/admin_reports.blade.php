@@ -222,7 +222,7 @@
         submitBtn.disabled = true;
         
         try {
-            const response = await fetch('{{ route("admin.reports.generate") }}', {
+            const response = await fetch('/admin/reports/generate', {
                 method: 'POST',
                 body: formData,
                 headers: {

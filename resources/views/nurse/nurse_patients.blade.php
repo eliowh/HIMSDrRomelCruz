@@ -615,7 +615,7 @@ document.addEventListener('DOMContentLoaded', function () {
             diagDescField.value = 'Loading description...';
             
             // Fetch the description from ICD-10 lookup
-            fetch('{{ route("icd10.search") }}?q=' + encodeURIComponent(patient.admission_diagnosis))
+            fetch('/icd10/search?q=' + encodeURIComponent(patient.admission_diagnosis))
                 .then(async r => {
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     const text = await r.text();
@@ -692,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Validate room if not empty
         if (roomValue) {
-            const roomValidation = fetch('{{ route("rooms.validate") }}', {
+            const roomValidation = fetch('/rooms/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -716,7 +716,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Validate ICD if not empty
         if (icdValue) {
-            const icdValidation = fetch('{{ route("icd10.validate") }}', {
+            const icdValidation = fetch('/icd10/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

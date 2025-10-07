@@ -30,7 +30,7 @@
                 @endif
             </form>
             <br><br>
-            <a href="{{ asset('/login') }}" class="back-link">
+            <a href="/login" class="back-link">
                 ← Back to Login
             </a>
         </div>

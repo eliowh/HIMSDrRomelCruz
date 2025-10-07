@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Validate against full database via server
-            fetch('{{ route("icd10.validate") }}', {
+            fetch('/icd10/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             timer = setTimeout(()=>{
-                fetch('{{ route("icd10.search") }}?q='+encodeURIComponent(val))
+                fetch('/icd10/search?q='+encodeURIComponent(val))
                     .then(async r=>{
                         const ct=(r.headers.get('content-type')||'').toLowerCase();
                         const text=await r.text();
@@ -435,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Validate against full database via server
-            fetch('{{ route("rooms.validate") }}', {
+            fetch('/rooms/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!val){ clearSuggestions(); hideError(); return; }
             
             timer = setTimeout(()=>{
-                fetch('{{ route("rooms.search") }}?q='+encodeURIComponent(val))
+                fetch('/rooms/search?q='+encodeURIComponent(val))
                     .then(async r=>{
                         const ct=(r.headers.get('content-type')||'').toLowerCase();
                         const text=await r.text();
@@ -641,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Validate against database via server
-            fetch('{{ route("doctors.validate") }}', {
+            fetch('/doctors/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -683,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } 
             timer = setTimeout(()=>{ 
                 console.log('Searching for doctors with query:', q);
-                fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q))
+                fetch('/doctors/search?q='+encodeURIComponent(q))
                     .then(r=>{
                         console.log('Doctor search response status:', r.status);
                         return r.json();

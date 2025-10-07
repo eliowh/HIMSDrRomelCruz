@@ -76,7 +76,7 @@
                 </form>
                 <div class="social-login">
                     <p>
-                        <a href="{{ asset('/forgot-password') }}">Forgot Password?</a>
+                        <a href="/forgot-password">Forgot Password?</a>
                     </p>
                 </div>
                 <p style="margin-top: 15px; font-size: 0.9em; color: #555; font-style: italic;">

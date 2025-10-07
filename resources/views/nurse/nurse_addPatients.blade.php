@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Validate against full database via server
-            fetch('{{ route("icd10.validate") }}', {
+            fetch('/icd10/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return;
             }
-            fetch('{{ route("icd10.search") }}?q=')
+            fetch('/icd10/search?q=')
                 .then(async r => {
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     const text = await r.text();
@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Validate against full database via server
-            fetch('{{ route("rooms.validate") }}', {
+            fetch('/rooms/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return;
             }
-            fetch('{{ route("rooms.search") }}?q=')
+            fetch('/rooms/search?q=')
                 .then(async r => {
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     const text = await r.text();
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!val){ clearSuggestions(); hideError(); return; }
             
             timer = setTimeout(()=>{
-                fetch('{{ route("rooms.search") }}?q='+encodeURIComponent(val))
+                fetch('/rooms/search?q='+encodeURIComponent(val))
                     .then(async r=>{
                         const ct=(r.headers.get('content-type')||'').toLowerCase();
                         const text=await r.text();
@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (showSuggestions) renderSuggestions(masterDoctorList, true);
                 return;
             }
-            fetch('{{ route("doctors.search") }}?q=')
+            fetch('/doctors/search?q=')
                 .then(async r => {
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     const text = await r.text();
@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentValue = input.value.trim();
             if (!currentValue) { hideDoctorError(); return Promise.resolve(true); }
 
-            return fetch('{{ route("doctors.validate") }}', {
+            return fetch('/doctors/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -686,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const q = input.value.trim();
             if(!q){ clearSuggestions(); return; }
             timer = setTimeout(()=>{
-                fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q))
+                fetch('/doctors/search?q='+encodeURIComponent(q))
                     .then(r => r.json())
                     .then(data => renderSuggestions(data || []))
                     .catch(e => console.error('Doctor fetch error', e));
@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 else loadAllDoctors(true);
             } else {
                 // perform a quick filtered search to show relevant suggestions
-                fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q))
+                fetch('/doctors/search?q='+encodeURIComponent(q))
                     .then(r => r.json())
                     .then(data => renderSuggestions(data || []))
                     .catch(e => console.error('Doctor fetch error', e));
@@ -749,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate room if not empty
             if (roomValue) {
-                const roomValidation = fetch('{{ route("rooms.validate") }}', {
+                const roomValidation = fetch('/rooms/validate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate ICD if not empty
             if (icdValue) {
-                const icdValidation = fetch('{{ route("icd10.validate") }}', {
+                const icdValidation = fetch('/icd10/validate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
