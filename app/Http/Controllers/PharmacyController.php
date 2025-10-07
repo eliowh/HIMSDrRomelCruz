@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\StockOrder;
 use App\Models\StockPrice;
+use App\Models\PharmacyStock;
+use App\Models\StocksReference;
+use App\Models\PharmacyRequest;
+use App\Models\Patient;
+use App\Models\PatientMedicine;
 
 class PharmacyController extends Controller
 {
@@ -243,35 +248,35 @@ class PharmacyController extends Controller
         $search = $request->get('search', '');
         $type = $request->get('type', 'all'); // 'item_code', 'generic_name', 'brand_name', or 'all'
         
-        $query = StockPrice::where('quantity', '>', 0); // Only show items in stock
+        $query = StocksReference::excludeHeader(); // Exclude header row and show all items
         
         if ($search) {
             switch ($type) {
                 case 'item_code':
-                    $query->where('item_code', 'like', '%' . $search . '%');
+                    $query->where('COL 1', 'like', '%' . $search . '%');
                     break;
                 case 'generic_name':
-                    $query->whereNotNull('generic_name')
-                          ->where('generic_name', '!=', '')
-                          ->where('generic_name', 'like', '%' . $search . '%');
+                    $query->whereNotNull('COL 2')
+                          ->where('COL 2', '!=', '')
+                          ->where('COL 2', 'like', '%' . $search . '%');
                     break;
                 case 'brand_name':
-                    $query->whereNotNull('brand_name')
-                          ->where('brand_name', '!=', '')
-                          ->where('brand_name', 'like', '%' . $search . '%');
+                    $query->whereNotNull('COL 3')
+                          ->where('COL 3', '!=', '')
+                          ->where('COL 3', 'like', '%' . $search . '%');
                     break;
                 default:
                     $query->where(function($q) use ($search) {
-                        $q->where('item_code', 'like', '%' . $search . '%')
+                        $q->where('COL 1', 'like', '%' . $search . '%')
                           ->orWhere(function($subQ) use ($search) {
-                              $subQ->whereNotNull('generic_name')
-                                   ->where('generic_name', '!=', '')
-                                   ->where('generic_name', 'like', '%' . $search . '%');
+                              $subQ->whereNotNull('COL 2')
+                                   ->where('COL 2', '!=', '')
+                                   ->where('COL 2', 'like', '%' . $search . '%');
                           })
                           ->orWhere(function($subQ) use ($search) {
-                              $subQ->whereNotNull('brand_name')
-                                   ->where('brand_name', '!=', '')
-                                   ->where('brand_name', 'like', '%' . $search . '%');
+                              $subQ->whereNotNull('COL 3')
+                                   ->where('COL 3', '!=', '')
+                                   ->where('COL 3', 'like', '%' . $search . '%');
                           });
                     });
             }
@@ -284,11 +289,11 @@ class PharmacyController extends Controller
             'data' => $stocks->map(function($stock) {
                 return [
                     'id' => $stock->id,
-                    'item_code' => $stock->item_code,
-                    'generic_name' => $stock->generic_name ?? '',
-                    'brand_name' => $stock->brand_name ?? '',
-                    'price' => $stock->price,
-                    'quantity_available' => $stock->quantity,
+                    'item_code' => $stock->item_code, // Uses accessor method
+                    'generic_name' => $stock->generic_name ?? '', // Uses accessor method
+                    'brand_name' => $stock->brand_name ?? '', // Uses accessor method
+                    'price' => $stock->price, // Uses accessor method
+                    'quantity_available' => 999, // Since stocksreference doesn't track quantity, use default
                 ];
             })
         ]);
@@ -371,22 +376,119 @@ class PharmacyController extends Controller
      */
     public function nurseRequests(Request $request)
     {
-        // Show pharmacy staff the orders submitted by nurses
-        $query = StockOrder::with('user')
-            ->orderBy('requested_at', 'desc')
-            ->where('source', 'nurse');
+        $q = $request->get('q', '');
+        $status = $request->get('status', 'all');
+        $sort = $request->get('sort', 'requested_at');
+        $direction = $request->get('direction', 'desc');
+        $perPage = $request->get('per_page', 10);
 
-        $orders = $query->paginate(15)->appends($request->query());
+        try {
+            // Show pharmacy staff the requests submitted by nurses
+            $query = PharmacyRequest::with(['requestedBy', 'patient']);
 
-        $statusCounts = [
-            'all' => StockOrder::where('source', 'nurse')->count(),
-            'pending' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_PENDING)->count(),
-            'approved' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_APPROVED)->count(),
-            'completed' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_COMPLETED)->count(),
-            'cancelled' => StockOrder::where('source', 'nurse')->where('status', StockOrder::STATUS_CANCELLED)->count(),
-        ];
+            // Add search functionality like stocks
+            if ($q) {
+                $query->where(function($builder) use ($q) {
+                    $builder->where('item_code', 'like', "%{$q}%")
+                            ->orWhere('generic_name', 'like', "%{$q}%")
+                            ->orWhere('brand_name', 'like', "%{$q}%")
+                            ->orWhere('patient_name', 'like', "%{$q}%")
+                            ->orWhere('patient_no', 'like', "%{$q}%");
+                });
+            }
 
-        return view('pharmacy.pharmacy_requests', compact('orders', 'statusCounts'));
+            // Add status filtering
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+
+            // Add sorting functionality
+            $allowedSorts = ['requested_at', 'patient_name', 'generic_name', 'brand_name', 'status', 'quantity', 'priority'];
+            if (in_array($sort, $allowedSorts)) {
+                $query->orderBy($sort, $direction === 'asc' ? 'asc' : 'desc');
+            } else {
+                $query->orderBy('requested_at', 'desc');
+            }
+
+            $requests = $query->paginate($perPage)->appends($request->query());
+
+            $statusCounts = [
+                'all' => PharmacyRequest::count(),
+                'pending' => PharmacyRequest::where('status', PharmacyRequest::STATUS_PENDING)->count(),
+                'in_progress' => PharmacyRequest::where('status', PharmacyRequest::STATUS_IN_PROGRESS)->count(),
+                'completed' => PharmacyRequest::where('status', PharmacyRequest::STATUS_COMPLETED)->count(),
+                'cancelled' => PharmacyRequest::where('status', PharmacyRequest::STATUS_CANCELLED)->count(),
+                'dispensed' => PharmacyRequest::where('status', PharmacyRequest::STATUS_DISPENSED)->count(),
+            ];
+
+            return view('pharmacy.pharmacy_requests', compact('requests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage'));
+        } catch (\Throwable $e) {
+            // Log the error and return an empty collection so the page doesn't crash.
+            \Log::error('Pharmacy requests load failed: ' . $e->getMessage());
+
+            // Create a paginator from an empty array
+            $requests = new \Illuminate\Pagination\LengthAwarePaginator(
+                [], 0, 15, 1, ['path' => $request->url()]
+            );
+            $dbError = $e->getMessage();
+            $statusCounts = [
+                'all' => 0,
+                'pending' => 0,
+                'in_progress' => 0,
+                'completed' => 0,
+                'cancelled' => 0,
+                'dispensed' => 0,
+            ];
+            return view('pharmacy.pharmacy_requests', compact('requests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage', 'dbError'));
+        }
+    }
+
+    /**
+     * Show pharmacy stocks list from pharmacystocks table
+     */
+    public function stocksPharmacy(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        try {
+            $stocksQuery = PharmacyStock::query();
+            if ($q) {
+                $stocksQuery->where(function($builder) use ($q) {
+                    $builder->where('item_code', 'like', "%{$q}%")
+                            ->orWhere('generic_name', 'like', "%{$q}%")
+                            ->orWhere('brand_name', 'like', "%{$q}%");
+                });
+            }
+
+            // Return paginated records and normalize null quantities to 0
+            $stockspharmacy = $stocksQuery->orderBy('generic_name')->paginate(15);
+            
+            // Transform the paginated data to normalize quantities
+            $stockspharmacy->getCollection()->transform(function($s) {
+                $s->quantity = $s->quantity ?? 0;
+                return $s;
+            });
+
+            return view('pharmacy.pharmacy_stocks', compact('stockspharmacy', 'q'));
+        } catch (\Throwable $e) {
+            // Log the error and return an empty collection so the page doesn't crash.
+            \Log::error('Pharmacy stocks load failed: ' . $e->getMessage());
+
+            // Create a paginator from an empty array
+            $stockspharmacy = new \Illuminate\Pagination\LengthAwarePaginator(
+                [], 0, 15, 1, ['path' => $request->url()]
+            );
+            $dbError = $e->getMessage();
+            return view('pharmacy.pharmacy_stocks', compact('stockspharmacy', 'q', 'dbError'));
+        }
+    }
+
+    /**
+     * Alias for stocksPharmacy method - for route /pharmacy/stocks
+     */
+    public function stocks(Request $request)
+    {
+        return $this->stocksPharmacy($request);
     }
 
     /**
@@ -409,8 +511,14 @@ class PharmacyController extends Controller
         }
 
         try {
-            $stockOrder = new StockOrder([
-                'user_id' => auth()->id(),
+            // Get patient information
+            $patient = Patient::findOrFail($request->patient_id);
+
+            $pharmacyRequest = new PharmacyRequest([
+                'patient_id' => $request->patient_id,
+                'requested_by' => auth()->id(),
+                'patient_name' => $patient->first_name . ' ' . $patient->last_name,
+                'patient_no' => $patient->patient_no,
                 'item_code' => $request->item_code ?: null,
                 'generic_name' => $request->generic_name ?: null,
                 'brand_name' => $request->brand_name ?: null,
@@ -418,17 +526,287 @@ class PharmacyController extends Controller
                 'unit_price' => $request->unit_price ?: 0,
                 'notes' => $request->notes ?: null,
                 'requested_at' => now(),
-                'status' => StockOrder::STATUS_PENDING,
+                'status' => PharmacyRequest::STATUS_PENDING,
+                'priority' => PharmacyRequest::PRIORITY_NORMAL,
             ]);
 
-            // mark source as nurse so pharmacy can filter
-            $stockOrder->source = 'nurse';
-            $stockOrder->calculateTotalPrice();
-            $stockOrder->save();
+            $pharmacyRequest->calculateTotalPrice();
+            $pharmacyRequest->save();
 
-            return response()->json(['success' => true, 'message' => 'Request submitted to pharmacy', 'order' => $stockOrder]);
+            return response()->json(['success' => true, 'message' => 'Medicine request submitted to pharmacy', 'request' => $pharmacyRequest]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to submit request: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function dispenseRequest($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $request = PharmacyRequest::findOrFail($id);
+            
+            if ($request->status !== PharmacyRequest::STATUS_PENDING) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending requests can be dispensed'
+                ], 400);
+            }
+
+            // Check if there's enough stock
+            $pharmacyStock = PharmacyStock::where('item_code', $request->item_code)->first();
+            
+            // If not found by item_code, try to find by generic_name or brand_name
+            if (!$pharmacyStock && $request->generic_name) {
+                $pharmacyStock = PharmacyStock::where('generic_name', $request->generic_name)->first();
+            }
+            
+            if (!$pharmacyStock && $request->brand_name) {
+                $pharmacyStock = PharmacyStock::where('brand_name', $request->brand_name)->first();
+            }
+            
+            if (!$pharmacyStock || $pharmacyStock->quantity < $request->quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient stock available for dispensing. Available: ' . ($pharmacyStock ? $pharmacyStock->quantity : 0) . ', Required: ' . $request->quantity
+                ], 400);
+            }
+
+            // Get patient information
+            $patient = Patient::find($request->patient_id);
+            if (!$patient) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Patient not found'
+                ], 400);
+            }
+
+            // Update pharmacy stock
+            $pharmacyStock->quantity -= $request->quantity;
+            $pharmacyStock->save();
+
+            // Create patient medicine record
+            $patientMedicineData = [
+                'patient_id' => $request->patient_id,
+                'pharmacy_request_id' => $request->id,
+                'patient_no' => $patient->patient_no,
+                'patient_name' => $request->patient_name,
+                'item_code' => $request->item_code,
+                'generic_name' => $request->generic_name,
+                'brand_name' => $request->brand_name,
+                'quantity' => $request->quantity,
+                'unit_price' => floatval($request->unit_price ?? 0),
+                'total_price' => floatval($request->total_price ?? 0),
+                'notes' => $request->notes,
+                'dispensed_by' => auth()->id(),
+                'dispensed_at' => now(),
+            ];
+            
+            $patientMedicine = PatientMedicine::create($patientMedicineData);
+
+            // Update request status
+            $updateData = [
+                'status' => PharmacyRequest::STATUS_DISPENSED,
+                'dispensed_at' => now()->format('Y-m-d H:i:s'),
+                'dispensed_by' => auth()->id(),
+                'updated_at' => now()->format('Y-m-d H:i:s')
+            ];
+            
+            PharmacyRequest::where('id', $request->id)->update($updateData);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Medicine dispensed successfully. Stock updated and medicine attached to patient record.',
+                'patient_medicine_id' => $patientMedicine->id,
+                'remaining_stock' => $pharmacyStock->quantity
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to dispense medicine: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cancelRequest($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $request = PharmacyRequest::findOrFail($id);
+            
+            if ($request->status !== PharmacyRequest::STATUS_PENDING) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending requests can be cancelled. Current status: ' . ucfirst(str_replace('_', ' ', $request->status))
+                ], 400);
+            }
+
+            // Update request status
+            $request->status = PharmacyRequest::STATUS_CANCELLED;
+            $request->cancelled_at = now();
+            $request->cancelled_by = auth()->id();
+            $request->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Medicine request cancelled successfully. No stock changes were made.',
+                'request_id' => $request->id,
+                'cancelled_by' => auth()->user()->name,
+                'cancelled_at' => $request->cancelled_at->format('Y-m-d H:i:s')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel request: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display all patient medicines (dispensed medicines)
+     */
+    public function patientMedicines(Request $request)
+    {
+        try {
+            $query = PatientMedicine::with(['patient', 'dispensedBy', 'pharmacyRequest'])
+                ->orderBy('dispensed_at', 'desc');
+
+            // Add search functionality
+            if ($search = $request->get('search')) {
+                $query->where(function($q) use ($search) {
+                    $q->where('patient_name', 'like', "%{$search}%")
+                      ->orWhere('patient_no', 'like', "%{$search}%")
+                      ->orWhere('generic_name', 'like', "%{$search}%")
+                      ->orWhere('brand_name', 'like', "%{$search}%")
+                      ->orWhere('item_code', 'like', "%{$search}%");
+                });
+            }
+
+            // Add date filter
+            if ($date = $request->get('date')) {
+                $query->whereDate('dispensed_at', $date);
+            }
+
+            $patientMedicines = $query->paginate(15);
+
+            return view('pharmacy.patient_medicines', compact('patientMedicines'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to load patient medicines: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Display medicines for a specific patient
+     */
+    public function patientMedicinesByPatient($patientId)
+    {
+        try {
+            $patient = Patient::findOrFail($patientId);
+            $medicines = PatientMedicine::with(['dispensedBy', 'pharmacyRequest'])
+                ->where('patient_id', $patientId)
+                ->orderBy('dispensed_at', 'desc')
+                ->paginate(15);
+
+            return view('pharmacy.patient_medicines_by_patient', compact('patient', 'medicines'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to load patient medicines: ' . $e->getMessage());
+        }
+    }
+
+    public function showRequest($id)
+    {
+        try {
+            $request = PharmacyRequest::with(['patient', 'requestedBy', 'pharmacist', 'dispensedBy'])->findOrFail($id);
+            
+            // Get patient name - try relationship first, then patient_name field
+            $patientName = 'Unknown Patient';
+            if ($request->patient) {
+                $patientName = $request->patient->full_name ?? ($request->patient->first_name . ' ' . $request->patient->last_name);
+            } elseif ($request->patient_name) {
+                $patientName = $request->patient_name;
+            }
+            
+            // Format medicine name
+            $medicineName = $request->generic_name ?: $request->brand_name ?: 'Unknown Medicine';
+            if ($request->generic_name && $request->brand_name) {
+                $medicineName = $request->generic_name . ' (' . $request->brand_name . ')';
+            }
+            
+            return response()->json([
+                'success' => true,
+                'request' => [
+                    'id' => $request->id,
+                    'patient_id' => $request->patient_id,
+                    'patient_name' => $patientName,
+                    'patient_no' => $request->patient_no,
+                    'medicine_name' => $medicineName,
+                    'generic_name' => $request->generic_name,
+                    'brand_name' => $request->brand_name,
+                    'item_code' => $request->item_code,
+                    'quantity' => $request->quantity,
+                    'unit_price' => $request->unit_price,
+                    'total_price' => $request->total_price,
+                    'notes' => $request->notes ?: 'No additional notes',
+                    'status' => ucfirst($request->status),
+                    'priority' => ucfirst($request->priority ?: 'normal'),
+                    'requested_at' => $request->requested_at ? $request->requested_at->format('M d, Y h:i A') : null,
+                    'requested_by' => $request->requestedBy ? $request->requestedBy->name : 'Unknown',
+                    'pharmacist' => $request->pharmacist ? $request->pharmacist->name : null,
+                    'dispensed_by' => $request->dispensedBy ? $request->dispensedBy->name : null,
+                    'dispensed_at' => $request->dispensed_at ? $request->dispensed_at->format('M d, Y h:i A') : null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load request details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API endpoint to get patient medicines for AJAX calls
+     */
+    public function getPatientMedicinesApi($patientId)
+    {
+        try {
+            $medicines = PatientMedicine::with(['dispensedBy'])
+                ->where('patient_id', $patientId)
+                ->orderBy('dispensed_at', 'desc')
+                ->get();
+
+            $formattedMedicines = $medicines->map(function($medicine) {
+                return [
+                    'id' => $medicine->id,
+                    'generic_name' => $medicine->generic_name,
+                    'brand_name' => $medicine->brand_name,
+                    'item_code' => $medicine->item_code,
+                    'quantity' => $medicine->quantity,
+                    'unit_price' => $medicine->unit_price,
+                    'total_price' => $medicine->total_price,
+                    'notes' => $medicine->notes,
+                    'dispensed_at' => $medicine->dispensed_at ? $medicine->dispensed_at->format('M d, Y h:i A') : null,
+                    'dispensed_by' => $medicine->dispensedBy ? $medicine->dispensedBy->name : 'Unknown',
+                    'medicine_name' => $medicine->generic_name ?: $medicine->brand_name ?: 'Unknown Medicine'
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'medicines' => $formattedMedicines
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load patient medicines: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

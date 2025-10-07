@@ -33,6 +33,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ asset('/pharmacy/stockspharmacy') }}"
+                   class="sidebar-btn{{ request()->is('pharmacy/stockspharmacy') ? ' active' : '' }}">
+                    <span class="icon">📦</span> <span class="text">Stocks</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ asset('/pharmacy/account') }}"
                    class="sidebar-btn{{ request()->is('pharmacy/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>

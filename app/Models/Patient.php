@@ -36,6 +36,11 @@ class Patient extends Model
         'age_days',
     ];
 
+    protected $hidden = [
+        'medicines',
+        'pharmacyRequests',
+    ];
+
     protected $casts = [
         'date_of_birth' => 'date',
     ];
@@ -96,6 +101,22 @@ class Patient extends Model
         if (!$this->date_of_birth) return null;
         $diff = $this->date_of_birth->diff(now());
         return $diff->d;
+    }
+
+    /**
+     * Get the medicines dispensed to this patient
+     */
+    public function medicines()
+    {
+        return $this->hasMany(PatientMedicine::class);
+    }
+
+    /**
+     * Get the pharmacy requests for this patient
+     */
+    public function pharmacyRequests()
+    {
+        return $this->hasMany(PharmacyRequest::class);
     }
 }
 

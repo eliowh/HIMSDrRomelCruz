@@ -88,15 +88,13 @@
                     
                     <div class="form-group">
                         <label for="edit_doctor_name">Doctor</label>
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <div class="input-validation-container" style="flex:1;">
-                                <div class="suggestion-container">
-                                    <input id="edit_doctor_input" type="text" autocomplete="off" placeholder="Type doctor name or select" />
-                                    <div id="edit-doctor-suggestions" class="suggestion-list"></div>
-                                </div>
-                                <div id="edit-doctor-validation-error" class="validation-error"></div>
-                                <input type="hidden" id="edit_doctor_name" name="doctor_name" />
+                        <div class="input-validation-container">
+                            <div class="suggestion-container">
+                                <input id="edit_doctor_input" type="text" autocomplete="off" placeholder="Type doctor name or select" />
+                                <div id="edit-doctor-suggestions" class="suggestion-list"></div>
                             </div>
+                            <div id="edit-doctor-validation-error" class="validation-error"></div>
+                            <input type="hidden" id="edit_doctor_name" name="doctor_name" />
                         </div>
                     </div>
                     
@@ -559,21 +557,189 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Autosuggest for edit modal (remote doctors search)
+    // Enhanced doctor autocomplete with validation
     (function(){
         const input = document.getElementById('edit_doctor_input');
         const container = document.getElementById('edit-doctor-suggestions');
         const hiddenName = document.getElementById('edit_doctor_name');
         const typeSelect = document.getElementById('edit_doctor_type');
+        const errorDiv = document.getElementById('edit-doctor-validation-error');
         if (!input || !container) return;
 
-        let timer=null, activeIndex=-1, lastItems=[];
-        function clearSuggestions(){ container.innerHTML=''; container.style.display='none'; activeIndex=-1; lastItems=[]; }
-        function renderSuggestions(items){ lastItems = items || []; if(!lastItems.length){ clearSuggestions(); return; } container.innerHTML=''; lastItems.slice(0,20).forEach((it,idx)=>{ const el=document.createElement('div'); el.className='icd-suggestion'; el.dataset.index=idx; el.textContent = it.name + (it.type ? (' — '+it.type) : ''); el.addEventListener('click', ()=> selectItem(idx)); container.appendChild(el);} ); container.style.display='block'; activeIndex=-1; }
-        function selectItem(idx){ const it = lastItems[idx]; if(!it) return; hiddenName.value = it.name || ''; if(typeSelect && it.type) typeSelect.value = it.type; input.value = it.name || ''; clearSuggestions(); }
-        input.addEventListener('input', ()=>{ clearTimeout(timer); const q = input.value.trim(); if(!q){ clearSuggestions(); return;} timer = setTimeout(()=>{ fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q)).then(r=>r.json()).then(data=>renderSuggestions(data||[])).catch(e=>console.error('Doctor fetch error', e)); }, 250); });
-        input.addEventListener('keydown', (e)=>{ const nodes = container.querySelectorAll('div'); if(!nodes.length) return; if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%nodes.length; nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); } else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=activeIndex<=0?(nodes.length-1):(activeIndex-1); nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); } else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); } else if(e.key==='Escape'){ clearSuggestions(); } });
-        input.addEventListener('blur', ()=> setTimeout(clearSuggestions, 200));
+        let timer = null;
+        let activeIndex = -1;
+        let lastItems = [];
+        let editDoctorIsValid = true;
+
+        function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        
+        function clearSuggestions(){ 
+            container.innerHTML=''; 
+            container.style.display='none'; 
+            container.style.visibility='hidden';
+            activeIndex=-1; 
+            lastItems=[];
+        }
+        
+        function renderSuggestions(items){ 
+            console.log('renderSuggestions called with items:', items);
+            lastItems = items || []; 
+            if(!lastItems.length){ 
+                console.log('No items to show, clearing suggestions');
+                clearSuggestions(); 
+                return; 
+            } 
+            console.log('Showing', lastItems.length, 'suggestions');
+            container.innerHTML = ''; 
+            
+            lastItems.slice(0,20).forEach((it,idx)=>{ 
+                const el=document.createElement('div'); 
+                el.className='icd-suggestion'; 
+                el.dataset.index=idx; 
+                el.textContent = escapeHtml(it.name) + (it.type ? (' — '+escapeHtml(it.type)) : ''); 
+                el.addEventListener('click', ()=> selectItem(idx)); 
+                container.appendChild(el); 
+            }); 
+            
+            // Force show the container when we have suggestions
+            container.style.display='block'; 
+            container.style.visibility='visible';
+            activeIndex=-1; 
+        }
+        
+        function selectItem(idx){ 
+            const it = lastItems[idx]; 
+            if(!it) return; 
+            hiddenName.value = it.name || ''; 
+            if(typeSelect && it.type) typeSelect.value = it.type; 
+            input.value = it.name || ''; 
+            editDoctorIsValid = true;
+            hideError();
+            clearSuggestions(); 
+        }
+
+        function showError(message) {
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('visible');
+            }
+        }
+        
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.classList.remove('visible');
+            }
+        }
+
+        function validateDoctorInput() {
+            const currentValue = input.value.trim();
+            if (!currentValue) {
+                editDoctorIsValid = true; // Allow empty
+                hideError();
+                hiddenName.value = '';
+                return;
+            }
+            
+            // Validate against database via server
+            fetch('{{ route("doctors.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                editDoctorIsValid = result.valid || false;
+                if (!editDoctorIsValid) {
+                    showError('Please select a valid doctor from the list.');
+                    hiddenName.value = '';
+                } else {
+                    hideError();
+                    hiddenName.value = currentValue;
+                    if (result.type && typeSelect) {
+                        typeSelect.value = result.type;
+                    }
+                }
+            })
+            .catch(e => {
+                console.error('Doctor validation error', e);
+                editDoctorIsValid = false;
+                showError('Unable to validate doctor. Please try again.');
+                hiddenName.value = '';
+            });
+        }
+        
+        input.addEventListener('input', ()=>{ 
+            clearTimeout(timer); 
+            const q = input.value.trim(); 
+            hideError(); // Clear errors when typing
+            if(!q){ 
+                clearSuggestions(); 
+                hiddenName.value = '';
+                editDoctorIsValid = true;
+                return;
+            } 
+            timer = setTimeout(()=>{ 
+                console.log('Searching for doctors with query:', q);
+                fetch('{{ route("doctors.search") }}?q='+encodeURIComponent(q))
+                    .then(r=>{
+                        console.log('Doctor search response status:', r.status);
+                        return r.json();
+                    })
+                    .then(data=>{
+                        console.log('Doctor search results:', data);
+                        renderSuggestions(data||[]);
+                    })
+                    .catch(e=>{
+                        console.error('Doctor fetch error', e);
+                        showError('Error searching doctors. Please try again.');
+                    }); 
+            }, 250); 
+        });
+        
+        input.addEventListener('keydown', (e)=>{ 
+            const nodes = container.querySelectorAll('.icd-suggestion'); 
+            if(!nodes.length) return; 
+            if(e.key==='ArrowDown'){ 
+                e.preventDefault(); 
+                activeIndex=(activeIndex+1)%nodes.length; 
+                nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+            } else if(e.key==='ArrowUp'){ 
+                e.preventDefault(); 
+                activeIndex=activeIndex<=0?(nodes.length-1):(activeIndex-1); 
+                nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+            } else if(e.key==='Enter'){ 
+                e.preventDefault(); 
+                if(activeIndex>=0) selectItem(activeIndex); 
+            } else if(e.key==='Escape'){ 
+                clearSuggestions(); 
+            } 
+        });
+        
+        input.addEventListener('blur', ()=> {
+            setTimeout(() => {
+                clearSuggestions();
+                validateDoctorInput(); // Validate when losing focus
+            }, 200);
+        });
+        
+        // Initialize - ensure suggestions are hidden
+        function initializeDoctorField() {
+            clearSuggestions();
+            hideError();
+            input.value = '';
+            hiddenName.value = '';
+            editDoctorIsValid = true;
+        }
+        
+        // Initialize when script loads
+        initializeDoctorField();
+        
+        // Store validation state for form submission
+        window.editDoctorIsValid = () => editDoctorIsValid;
+        window.initializeDoctorField = initializeDoctorField;
     })();
 
 });
@@ -622,10 +788,31 @@ document.addEventListener('DOMContentLoaded', function() {
     margin-left: 10px;
 }
 
+/* Suggestion container styling */
+.suggestion-container {
+    position: relative;
+}
+
+.suggestion-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none; /* Hidden by default */
+}
+
 /* Ensure suggestion dropdowns don't affect layout */
 .icd-suggestions,
 #edit_room_suggestions,
-#edit_icd10_suggestions {
+#edit_icd10_suggestions,
+#edit-doctor-suggestions {
     position: absolute !important;
     z-index: 9999 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
@@ -636,7 +823,24 @@ document.addEventListener('DOMContentLoaded', function() {
 /* Prevent suggestion containers from triggering layout recalculations */
 .icd-suggestions *,
 #edit_room_suggestions *,
-#edit_icd10_suggestions * {
+#edit_icd10_suggestions *,
+#edit-doctor-suggestions * {
     contain: layout style !important;
+}
+
+/* Validation error styling */
+.validation-error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+}
+
+.validation-error.visible {
+    display: block;
+}
+
+.input-validation-container {
+    position: relative;
 }
 </style>

@@ -90,6 +90,8 @@
 .pharmacy-notification-body {
     padding: 30px 25px;
     background: #f8f9fa;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .pharmacy-notification-body p {
@@ -97,6 +99,23 @@
     line-height: 1.6;
     color: #495057;
     font-size: 16px;
+}
+
+/* Styles for formatted content */
+.pharmacy-notification-body h4 {
+    margin: 0 0 15px 0;
+    color: #2E7D32;
+    font-size: 18px;
+}
+
+.pharmacy-notification-body div {
+    margin-bottom: 8px;
+    color: #495057;
+}
+
+.pharmacy-notification-body strong {
+    color: #343a40;
+    font-weight: 600;
 }
 
 .pharmacy-notification-footer {
@@ -238,8 +257,42 @@
 window.PharmacyNotificationSystem = {
     currentCallback: null,
     
+    // Ensure notification elements exist
+    ensureElements: function() {
+        let overlay = document.getElementById('pharmacyNotificationOverlay');
+        if (!overlay) {
+            console.warn('Creating notification overlay dynamically');
+            overlay = document.createElement('div');
+            overlay.id = 'pharmacyNotificationOverlay';
+            overlay.className = 'pharmacy-notification-overlay';
+            overlay.style.display = 'none';
+            overlay.innerHTML = `
+                <div class="pharmacy-notification-modal">
+                    <div class="pharmacy-notification-header">
+                        <span class="pharmacy-notification-icon">
+                            <i id="pharmacyNotificationIcon" class="fas fa-info-circle"></i>
+                        </span>
+                        <h3 id="pharmacyNotificationTitle">Notification</h3>
+                        <button class="pharmacy-notification-close" onclick="closePharmacyNotification()">&times;</button>
+                    </div>
+                    <div class="pharmacy-notification-body">
+                        <p id="pharmacyNotificationMessage">Message content here</p>
+                    </div>
+                    <div class="pharmacy-notification-footer">
+                        <button id="pharmacyNotificationConfirmBtn" class="pharmacy-btn-confirm" onclick="confirmPharmacyNotification()">OK</button>
+                        <button id="pharmacyNotificationCancelBtn" class="pharmacy-btn-cancel" onclick="closePharmacyNotification()" style="display: none;">Cancel</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        return overlay;
+    },
+    
     show: function(message, type = 'info', title = null, callback = null) {
-        const overlay = document.getElementById('pharmacyNotificationOverlay');
+        // Ensure elements exist
+        const overlay = this.ensureElements();
+        
         const modal = overlay.querySelector('.pharmacy-notification-modal');
         const titleEl = document.getElementById('pharmacyNotificationTitle');
         const messageEl = document.getElementById('pharmacyNotificationMessage');
@@ -247,54 +300,110 @@ window.PharmacyNotificationSystem = {
         const confirmBtn = document.getElementById('pharmacyNotificationConfirmBtn');
         const cancelBtn = document.getElementById('pharmacyNotificationCancelBtn');
         
+        // Double-check all elements exist after creation
+        if (!modal || !titleEl || !messageEl || !iconEl || !confirmBtn || !cancelBtn) {
+            console.error('Failed to create required notification elements');
+            console.error('Missing elements after creation:', {
+                modal: !!modal, 
+                titleEl: !!titleEl, 
+                messageEl: !!messageEl, 
+                iconEl: !!iconEl, 
+                confirmBtn: !!confirmBtn, 
+                cancelBtn: !!cancelBtn
+            });
+            if (callback) callback(type === 'confirm' ? false : true);
+            return false;
+        }
+        
         // Reset modal classes
         modal.className = 'pharmacy-notification-modal pharmacy-notification-' + type;
         
-        // Set content
-        titleEl.textContent = title || this.getDefaultTitle(type);
-        messageEl.textContent = message;
-        
-        // Set icon
-        iconEl.className = 'fas ' + this.getIcon(type);
+        // Set content safely
+        try {
+            titleEl.textContent = title || this.getDefaultTitle(type);
+            
+            // Support HTML content for better formatting
+            if (message.includes('<') && message.includes('>')) {
+                messageEl.innerHTML = message;
+            } else {
+                messageEl.textContent = message;
+            }
+            
+            iconEl.className = 'fas ' + this.getIcon(type);
+        } catch (error) {
+            console.error('Error setting notification content:', error);
+            return false;
+        }
         
         // Store callback
         this.currentCallback = callback;
         
         // Show/hide buttons based on type
-        if (type === 'confirm') {
-            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Yes';
-            cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
-            cancelBtn.style.display = 'inline-flex';
-        } else {
-            confirmBtn.innerHTML = '<i class="fas fa-check"></i> OK';
-            cancelBtn.style.display = 'none';
+        try {
+            if (type === 'confirm') {
+                confirmBtn.innerHTML = '<i class="fas fa-check"></i> Yes';
+                cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+                cancelBtn.style.display = 'inline-flex';
+            } else {
+                confirmBtn.innerHTML = '<i class="fas fa-check"></i> OK';
+                cancelBtn.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error setting notification buttons:', error);
+            return false;
         }
         
         // Show overlay
         overlay.style.display = 'flex';
         
         // Focus confirm button
-        setTimeout(() => confirmBtn.focus(), 100);
+        setTimeout(() => {
+            try {
+                if (confirmBtn && confirmBtn.focus) {
+                    confirmBtn.focus();
+                }
+            } catch (error) {
+                console.warn('Could not focus confirm button:', error);
+            }
+        }, 100);
+        
+        return true;
     },
     
     showLoading: function(message = 'Processing...', title = 'Please Wait') {
         const overlay = document.getElementById('pharmacyNotificationOverlay');
+        if (!overlay) {
+            console.error('Pharmacy notification overlay not found');
+            return false;
+        }
+        
         const modal = overlay.querySelector('.pharmacy-notification-modal');
         const titleEl = document.getElementById('pharmacyNotificationTitle');
-        const body = modal.querySelector('.pharmacy-notification-body');
+        const body = modal ? modal.querySelector('.pharmacy-notification-body') : null;
         
-        // Set loading state
-        modal.className = 'pharmacy-notification-modal pharmacy-notification-loading';
-        titleEl.textContent = title;
+        if (!modal || !titleEl || !body) {
+            console.error('Required loading notification elements not found');
+            return false;
+        }
         
-        // Create loading content
-        body.innerHTML = `
-            <div class="pharmacy-notification-spinner"></div>
-            <p>${message}</p>
-        `;
-        
-        // Show overlay
-        overlay.style.display = 'flex';
+        try {
+            // Set loading state
+            modal.className = 'pharmacy-notification-modal pharmacy-notification-loading';
+            titleEl.textContent = title;
+            
+            // Create loading content
+            body.innerHTML = `
+                <div class="pharmacy-notification-spinner"></div>
+                <p>${message}</p>
+            `;
+            
+            // Show overlay
+            overlay.style.display = 'flex';
+            return true;
+        } catch (error) {
+            console.error('Error showing loading notification:', error);
+            return false;
+        }
     },
     
     getDefaultTitle: function(type) {
@@ -322,27 +431,60 @@ window.PharmacyNotificationSystem = {
 
 // Helper functions for different pharmacy notification types
 function showPharmacySuccess(message, title = null, callback = null) {
-    PharmacyNotificationSystem.show(message, 'success', title, callback);
+    try {
+        PharmacyNotificationSystem.show(message, 'success', title, callback);
+    } catch (error) {
+        console.error('Error showing success notification:', error);
+        if (callback) callback(true);
+    }
 }
 
 function showPharmacyError(message, title = null, callback = null) {
-    PharmacyNotificationSystem.show(message, 'error', title, callback);
+    try {
+        PharmacyNotificationSystem.show(message, 'error', title, callback);
+    } catch (error) {
+        console.error('Error showing error notification:', error);
+        if (callback) callback(true);
+    }
 }
 
 function showPharmacyWarning(message, title = null, callback = null) {
-    PharmacyNotificationSystem.show(message, 'warning', title, callback);
+    try {
+        PharmacyNotificationSystem.show(message, 'warning', title, callback);
+    } catch (error) {
+        console.error('Error showing warning notification:', error);
+        if (callback) callback(true);
+    }
 }
 
 function showPharmacyInfo(message, title = null, callback = null) {
-    PharmacyNotificationSystem.show(message, 'info', title, callback);
+    try {
+        PharmacyNotificationSystem.show(message, 'info', title, callback);
+    } catch (error) {
+        console.error('Error showing info notification:', error);
+        if (callback) callback(true);
+    }
 }
 
 function showPharmacyConfirm(message, title = null, callback = null) {
-    PharmacyNotificationSystem.show(message, 'confirm', title, callback);
+    try {
+        PharmacyNotificationSystem.show(message, 'confirm', title, callback);
+    } catch (error) {
+        console.error('Error showing confirm notification:', error);
+        if (callback) callback(false);
+    }
 }
 
 function showPharmacyLoading(message = 'Processing your request...', title = 'Please Wait') {
-    PharmacyNotificationSystem.showLoading(message, title);
+    try {
+        if (!PharmacyNotificationSystem.showLoading(message, title)) {
+            console.warn('Loading notification failed, using console log instead');
+            console.log(title + ': ' + message);
+        }
+    } catch (error) {
+        console.error('Error showing loading notification:', error);
+        console.log(title + ': ' + message);
+    }
 }
 
 // Helper function to handle AJAX response errors consistently
@@ -391,17 +533,29 @@ async function handlePharmacyFetchResponse(response, successCallback, errorTitle
 }
 
 function confirmPharmacyNotification() {
-    const callback = PharmacyNotificationSystem.currentCallback;
-    closePharmacyNotification();
-    if (callback && typeof callback === 'function') {
-        callback(true);
+    try {
+        const callback = PharmacyNotificationSystem.currentCallback;
+        closePharmacyNotification();
+        if (callback && typeof callback === 'function') {
+            callback(true);
+        }
+    } catch (error) {
+        console.error('Error in confirmPharmacyNotification:', error);
     }
 }
 
 function closePharmacyNotification() {
-    const overlay = document.getElementById('pharmacyNotificationOverlay');
-    overlay.style.display = 'none';
-    PharmacyNotificationSystem.currentCallback = null;
+    try {
+        const overlay = document.getElementById('pharmacyNotificationOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+        if (PharmacyNotificationSystem) {
+            PharmacyNotificationSystem.currentCallback = null;
+        }
+    } catch (error) {
+        console.error('Error in closePharmacyNotification:', error);
+    }
 }
 
 // Close on escape key
@@ -423,6 +577,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 closePharmacyNotification();
             }
         });
+        console.log('Pharmacy notification system initialized successfully');
+    } else {
+        console.warn('Pharmacy notification overlay not found during initialization');
     }
 });
+
+// Initialize notification system when script loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Pharmacy notification system ready');
+    });
+} else {
+    // DOM already loaded
+    setTimeout(function() {
+        const overlay = document.getElementById('pharmacyNotificationOverlay');
+        if (overlay) {
+            console.log('Pharmacy notification system ready (immediate)');
+        } else {
+            console.warn('Pharmacy notification overlay not found (immediate check)');
+        }
+    }, 100);
+}
 </script>

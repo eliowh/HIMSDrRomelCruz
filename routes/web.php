@@ -191,6 +191,9 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
 
     // Allow nurses to query stocks reference for medicine autosuggest in nurse modal
     Route::get('/nurse/pharmacy/stocks-reference', [PharmacyController::class, 'getStocksReference'])->name('nurse.pharmacy.stocks.reference');
+    
+    // Allow nurses to view patient medicines 
+    Route::get('/api/patients/{patientId}/medicines', [PharmacyController::class, 'getPatientMedicinesApi'])->name('api.patient.medicines.nurse');
 });
 
 /*
@@ -422,6 +425,19 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
 
     // Nurse-submitted medicine requests (new tab)
     Route::get('/pharmacy/requests', [App\Http\Controllers\PharmacyController::class, 'nurseRequests'])->name('pharmacy.requests');
+    Route::get('/pharmacy/requests/{id}', [App\Http\Controllers\PharmacyController::class, 'showRequest'])->name('pharmacy.requests.show');
+    Route::post('/pharmacy/requests/{id}/dispense', [App\Http\Controllers\PharmacyController::class, 'dispenseRequest'])->name('pharmacy.requests.dispense');
+    Route::post('/pharmacy/requests/{id}/cancel', [App\Http\Controllers\PharmacyController::class, 'cancelRequest'])->name('pharmacy.requests.cancel');
+    
+    // Patient medicines (dispensed medicines)
+    Route::get('/pharmacy/patient-medicines', [App\Http\Controllers\PharmacyController::class, 'patientMedicines'])->name('pharmacy.patient.medicines');
+    Route::get('/pharmacy/patient-medicines/{patientId}', [App\Http\Controllers\PharmacyController::class, 'patientMedicinesByPatient'])->name('pharmacy.patient.medicines.by.patient');
+    
+    // API route moved to nurse group since nurses access patient data
+    
+    // Stocks management (list stocks reference)
+    Route::get('/pharmacy/stocks', [App\Http\Controllers\PharmacyController::class, 'stocks'])->name('pharmacy.stocks');
+    Route::get('/pharmacy/stockspharmacy', [App\Http\Controllers\PharmacyController::class, 'stocksPharmacy'])->name('pharmacy.stockspharmacy');
 });
 
 /*

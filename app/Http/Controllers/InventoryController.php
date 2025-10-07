@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\StockPrice;
 use App\Models\StockOrder;
 use App\Models\StocksReference;
+use App\Models\PharmacyStock;
 
 class InventoryController extends Controller
 {
@@ -359,10 +360,16 @@ class InventoryController extends Controller
                 
                 $stock->save();
                 $message = 'Stock updated successfully. Added ' . $finalData['quantity'] . ' units.';
+                
+                // Note: Manual inventory stock additions are now separate from pharmacy stocks
+                \Log::info("Manual inventory stock added/updated for item: {$finalData['item_code']} with quantity: {$finalData['quantity']} - NOT auto-transferred to pharmacy");
             } else {
                 // Create new stock entry
                 $stock = StockPrice::create($finalData);
                 $message = 'New stock item created successfully with ' . $finalData['quantity'] . ' units.';
+                
+                // Note: Manual inventory stock additions are now separate from pharmacy stocks
+                \Log::info("New inventory stock created for item: {$finalData['item_code']} with quantity: {$finalData['quantity']} - NOT auto-transferred to pharmacy");
             }
 
             return response()->json([
@@ -624,9 +631,25 @@ class InventoryController extends Controller
                 ], 400);
             }
 
-            // Deduct the requested quantity
+            // Deduct the requested quantity from inventory
             $stock->quantity -= intval($data['quantity']);
             $stock->save();
+
+            // Add the deducted quantity to pharmacy stocks
+            \Log::info("Processing pharmacy order - transferring {$data['quantity']} units of {$data['item_code']} to pharmacy stocks");
+            $transferData = [
+                'item_code' => $stock->item_code,
+                'generic_name' => $stock->generic_name,
+                'brand_name' => $stock->brand_name,
+                'price' => $stock->price,
+                'quantity' => $data['quantity'], // The amount being transferred
+                'expiry_date' => $stock->expiry_date,
+                'reorder_level' => $stock->reorder_level,
+                'supplier' => $stock->supplier,
+                'batch_number' => $stock->batch_number,
+                'date_received' => $stock->date_received,
+            ];
+            $this->addToPharmacyStocks($transferData);
 
             // Update the order status to completed
             $order = StockOrder::find($data['order_id']);
@@ -649,6 +672,65 @@ class InventoryController extends Controller
                 'ok' => false, 
                 'message' => 'Failed to process order: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Add encoded inventory items to pharmacy stocks
+     * If item exists, add to quantity. If not, create new entry.
+     */
+    private function addToPharmacyStocks($stockData)
+    {
+        try {
+            \Log::info("addToPharmacyStocks called with data: " . json_encode($stockData));
+            
+            // Check if item already exists in pharmacy stocks
+            $pharmacyStock = PharmacyStock::where('item_code', $stockData['item_code'])->first();
+
+            if ($pharmacyStock) {
+                $oldQuantity = $pharmacyStock->quantity ?? 0;
+                $addQuantity = intval($stockData['quantity']);
+                $newQuantity = $oldQuantity + $addQuantity;
+                
+                \Log::info("Updating existing pharmacy stock {$stockData['item_code']}: {$oldQuantity} + {$addQuantity} = {$newQuantity}");
+                
+                // Add to existing quantity in pharmacy stocks
+                $pharmacyStock->quantity = $newQuantity;
+                
+                // Update other fields with new data (prices, dates, etc.)
+                $pharmacyStock->price = $stockData['price'];
+                $pharmacyStock->expiry_date = $stockData['expiry_date'] ?? $pharmacyStock->expiry_date;
+                $pharmacyStock->supplier = $stockData['supplier'] ?? $pharmacyStock->supplier;
+                $pharmacyStock->batch_number = $stockData['batch_number'] ?? $pharmacyStock->batch_number;
+                $pharmacyStock->date_received = $stockData['date_received'] ?? $pharmacyStock->date_received;
+                $pharmacyStock->reorder_level = $stockData['reorder_level'] ?? $pharmacyStock->reorder_level;
+                
+                $saveResult = $pharmacyStock->save();
+                \Log::info("Save result: " . ($saveResult ? 'SUCCESS' : 'FAILED') . " - Final quantity: {$pharmacyStock->quantity}");
+                
+            } else {
+                \Log::info("Creating new pharmacy stock entry for {$stockData['item_code']} with quantity: {$stockData['quantity']}");
+                
+                // Create new pharmacy stock entry
+                $newStock = PharmacyStock::create([
+                    'item_code' => $stockData['item_code'],
+                    'generic_name' => $stockData['generic_name'],
+                    'brand_name' => $stockData['brand_name'],
+                    'price' => $stockData['price'],
+                    'quantity' => $stockData['quantity'],
+                    'expiry_date' => $stockData['expiry_date'],
+                    'reorder_level' => $stockData['reorder_level'] ?? 10,
+                    'supplier' => $stockData['supplier'],
+                    'batch_number' => $stockData['batch_number'],
+                    'date_received' => $stockData['date_received'],
+                ]);
+                
+                \Log::info("Created new pharmacy stock with ID: {$newStock->id} and quantity: {$newStock->quantity}");
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to add item {$stockData['item_code']} to pharmacy stocks: " . $e->getMessage());
+            \Log::error("Stack trace: " . $e->getTraceAsString());
+            // Don't throw exception here to avoid breaking the main inventory process
         }
     }
 }
