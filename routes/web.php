@@ -210,6 +210,12 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Allow nurses to view patient medicines 
     Route::get('/api/patients/{patientId}/medicines', [PharmacyController::class, 'getPatientMedicinesApi'])->name('api.patient.medicines.nurse');
+    
+    // Allow nurses to view patient lab results
+    Route::get('/api/patients/{patientId}/lab-results', [LabOrderController::class, 'getPatientTestHistory'])->name('api.patient.lab-results.nurse');
+    
+    // Allow nurses to view lab result PDFs
+    Route::get('/nurse/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('nurse.lab.viewPdf');
 });
 
 /*

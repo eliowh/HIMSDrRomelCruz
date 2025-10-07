@@ -108,7 +108,8 @@
         </main>
     </div>
 
-    @include('pharmacy.modals.notification_system')
+    <!-- Include notification system before scripts -->
+    @include('pharmacy.notification-system')
 
     <style>
         /* Action Dropdown Styles */
@@ -215,6 +216,34 @@
     </style>
 
     <script>
+        // Simple and clean dropdown toggle function
+        function toggleDropdown(requestId) {
+            console.log('toggleDropdown called for ID:', requestId);
+            
+            // Close all dropdowns first
+            document.querySelectorAll('.dropdown-content').forEach(function(dd) {
+                dd.classList.remove('show');
+            });
+            
+            // Open the requested dropdown
+            const dropdown = document.getElementById('dropdown-' + requestId);
+            if (dropdown) {
+                dropdown.classList.add('show');
+                console.log('Dropdown shown for ID:', requestId);
+            } else {
+                console.error('Dropdown not found for ID:', requestId);
+            }
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.action-dropdown')) {
+                document.querySelectorAll('.dropdown-content').forEach(function(dropdown) {
+                    dropdown.classList.remove('show');
+                });
+            }
+        });
+        
         // Sorting and pagination functions
         function sortTable(column) {
             const currentSort = '{{ $sort }}';
@@ -231,130 +260,11 @@
             window.location.href = url.toString();
         }
 
-        function toggleDropdown(requestId) {
-            const dropdown = document.getElementById(`dropdown-${requestId}`);
-            
-            // Close all other dropdowns first
-            document.querySelectorAll('.dropdown-content.show').forEach(dd => {
-                if (dd.id !== `dropdown-${requestId}`) {
-                    dd.classList.remove('show');
-                    dd.style.position = '';
-                    dd.style.top = '';
-                    dd.style.left = '';
-                    dd.style.right = '';
-                    dd.style.bottom = '';
-                }
-            });
+        // Removed duplicate function - using simple version above
 
-            // Toggle the current dropdown
-            if (dropdown.classList.contains('show')) {
-                dropdown.classList.remove('show');
-                dropdown.style.position = '';
-                dropdown.style.top = '';
-                dropdown.style.left = '';
-                dropdown.style.right = '';
-                dropdown.style.bottom = '';
-            } else {
-                const button = dropdown.previousElementSibling;
-                const rect = button.getBoundingClientRect();
-                const dropdownRect = dropdown.getBoundingClientRect();
-                const viewportHeight = window.innerHeight;
-                const viewportWidth = window.innerWidth;
-
-                // Check if dropdown would overflow at the bottom
-                if (rect.bottom + 160 > viewportHeight) {
-                    dropdown.style.position = 'fixed';
-                    dropdown.style.bottom = (viewportHeight - rect.top) + 'px';
-                    dropdown.style.top = 'auto';
-                } else {
-                    dropdown.style.position = 'fixed';
-                    dropdown.style.top = rect.bottom + 'px';
-                    dropdown.style.bottom = 'auto';
-                }
-
-                // Check if dropdown would overflow on the right
-                if (rect.right - 160 < 0) {
-                    dropdown.style.left = rect.left + 'px';
-                    dropdown.style.right = 'auto';
-                } else {
-                    dropdown.style.right = (viewportWidth - rect.right) + 'px';
-                    dropdown.style.left = 'auto';
-                }
-
-                dropdown.classList.add('show');
-            }
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.matches('.action-btn') && !event.target.matches('.fas')) {
-                document.querySelectorAll('.dropdown-content.show').forEach(dropdown => {
-                    dropdown.classList.remove('show');
-                    dropdown.style.position = '';
-                    dropdown.style.top = '';
-                    dropdown.style.left = '';
-                    dropdown.style.right = '';
-                    dropdown.style.bottom = '';
-                });
-            }
-        });
-
-        function viewRequest(id){
-            fetch(`/pharmacy/requests/${id}`)
-                .then(r=>r.json())
-                .then(j=>{
-                    if(j.success){
-                        const o = j.request;
-                        
-                        // Format the request details nicely
-                        let details = `<div style="text-align: left; line-height: 1.6;">
-                            <h4 style="margin: 0 0 15px 0; color: #2E7D32; border-bottom: 2px solid #4CAF50; padding-bottom: 8px;">
-                                Request #${o.id} Details
-                            </h4>
-                            
-                            <div style="display: grid; gap: 12px;">
-                                <div><strong>Patient:</strong> ${o.patient_name}${o.patient_no ? ' (ID: ' + o.patient_no + ')' : ''}</div>
-                                <div><strong>Medicine:</strong> ${o.medicine_name}</div>
-                                ${o.item_code ? '<div><strong>Item Code:</strong> ' + o.item_code + '</div>' : ''}
-                                <div><strong>Quantity:</strong> ${o.quantity} units</div>
-                                ${o.unit_price ? '<div><strong>Unit Price:</strong> ₱' + parseFloat(o.unit_price).toFixed(2) + '</div>' : ''}
-                                ${o.total_price ? '<div><strong>Total Price:</strong> ₱' + parseFloat(o.total_price).toFixed(2) + '</div>' : ''}
-                                <div><strong>Status:</strong> <span style="color: ${getStatusColor(o.status.toLowerCase())}; font-weight: bold;">${o.status}</span></div>
-                                <div><strong>Priority:</strong> ${o.priority}</div>
-                                <div><strong>Requested By:</strong> ${o.requested_by}</div>
-                                <div><strong>Requested Date:</strong> ${o.requested_at || 'Not specified'}</div>
-                                ${o.pharmacist ? '<div><strong>Assigned Pharmacist:</strong> ' + o.pharmacist + '</div>' : ''}
-                                ${o.dispensed_by ? '<div><strong>Dispensed By:</strong> ' + o.dispensed_by + '</div>' : ''}
-                                ${o.dispensed_at ? '<div><strong>Dispensed Date:</strong> ' + o.dispensed_at + '</div>' : ''}
-                                <div style="margin-top: 8px;"><strong>Notes:</strong><br><em style="color: #666;">${o.notes}</em></div>
-                            </div>
-                        </div>`;
-                        
-                        // Use notification system directly without fallback to alert
-                        showPharmacyInfo(details, 'Request Details');
-                    } else {
-                        showPharmacyError('Failed to load request details: ' + (j.message || 'Unknown error'), 'Error');
-                    }
-                }).catch(e=>{ 
-                    console.error(e); 
-                    showPharmacyError('Network error while loading request details', 'Connection Error');
-                });
-        }
-
-        // Helper function to get status colors
-        function getStatusColor(status) {
-            switch(status) {
-                case 'pending': return '#FF9800';
-                case 'in_progress': return '#2196F3';
-                case 'completed': return '#4CAF50';
-                case 'dispensed': return '#4CAF50';
-                case 'cancelled': return '#F44336';
-                default: return '#666';
-            }
-        }
-
+        // Essential pharmacy functions
         function dispenseRequest(id) {
-            // Check if notification system is available
+            // Check if notification system is available, fallback to confirm if not
             if (typeof showPharmacyConfirm === 'function') {
                 showPharmacyConfirm(
                     'Are you sure you want to dispense this medicine request? This action will reduce the pharmacy stock quantity.',
@@ -362,91 +272,79 @@
                     function(confirmed) {
                         if (confirmed) {
                             showPharmacyLoading('Dispensing medicine...', 'Processing Request');
-                        
-                        fetch(`/pharmacy/requests/${id}/dispense`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            }
-                        })
-                        .then(response => {
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.success) {
-                                showPharmacySuccess(
-                                    'Medicine dispensed successfully!',
-                                    'Dispensed'
-                                );
-                                // Auto-reload after 2 seconds
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 2000);
-                            } else {
-                                showPharmacyError(data.message || 'Failed to dispense medicine', 'Dispensing Failed');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Fetch error:', error);
-                            showPharmacyError('A network error occurred while dispensing medicine', 'Connection Error');
-                        });
-                    }
-                }
-            );
-            } else {
-                // Force use of notification system even when initially not detected
-                PharmacyNotificationSystem.show(
-                    'Are you sure you want to dispense this medicine request? This action will reduce the pharmacy stock quantity.',
-                    'confirm',
-                    'Confirm Dispensing',
-                    function(confirmed) {
-                        if (confirmed) {
-                            PharmacyNotificationSystem.show('Dispensing medicine...', 'loading', 'Processing Request');
                             
-                            fetch(`/pharmacy/requests/${id}/dispense`, {
+                            fetch('/pharmacy/requests/' + id + '/dispense', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 }
                             })
-                            .then(response => response.json())
-                            .then(data => {
+                            .then(function(response) {
+                                return response.json();
+                            })
+                            .then(function(data) {
+                                closePharmacyNotification(); // Close loading
+                                
                                 if (data.success) {
-                                    PharmacyNotificationSystem.show(
-                                        'Medicine dispensed successfully!',
-                                        'success',
-                                        'Dispensed'
+                                    showPharmacySuccess(
+                                        data.message || 'Medicine dispensed successfully!',
+                                        'Dispensed Successfully'
                                     );
                                     // Auto-reload after 2 seconds
                                     setTimeout(() => {
                                         location.reload();
                                     }, 2000);
                                 } else {
-                                    PharmacyNotificationSystem.show(
+                                    showPharmacyError(
                                         data.message || 'Failed to dispense medicine',
-                                        'error',
                                         'Dispensing Failed'
                                     );
                                 }
                             })
-                            .catch(error => {
-                                console.error('Fetch error:', error);
-                                PharmacyNotificationSystem.show(
-                                    'Network error occurred while dispensing medicine',
-                                    'error',
+                            .catch(function(error) {
+                                closePharmacyNotification(); // Close loading
+                                console.error('Error:', error);
+                                showPharmacyError(
+                                    'Network error occurred while dispensing medicine. Please try again.',
                                     'Connection Error'
                                 );
                             });
                         }
                     }
                 );
+            } else {
+                // Fallback to browser confirm if notification system not available
+                console.warn('Notification system not available, using fallback');
+                if (confirm('Are you sure you want to dispense this medicine request?')) {
+                    fetch('/pharmacy/requests/' + id + '/dispense', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.success) {
+                            alert('Success: ' + (data.message || 'Medicine dispensed successfully!'));
+                            location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to dispense medicine'));
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        alert('Error: Network error occurred');
+                    });
+                }
             }
         }
-
+        
         function cancelRequest(id) {
-            // Check if notification system is available
+            // Check if notification system is available, fallback to confirm if not
             if (typeof showPharmacyConfirm === 'function') {
                 showPharmacyConfirm(
                     'Are you sure you want to cancel this medicine request? This action cannot be undone.',
@@ -455,85 +353,136 @@
                         if (confirmed) {
                             showPharmacyLoading('Cancelling request...', 'Processing Request');
                             
-                            fetch(`/pharmacy/requests/${id}/cancel`, {
+                            fetch('/pharmacy/requests/' + id + '/cancel', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                 }
                             })
-                            .then(response => response.json())
-                            .then(data => {
+                            .then(function(response) {
+                                return response.json();
+                            })
+                            .then(function(data) {
+                                closePharmacyNotification(); // Close loading
+                                
                                 if (data.success) {
                                     showPharmacySuccess(
-                                        'Request cancelled successfully!',
-                                        'Cancelled'
+                                        data.message || 'Request cancelled successfully!',
+                                        'Cancelled Successfully'
                                     );
                                     // Auto-reload after 2 seconds
                                     setTimeout(() => {
                                         location.reload();
                                     }, 2000);
                                 } else {
-                                    showPharmacyError(data.message || 'Failed to cancel request', 'Cancellation Failed');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                showPharmacyError('A network error occurred while cancelling the request', 'Connection Error');
-                            });
-                        }
-                    }
-                );
-            } else {
-                // Force use of notification system even when initially not detected
-                PharmacyNotificationSystem.show(
-                    'Are you sure you want to cancel this medicine request? This action cannot be undone.',
-                    'confirm',
-                    'Confirm Cancellation',
-                    function(confirmed) {
-                        if (confirmed) {
-                            PharmacyNotificationSystem.show('Cancelling request...', 'loading', 'Processing Request');
-                            
-                            fetch(`/pharmacy/requests/${id}/cancel`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                }
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    PharmacyNotificationSystem.show(
-                                        'Request cancelled successfully!',
-                                        'success',
-                                        'Cancelled'
-                                    );
-                                    // Auto-reload after 2 seconds
-                                    setTimeout(() => {
-                                        location.reload();
-                                    }, 2000);
-                                } else {
-                                    PharmacyNotificationSystem.show(
+                                    showPharmacyError(
                                         data.message || 'Failed to cancel request',
-                                        'error',
                                         'Cancellation Failed'
                                     );
                                 }
                             })
-                            .catch(error => {
+                            .catch(function(error) {
+                                closePharmacyNotification(); // Close loading
                                 console.error('Error:', error);
-                                PharmacyNotificationSystem.show(
-                                    'Network error occurred while cancelling the request',
-                                    'error',
+                                showPharmacyError(
+                                    'Network error occurred while cancelling the request. Please try again.',
                                     'Connection Error'
                                 );
                             });
                         }
                     }
                 );
+            } else {
+                // Fallback to browser confirm if notification system not available
+                console.warn('Notification system not available, using fallback');
+                if (confirm('Are you sure you want to cancel this medicine request?')) {
+                    fetch('/pharmacy/requests/' + id + '/cancel', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.success) {
+                            alert('Success: ' + (data.message || 'Request cancelled successfully!'));
+                            location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to cancel request'));
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        alert('Error: Network error occurred');
+                    });
+                }
             }
         }
+
+        function viewRequest(id) {
+            // Fetch request details and show in modal
+            fetch(`/pharmacy/requests/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const request = data.request;
+                        let details = `<div style="text-align: left; line-height: 1.6;">
+                            <h4 style="margin: 0 0 15px 0; color: #2E7D32; border-bottom: 2px solid #4CAF50; padding-bottom: 8px;">
+                                Request #${request.id} Details
+                            </h4>
+                            <div style="display: grid; gap: 12px;">
+                                <div><strong>Patient:</strong> ${request.patient_name || 'N/A'}</div>
+                                <div><strong>Medicine:</strong> ${request.generic_name || request.brand_name || 'N/A'}</div>
+                                <div><strong>Item Code:</strong> ${request.item_code || 'N/A'}</div>
+                                <div><strong>Quantity:</strong> ${request.quantity} units</div>
+                                <div><strong>Unit Price:</strong> ₱${parseFloat(request.unit_price || 0).toFixed(2)}</div>
+                                <div><strong>Total Price:</strong> ₱${parseFloat(request.total_price || 0).toFixed(2)}</div>
+                                <div><strong>Status:</strong> ${request.status}</div>
+                                <div><strong>Requested By:</strong> ${request.requested_by || 'N/A'}</div>
+                                <div><strong>Requested Date:</strong> ${request.requested_at || 'N/A'}</div>
+                            </div>
+                        </div>`;
+                        
+                        if (typeof showPharmacyInfo === 'function') {
+                            showPharmacyInfo(details, 'Request Details');
+                        } else {
+                            alert('Request Details\n\n' + details.replace(/<[^>]*>/g, ''));
+                        }
+                    } else {
+                        alert('Failed to load request details');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading request details');
+                });
+        }
+        
+        console.log('Pharmacy page loaded successfully');
+        
+        // Debug: Check if notification functions are available
+        console.log('showPharmacyConfirm available:', typeof showPharmacyConfirm);
+        console.log('showPharmacySuccess available:', typeof showPharmacySuccess);
+        console.log('showPharmacyError available:', typeof showPharmacyError);
+        console.log('PharmacyNotificationSystem available:', typeof PharmacyNotificationSystem);
+        
+        // Test notification system
+        window.testNotification = function() {
+            if (typeof showPharmacyConfirm === 'function') {
+                showPharmacyConfirm('Test message', 'Test Title', function(result) {
+                    console.log('Test result:', result);
+                });
+            } else {
+                console.error('showPharmacyConfirm not available');
+            }
+        };
+        
+        console.log('You can test notifications by running: testNotification()');
+        
     </script>
 </body>
 </html>

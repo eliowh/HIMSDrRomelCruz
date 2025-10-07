@@ -12,140 +12,6 @@
 <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
 <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
 <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
-<style>
-.details-section {
-    margin-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 15px;
-}
-
-.details-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-}
-
-.section-header {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 10px 0;
-    padding: 5px 0;
-    border-bottom: 2px solid #3498db;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.medicine-item {
-    background: #f8f9fa;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 6px;
-    border-left: 4px solid #28a745;
-    font-size: 13px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.medicine-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}
-
-.medicine-header strong {
-    color: #2c3e50;
-    font-size: 14px;
-}
-
-.medicine-quantity {
-    background: #28a745;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.medicine-details {
-    font-size: 12px;
-    color: #666;
-    line-height: 1.4;
-}
-
-.medicine-price {
-    font-weight: 600;
-    color: #17a2b8;
-    margin-bottom: 2px;
-}
-
-.medicine-meta {
-    color: #888;
-    font-style: italic;
-}
-
-.medicine-notes {
-    margin-top: 6px;
-    padding: 6px 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    font-size: 11px;
-}
-
-.loading-medicines, .no-medicines, .error-medicines {
-    padding: 12px;
-    text-align: center;
-    font-style: italic;
-    color: #666;
-    background: #f8f9fa;
-    border-radius: 4px;
-    margin: 8px 0;
-}
-
-.loading-medicines {
-    color: #007bff;
-}
-
-.error-medicines {
-    color: #dc3545;
-    background: #f8d7da;
-}
-
-.no-medicines {
-    color: #6c757d;
-}
-
-.view-more-medicines {
-    padding: 10px;
-    text-align: center;
-    margin-top: 8px;
-}
-
-.view-medicine-summary-btn {
-    background: #fff;
-    border: 1px solid #007bff;
-    color: #007bff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.view-medicine-summary-btn:hover {
-    background: #007bff;
-    color: white;
-}
-
-.patient-details dt {
-    font-weight: 600;
-    color: #555;
-}
-
-.patient-details dd {
-    color: #333;
-    margin-bottom: 8px;
-}
-</style>
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
@@ -189,7 +55,6 @@
                                     'nationality' => $p->nationality,
                                     'room_no' => $p->room_no,
                                     'admission_type' => $p->admission_type,
-                                    'service' => $p->service,
                                     'doctor_name' => $p->doctor_name,
                                     'doctor_type' => $p->doctor_type,
                                     'admission_diagnosis' => $p->admission_diagnosis,
@@ -252,7 +117,6 @@
                     <dl class="patient-details">
                         <dt>Room No.</dt><dd id="md-room_no">-</dd>
                         <dt>Admission Type</dt><dd id="md-admission_type">-</dd>
-                        <dt>Service</dt><dd id="md-service">-</dd>
                         <dt>Doctor</dt><dd id="md-doctor_name">-</dd>
                         <dt>Doctor Type</dt><dd id="md-doctor_type">-</dd>
                         <dt>Diagnosis</dt><dd id="md-admission_diagnosis">-</dd>
@@ -264,6 +128,12 @@
                 <div class="details-section" id="medicine-section" style="display:none;">
                     <h4 class="section-header">Medicine Details</h4>
                     <div id="md-medicines">No medicines dispensed</div>
+                </div>
+
+                <!-- Lab Results Section -->
+                <div class="details-section" id="lab-results-section" style="display:none;">
+                    <h4 class="section-header">Lab Results</h4>
+                    <div id="md-lab-results">No lab results available</div>
                 </div>
 
                 <div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
@@ -280,6 +150,7 @@
 @include('nurse.modals.lab_request_modal')
 @include('nurse.modals.medicine_request_modal')
 @include('nurse.modals.edit_patient_modal')
+@include('nurse.modals.medicine_history_modal')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -380,18 +251,20 @@ document.addEventListener('DOMContentLoaded', function () {
         // Admission Details Section
         document.getElementById('md-room_no').textContent = or(patient.room_no);
         document.getElementById('md-admission_type').textContent = formatName(patient.admission_type);
-        document.getElementById('md-service').textContent = formatName(patient.service);
         document.getElementById('md-doctor_name').textContent = formatName(patient.doctor_name);
         document.getElementById('md-doctor_type').textContent = formatName(patient.doctor_type);
         document.getElementById('md-admission_diagnosis').textContent = or(patient.admission_diagnosis);
         document.getElementById('md-created_at').textContent = formatDateTime(patient.created_at);
         
         // Load patient medicines
-        loadPatientMedicines(patient.id);
+        loadPatientMedicines(patient.id, patient);
+        
+        // Load patient lab results
+        loadPatientLabResults(patient.id);
     }
     
     // Function to load and display patient medicines
-    function loadPatientMedicines(patientId) {
+    function loadPatientMedicines(patientId, patient) {
         const medicineSection = document.getElementById('medicine-section');
         const medicinesDiv = document.getElementById('md-medicines');
         
@@ -424,9 +297,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Medicines loaded:', data);
                 
                 if (data.success && data.medicines && data.medicines.length > 0) {
-                    // Limit display to first 3 medicines
-                    const displayMedicines = data.medicines.slice(0, 3);
-                    const hasMore = data.medicines.length > 3;
+                    // Limit display to first 2 medicines
+                    const displayMedicines = data.medicines.slice(0, 2);
+                    const hasMore = data.medicines.length > 2;
                     
                     // Display medicines
                     medicinesDiv.innerHTML = displayMedicines.map(med => {
@@ -453,11 +326,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         `;
                     }).join('');
                     
-                    // Add "View Medicine Summary" button if there are more than 3 medicines
+                    // Add "View Medicine Summary" button if there are more than 2 medicines
                     if (hasMore) {
+                        const patientName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
+                        const patientNo = patient.patient_no || '';
                         medicinesDiv.innerHTML += `
                             <div class="view-more-medicines">
-                                <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn">
+                                <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openMedicineHistoryModal(${patientId}, '${patientName}', '${patientNo}')">
                                     <i class="fas fa-pills"></i> 
                                     View Medicine Summary (${data.medicines.length} total)
                                 </button>
@@ -480,6 +355,104 @@ document.addEventListener('DOMContentLoaded', function () {
                 medicineSection.style.display = 'block';
             });
     }
+    
+    // Function to load and display patient lab results
+    function loadPatientLabResults(patientId) {
+        const labResultsSection = document.getElementById('lab-results-section');
+        const labResultsDiv = document.getElementById('md-lab-results');
+        
+        if (!patientId) {
+            labResultsSection.style.display = 'none';
+            return;
+        }
+        
+        console.log('Loading lab results for patient ID:', patientId);
+        
+        // Show loading state
+        labResultsDiv.innerHTML = '<div class="loading-lab-results">Loading lab results...</div>';
+        labResultsSection.style.display = 'block';
+        
+        // Fetch patient lab results via API
+        fetch(`/api/patients/${patientId}/lab-results`)
+            .then(response => {
+                console.log('Lab Results API Response status:', response.status);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Error response body:', text);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Lab results loaded:', data);
+                
+                if (data.success && data.tests && data.tests.length > 0) {
+                    // Display lab results
+                    labResultsDiv.innerHTML = data.tests.map(result => {
+                        const testName = result.test_requested || 'Unknown Test';
+                        const status = result.status || 'unknown';
+                        const priority = result.priority || 'medium';
+                        const requestedBy = result.requestedBy ? formatName(result.requestedBy.name) : 'Unknown';
+                        const requestedAt = result.requested_at ? formatDateTime(result.requested_at) : 'Unknown date';
+                        const completedAt = result.completed_at ? formatDateTime(result.completed_at) : null;
+                        const labTech = result.labTech ? formatName(result.labTech.name) : null;
+                        const results = result.results || '';
+                        const hasPdf = result.results_pdf_path ? true : false;
+                        
+                        const statusClass = status.toLowerCase().replace('_', '-');
+                        const priorityClass = priority.toLowerCase();
+                        
+                        let statusButtons = '';
+                        if (hasPdf && status === 'completed') {
+                            statusButtons = `
+                                <button type="button" class="view-pdf-btn" onclick="viewLabResultPdf(${result.id})">
+                                    <i class="fas fa-file-pdf"></i> View PDF
+                                </button>
+                            `;
+                        }
+                        
+                        return `
+                            <div class="lab-result-item">
+                                <div class="lab-result-header">
+                                    <strong>${testName}</strong>
+                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                        <span class="lab-result-status ${statusClass}">${status.replace('_', ' ')}</span>
+                                        ${statusButtons}
+                                    </div>
+                                </div>
+                                <div class="lab-result-details">
+                                    <div class="lab-result-priority ${priorityClass}">Priority: ${priority.toUpperCase()}</div>
+                                    <div class="lab-result-meta">Requested: ${requestedAt} by ${requestedBy}</div>
+                                    ${completedAt ? `<div class="lab-result-meta">Completed: ${completedAt}${labTech ? ` by ${labTech}` : ''}</div>` : ''}
+                                    ${results ? `<div style="margin-top: 6px; padding: 6px 8px; background: #e9ecef; border-radius: 4px; font-size: 11px;"><strong>Results:</strong> ${results}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    labResultsSection.style.display = 'block';
+                } else {
+                    // No lab results found
+                    labResultsDiv.innerHTML = '<div class="no-lab-results">No lab results available yet</div>';
+                    labResultsSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading patient lab results:', error);
+                labResultsDiv.innerHTML = `<div class="error-lab-results">Failed to load lab results: ${error.message}</div>`;
+                labResultsSection.style.display = 'block';
+            });
+    }
+    
+    // Function to view lab result PDF
+    function viewLabResultPdf(labOrderId) {
+        // Open the PDF in a new window/tab using nurse-accessible route
+        window.open(`/nurse/lab-orders/${labOrderId}/view-pdf`, '_blank');
+    }
+    
+    // Make viewLabResultPdf available globally
+    window.viewLabResultPdf = viewLabResultPdf;
 
     function clearActive(){
         rows.forEach(r => r.classList.remove('active'));
