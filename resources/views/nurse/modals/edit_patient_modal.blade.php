@@ -38,12 +38,12 @@
                     
                     <div class="form-group">
                         <label for="edit_barangay">Barangay</label>
-                        <input id="edit_barangay" name="barangay" placeholder="Enter barangay" />
+                        <input id="edit_barangay" name="barangay" placeholder="Enter barangay" required />
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_nationality">Nationality</label>
-                        <input id="edit_nationality" name="nationality" placeholder="Enter nationality" />
+                        <input id="edit_nationality" name="nationality" placeholder="Enter nationality" required />
                     </div>
 
                     <div class="form-divider full-width"></div>

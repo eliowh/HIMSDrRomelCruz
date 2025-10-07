@@ -604,6 +604,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // Note: edit_service field doesn't exist in the modal, so we skip it
             // safeSetValue('edit_service', patient.service);
             
+            // Set both the visible doctor input and hidden doctor name field
+            safeSetValue('edit_doctor_input', patient.doctor_name);
             safeSetValue('edit_doctor_name', patient.doctor_name);
             safeSetValue('edit_doctor_type', patient.doctor_type);
             safeSetValue('edit_admission_diagnosis', patient.admission_diagnosis);

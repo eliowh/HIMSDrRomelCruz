@@ -78,7 +78,7 @@
                 <label for="room-input">Room</label>
                 <div class="input-validation-container">
                     <div class="suggestion-container">
-                        <input id="room-input" type="text" name="room" autocomplete="off" value="{{ old('room') }}" placeholder="Type room name or price">
+                        <input id="room-input" type="text" name="room_no" autocomplete="off" value="{{ old('room_no') }}" placeholder="Type room name or price">
                         <div id="room-suggestions" class="suggestion-list"></div>
                     </div>
                     <div id="room-validation-error" class="validation-error"></div>
