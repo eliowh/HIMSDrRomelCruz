@@ -32,7 +32,7 @@ class ResetPasswordMail extends Notification
             ->subject('Reset Password')
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('We received a request to reset your password. If you did not make this request, please ignore this email.')
-            ->action('Reset Password', url('/reset-password/' . $this->token))
+            ->action('Reset Password', route('reset-password', ['token' => $this->token]))
             ->line('Best regards, Dr. Romel Cruz Hospital');
     }
 }

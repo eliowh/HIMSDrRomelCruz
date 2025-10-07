@@ -15,32 +15,32 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ asset('/inventory/home') }}" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
-                    <span class="icon">🏠</span> <span class="text">Dashboard</span>
+                                <a href="/inventory/home" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
+                    <span class="btn-icon">🏠</span> Home
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/inventory/stocks') }}" class="sidebar-btn{{ request()->is('inventory/stocks') ? ' active' : '' }}">
-                    <span class="icon">📦</span> <span class="text">Stocks</span>
+                <a href="/inventory/stocks" class="sidebar-btn{{ request()->is('inventory/stocks') ? ' active' : '' }}">
+                    <span class="btn-icon">📦</span> Stocks
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/inventory/orders') }}" class="sidebar-btn{{ request()->is('inventory/orders') ? ' active' : '' }}">
-                    <span class="icon">📝</span> <span class="text">Orders</span>
+                <a href="/inventory/orders" class="sidebar-btn{{ request()->is('inventory/orders') ? ' active' : '' }}">
+                    <span class="btn-icon">�</span> Orders
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/inventory/reports') }}" class="sidebar-btn{{ request()->is('inventory/reports') ? ' active' : '' }}">
-                    <span class="icon">📊</span> <span class="text">Reports</span>
+                <a href="/inventory/reports" class="sidebar-btn{{ request()->is('inventory/reports') ? ' active' : '' }}">
+                    <span class="btn-icon">�</span> Reports
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/inventory/account') }}" class="sidebar-btn{{ request()->is('inventory/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
+                <a href="/inventory/account" class="sidebar-btn{{ request()->is('inventory/account') ? ' active' : '' }}">
+                    <span class="btn-icon">⚙️</span> Account
                 </a>
             </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="inventory-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="inventory-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn" onclick="confirmLogout('inventory-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>

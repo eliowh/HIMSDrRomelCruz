@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        fetch('{{ route('inventory.stocks.add') }}', {
+        fetch('/inventory/stocks/add', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),

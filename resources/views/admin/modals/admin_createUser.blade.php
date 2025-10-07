@@ -112,7 +112,7 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
         submitBtn.disabled = true;
         submitBtn.textContent = 'Creating...';
         
-        fetch('{{ route('admin.createUser') }}', {
+        fetch('/admin/users/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

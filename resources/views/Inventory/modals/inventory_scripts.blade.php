@@ -41,7 +41,7 @@
     function highlight(container){ const nodes = container.querySelectorAll('.icd-suggestion'); nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); }
 
     function populateBrandOptions(item){ if(!brandSelect || !brandInput) return; if(!item || !item.generic_name){ brandSelect.style.display='none'; return; }
-        fetch(`{{ route('inventory.stocks.search') }}?q=` + encodeURIComponent(item.generic_name || item.item_code || ''))
+        fetch(`/inventory/stocks/search?q=` + encodeURIComponent(item.generic_name || item.item_code || ''))
             .then(r=>r.json()).then(list=>{
                 // Filter matches by generic name
                 const matches = list.filter(x => x.generic_name && 
@@ -115,7 +115,7 @@
     }
 
     function doSearch(q, container){ if(timer) clearTimeout(timer); if(!q || q.length < 1){ clearSuggestions(container); return; } timer = setTimeout(()=>{
-        fetch(`{{ route('inventory.stocks.search') }}?q=` + encodeURIComponent(q)).then(async r=>{
+        fetch(`/inventory/stocks/search?q=` + encodeURIComponent(q)).then(async r=>{
             const ct = (r.headers.get('content-type')||'').toLowerCase(); const text = await r.text(); if(!ct.includes('application/json')){ clearSuggestions(container); return; }
             try{ const data = JSON.parse(text); render(container, Array.isArray(data)?data:[]); } catch(e){ console.error('parse', e); clearSuggestions(container); }
         }).catch(e=>{ console.error('search fail', e); clearSuggestions(container); });

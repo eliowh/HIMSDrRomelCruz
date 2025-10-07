@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
     <title>Inventory Orders</title>
     <link rel="stylesheet" href="{{ asset('css/inventorycss/inventory.css') }}">
     <link rel="stylesheet" href="{{ asset('css/inventorycss/inventory_orders.css') }}">
@@ -402,7 +403,7 @@
 
             const formData = new FormData(form);
 
-            fetch('{{ route('inventory.stocks.addFromOrder') }}', {
+            fetch('/inventory/stocks/add-from-order', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),

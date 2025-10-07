@@ -533,6 +533,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             console.log('Opening edit modal for patient:', patient);
+            console.log('Doctor name from patient data:', patient.doctor_name);
             
             const form = document.getElementById('editPatientForm');
             if (!form) {
@@ -577,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Note: edit_service field doesn't exist in the modal, so we skip it
             // safeSetValue('edit_service', patient.service);
             
-            safeSetValue('edit_doctor_name', patient.doctor_name);
             safeSetValue('edit_doctor_type', patient.doctor_type);
             safeSetValue('edit_admission_diagnosis', patient.admission_diagnosis);
         
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
             diagDescField.value = 'Loading description...';
             
             // Fetch the description from ICD-10 lookup
-            fetch('{{ route("icd10.search") }}?q=' + encodeURIComponent(patient.admission_diagnosis))
+            fetch('/icd10/search?q=' + encodeURIComponent(patient.admission_diagnosis))
                 .then(async r => {
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     const text = await r.text();
@@ -622,10 +622,16 @@ document.addEventListener('DOMContentLoaded', function () {
             diagDescField.value = '';
         }
         
-        // Initialize doctor field to ensure suggestions are hidden
+        // Initialize doctor field to ensure suggestions are hidden - but this clears the field!
         if (typeof window.initializeDoctorField === 'function') {
             window.initializeDoctorField();
         }
+        
+        // Set doctor fields AFTER initialization to prevent them from being cleared
+        console.log('Setting doctor input with value:', patient.doctor_name);
+        const doctorInputSet = safeSetValue('edit_doctor_input', patient.doctor_name);
+        const doctorNameSet = safeSetValue('edit_doctor_name', patient.doctor_name);
+        console.log('Doctor input set success:', doctorInputSet, 'Doctor name set success:', doctorNameSet);
         
         modal.classList.add('open');
         modal.classList.add('show');
@@ -665,7 +671,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Validate room if not empty
         if (roomValue) {
-            const roomValidation = fetch('{{ route("rooms.validate") }}', {
+            const roomValidation = fetch('/rooms/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -689,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Validate ICD if not empty
         if (icdValue) {
-            const icdValidation = fetch('{{ route("icd10.validate") }}', {
+            const icdValidation = fetch('/icd10/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -782,9 +788,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Lab Request Modal Functions
 function openLabRequestModal(patientId, patientName, patientNo) {
-    // Set global flag to prevent sidebar height adjustments
-    window.isModalOpen = true;
-    
     document.getElementById('requestPatientId').value = patientId;
     document.getElementById('requestPatientInfo').textContent = `${patientName} (ID: ${patientNo})`;
     const modal = document.getElementById('labRequestModal');
@@ -796,21 +799,21 @@ function openLabRequestModal(patientId, patientName, patientNo) {
     // Ensure additional tests textarea is disabled by default
     const additionalTestsCheckbox = document.getElementById('enableAdditionalTests');
     const additionalTestsTextarea = document.getElementById('additionalTests');
-    additionalTestsCheckbox.checked = false;
-    additionalTestsTextarea.disabled = true;
+    if (additionalTestsCheckbox && additionalTestsTextarea) {
+        additionalTestsCheckbox.checked = false;
+        additionalTestsTextarea.disabled = true;
+    }
     
-    updateTestOptions(); // Reset the specific test dropdown
+    // Reset the specific test dropdown
+    if (typeof updateTestOptions === 'function') {
+        updateTestOptions();
+    }
 }
 
 function closeLabRequestModal() {
     const modal = document.getElementById('labRequestModal');
     modal.classList.remove('show');
     document.getElementById('labRequestForm').reset();
-    
-    // Clear global flag after a delay to ensure modal is fully closed
-    setTimeout(() => {
-        window.isModalOpen = false;
-    }, 300);
 }
 
 // Update test options based on selected category

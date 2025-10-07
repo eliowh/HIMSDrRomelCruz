@@ -15,31 +15,31 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ asset('/billing/home') }}"
+                <a href="/billing/home"
                    class="sidebar-btn{{ request()->is('billing/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/billing/invoices') }}"
+                <a href="/billing/invoices"
                    class="sidebar-btn{{ request()->is('billing/invoices') ? ' active' : '' }}">
                     <span class="icon">💳</span> <span class="text">Invoices</span>
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/billing/payments') }}"
+                <a href="/billing/payments"
                    class="sidebar-btn{{ request()->is('billing/payments') ? ' active' : '' }}">
                     <span class="icon">💰</span> <span class="text">Payments</span>
                 </a>
             </li>
             <li>
-                <a href="{{ asset('/billing/account') }}"
+                <a href="/billing/account"
                    class="sidebar-btn{{ request()->is('billing/account') ? ' active' : '' }}">
                     <span class="icon">⚙️</span> <span class="text">Account</span>
                 </a>
             </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="billing-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="billing-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn" onclick="confirmLogout('billing-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Log Out</span>

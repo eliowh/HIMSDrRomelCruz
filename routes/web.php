@@ -57,6 +57,21 @@ Route::post('/logout', [UserController::class, 'logout']);
 Route::get('/forgot-password', [UserController::class, 'forgotPassword']);
 Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
 Route::get('/reset-password/{token}', [UserController::class, 'resetPassword'])->name('reset-password');
+
+// Test mail configuration (remove in production)
+Route::get('/test-mail', function() {
+    try {
+        \Log::info('Testing mail configuration...');
+        \Mail::raw('This is a test email from Railway deployment.', function ($message) {
+            $message->to('himsdemo111@gmail.com')
+                    ->subject('Railway Mail Test');
+        });
+        return response()->json(['status' => 'Mail sent successfully']);
+    } catch (\Exception $e) {
+        \Log::error('Mail test failed: ' . $e->getMessage());
+        return response()->json(['status' => 'Mail failed', 'error' => $e->getMessage()], 500);
+    }
+});
 Route::post('/reset-password/{token}', [UserController::class, 'updatePassword'])->name('update-password');
 Route::post('/resend-email', [UserController::class, 'resendEmail'])->name('resend-email');
 Route::get('/password-reset-email-sent', function() { return view('reset_password_email_sent'); })->name('password-reset-email-sent');
@@ -107,7 +122,8 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
 Route::middleware(['auth', 'role:nurse'])->group(function () {
     // Dashboard
     Route::get('/nurse/home', function () {
-        return view('nurse.nurse_home');
+        $patients = \App\Models\Patient::orderBy('created_at', 'desc')->get();
+        return view('nurse.nurse_home', compact('patients'));
     });
     
     // Appointments
