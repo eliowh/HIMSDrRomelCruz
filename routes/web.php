@@ -107,7 +107,8 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
 Route::middleware(['auth', 'role:nurse'])->group(function () {
     // Dashboard
     Route::get('/nurse/home', function () {
-        return view('nurse.nurse_home');
+        $patients = \App\Models\Patient::orderBy('created_at', 'desc')->get();
+        return view('nurse.nurse_home', compact('patients'));
     });
     
     // Appointments
