@@ -561,8 +561,10 @@ body.modal-open {
 /* Patients View Styles */
 .patients-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 1fr 420px;
+    gap: 18px;
+    align-items: start;
+    padding: 18px;
 }
 
 .list-column {
@@ -623,6 +625,13 @@ body.modal-open {
     min-height: 400px;
 }
 
+.details-card .patient-details {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 12px;
+    margin: 0;
+}
+
 .details-empty {
     display: flex;
     align-items: center;
@@ -630,10 +639,6 @@ body.modal-open {
     height: 300px;
     color: #999;
     font-style: italic;
-}
-
-.details-content {
-    padding: 15px;
 }
 
 .patient-details dt {
