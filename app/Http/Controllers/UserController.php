@@ -155,12 +155,23 @@ class UserController extends Controller
                     $token = Str::random(60);
                     $user->password_reset_token = $token;
                     $user->save();
+                    
+                    // Add more detailed logging for debugging
+                    \Log::info('Attempting to send password reset email to: ' . $email);
+                    \Log::info('Mail configuration - Host: ' . config('mail.mailers.smtp.host'));
+                    \Log::info('Mail configuration - Port: ' . config('mail.mailers.smtp.port'));
+                    \Log::info('Mail configuration - Username: ' . config('mail.mailers.smtp.username'));
+                    
+                    // Send notification (should be synchronous with QUEUE_CONNECTION=sync)
                     $user->notify(new ResetPasswordMail($user, $token));
+                    
+                    \Log::info('Password reset email sent successfully to: ' . $email);
                     return view('reset_password_email_sent'); // Return the new view
                 } catch (\Exception $e) {
-                    // Log the error for debugging
+                    // Log the error for debugging with full stack trace
                     \Log::error('Password reset email sending failed: ' . $e->getMessage());
-                    return redirect()->back()->withInput()->withErrors(['email' => 'Sorry, we encountered an error sending the reset email. Please try again later or contact support.']);
+                    \Log::error('Full exception: ' . $e->getTraceAsString());
+                    return redirect()->back()->withInput()->withErrors(['email' => 'Sorry, we encountered an error sending the reset email. Please try again later or contact support. Error: ' . $e->getMessage()]);
                 }
             } else {
                 return redirect()->back()->withInput()->withErrors(['email' => 'Sorry, we couldn\'t find an account with that email address. Please try again!']);
