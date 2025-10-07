@@ -12,6 +12,118 @@
 <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
 <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
 <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
+<style>
+.details-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.details-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.section-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 10px 0;
+    padding: 5px 0;
+    border-bottom: 2px solid #3498db;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.medicine-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.medicine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.medicine-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.medicine-quantity {
+    background: #28a745;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.medicine-details {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.medicine-price {
+    font-weight: 600;
+    color: #17a2b8;
+    margin-bottom: 2px;
+}
+
+.medicine-meta {
+    color: #888;
+    font-style: italic;
+}
+
+.medicine-notes {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.loading-medicines, .no-medicines, .error-medicines {
+    padding: 12px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.loading-medicines {
+    color: #007bff;
+}
+
+.error-medicines {
+    color: #dc3545;
+    background: #f8d7da;
+}
+
+.no-medicines {
+    color: #6c757d;
+}
+
+.patient-details dt {
+    font-weight: 600;
+    color: #555;
+}
+
+.patient-details dd {
+    color: #333;
+    margin-bottom: 8px;
+}
+</style>
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
@@ -41,7 +153,28 @@
                         </thead>
                         <tbody>
                         @foreach($patients as $p)
-                            <tr class="patient-row" data-patient='@json($p)'>
+                            @php
+                                $patientData = [
+                                    'id' => $p->id,
+                                    'patient_no' => $p->patient_no,
+                                    'first_name' => $p->first_name,
+                                    'middle_name' => $p->middle_name,
+                                    'last_name' => $p->last_name,
+                                    'date_of_birth' => $p->date_of_birth ? $p->date_of_birth->format('Y-m-d') : null,
+                                    'province' => $p->province,
+                                    'city' => $p->city,
+                                    'barangay' => $p->barangay,
+                                    'nationality' => $p->nationality,
+                                    'room_no' => $p->room_no,
+                                    'admission_type' => $p->admission_type,
+                                    'service' => $p->service,
+                                    'doctor_name' => $p->doctor_name,
+                                    'doctor_type' => $p->doctor_type,
+                                    'admission_diagnosis' => $p->admission_diagnosis,
+                                    'created_at' => $p->created_at ? $p->created_at->format('Y-m-d H:i:s') : null
+                                ];
+                            @endphp
+                            <tr class="patient-row" data-patient="{{ json_encode($patientData) }}">
                                 <td class="col-no">{{ $p->patient_no }}</td>
                                 <td class="col-name">{{ $p->last_name }}, {{ $p->first_name }}{{ $p->middle_name ? ' '.$p->middle_name : '' }}</td>
                                 <td class="col-dob">
@@ -78,21 +211,38 @@
             <div class="details-empty" id="detailsEmpty">Select a patient to view details.</div>
 
             <div class="details-content" id="detailsContent" style="display:none;">
-                <dl class="patient-details">
-                    <dt>Patient No</dt><dd id="md-patient_no">-</dd>
-                    <dt>Full Name</dt><dd id="md-name">-</dd>
-                    <dt>Date of Birth</dt><dd id="md-dob">-</dd>
-                    <dt>Age</dt><dd id="md-age">-</dd>
-                    <dt>Province / City / Barangay</dt><dd id="md-location">-</dd>
-                    <dt>Nationality</dt><dd id="md-nationality">-</dd>
-                    <dt>Room No.</dt><dd id="md-room_no">-</dd>
-                    <dt>Admission Diagnosis</dt><dd id="md-admission_diagnosis">-</dd>
-                    <dt>Admission Type</dt><dd id="md-admission_type">-</dd>
-                    <dt>Service</dt><dd id="md-service">-</dd>
-                    <dt>Doctor</dt><dd id="md-doctor_name">-</dd>
-                    <dt>Doctor Type</dt><dd id="md-doctor_type">-</dd>
-                    <dt>Created At</dt><dd id="md-created_at">-</dd>
-                </dl>
+                <!-- Patient Details Section -->
+                <div class="details-section">
+                    <h4 class="section-header">Patient Details</h4>
+                    <dl class="patient-details">
+                        <dt>Patient No</dt><dd id="md-patient_no">-</dd>
+                        <dt>Full Name</dt><dd id="md-name">-</dd>
+                        <dt>Date of Birth</dt><dd id="md-dob">-</dd>
+                        <dt>Age</dt><dd id="md-age">-</dd>
+                        <dt>Location</dt><dd id="md-location">-</dd>
+                        <dt>Nationality</dt><dd id="md-nationality">-</dd>
+                    </dl>
+                </div>
+                
+                <!-- Admission Details Section -->
+                <div class="details-section">
+                    <h4 class="section-header">Admission Details</h4>
+                    <dl class="patient-details">
+                        <dt>Room No.</dt><dd id="md-room_no">-</dd>
+                        <dt>Admission Type</dt><dd id="md-admission_type">-</dd>
+                        <dt>Service</dt><dd id="md-service">-</dd>
+                        <dt>Doctor</dt><dd id="md-doctor_name">-</dd>
+                        <dt>Doctor Type</dt><dd id="md-doctor_type">-</dd>
+                        <dt>Diagnosis</dt><dd id="md-admission_diagnosis">-</dd>
+                        <dt>Admitted</dt><dd id="md-created_at">-</dd>
+                    </dl>
+                </div>
+                
+                <!-- Medicine Details Section -->
+                <div class="details-section" id="medicine-section" style="display:none;">
+                    <h4 class="section-header">Medicine Details</h4>
+                    <div id="md-medicines">No medicines dispensed</div>
+                </div>
 
                 <div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
                     <button id="btnEditPatient" class="btn secondary">Edit</button>
@@ -125,10 +275,63 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function or(v){ return v===null||v===undefined||v==='' ? '-' : v; }
 
+    // Helper function to format names with proper capitalization
+    function formatName(name) {
+        if (!name) return '-';
+        return name.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    // Helper function to format dates without timezone
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '-';
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long', 
+                day: 'numeric'
+            });
+        } catch (e) {
+            return dateStr.split('T')[0]; // fallback to just date part
+        }
+    }
+    
+    // Helper function to format datetime
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '-';
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            return dateStr.split('T')[0]; // fallback
+        }
+    }
+
     function renderPatient(patient){
+        console.log('Rendering patient:', patient); // Debug log
+        
+        // Patient Details Section
         document.getElementById('md-patient_no').textContent = or(patient.patient_no);
-        document.getElementById('md-name').textContent = or([patient.last_name, patient.first_name, patient.middle_name].filter(Boolean).join(', '));
-        document.getElementById('md-dob').textContent = or(patient.date_of_birth);
+        
+        // Format name with proper capitalization
+        const nameParts = [
+            formatName(patient.last_name),
+            formatName(patient.first_name), 
+            formatName(patient.middle_name)
+        ].filter(Boolean);
+        document.getElementById('md-name').textContent = nameParts.length ? nameParts.join(', ') : '-';
+        
+        // Format date without timezone
+        document.getElementById('md-dob').textContent = formatDate(patient.date_of_birth);
+        
         // Compute age (years) from date_of_birth
         const dob = patient.date_of_birth ? new Date(patient.date_of_birth) : null;
         const now = new Date();
@@ -141,15 +344,102 @@ document.addEventListener('DOMContentLoaded', function () {
             ageText = years + ' years';
         }
         document.getElementById('md-age').textContent = ageText;
-        document.getElementById('md-location').textContent = or((patient.barangay ? patient.barangay + ', ' : '') + or(patient.city) + ', ' + or(patient.province));
-        document.getElementById('md-nationality').textContent = or(patient.nationality);
+        
+        // Format location
+        const locationParts = [
+            formatName(patient.barangay),
+            formatName(patient.city),
+            formatName(patient.province)
+        ].filter(part => part && part !== '-');
+        document.getElementById('md-location').textContent = locationParts.length ? locationParts.join(', ') : '-';
+        
+        document.getElementById('md-nationality').textContent = formatName(patient.nationality);
+        
+        // Admission Details Section
         document.getElementById('md-room_no').textContent = or(patient.room_no);
+        document.getElementById('md-admission_type').textContent = formatName(patient.admission_type);
+        document.getElementById('md-service').textContent = formatName(patient.service);
+        document.getElementById('md-doctor_name').textContent = formatName(patient.doctor_name);
+        document.getElementById('md-doctor_type').textContent = formatName(patient.doctor_type);
         document.getElementById('md-admission_diagnosis').textContent = or(patient.admission_diagnosis);
-        document.getElementById('md-admission_type').textContent = or(patient.admission_type);
-        document.getElementById('md-service').textContent = or(patient.service);
-        document.getElementById('md-doctor_name').textContent = or(patient.doctor_name);
-        document.getElementById('md-doctor_type').textContent = or(patient.doctor_type);
-        document.getElementById('md-created_at').textContent = or(patient.created_at);
+        document.getElementById('md-created_at').textContent = formatDateTime(patient.created_at);
+        
+        // Load patient medicines
+        loadPatientMedicines(patient.id);
+    }
+    
+    // Function to load and display patient medicines
+    function loadPatientMedicines(patientId) {
+        const medicineSection = document.getElementById('medicine-section');
+        const medicinesDiv = document.getElementById('md-medicines');
+        
+        if (!patientId) {
+            medicineSection.style.display = 'none';
+            return;
+        }
+        
+        console.log('Loading medicines for patient ID:', patientId);
+        
+        // Show loading state
+        medicinesDiv.innerHTML = '<div class="loading-medicines">Loading medicines...</div>';
+        medicineSection.style.display = 'block';
+        
+        // Fetch patient medicines via API
+        fetch(`/api/patients/${patientId}/medicines`)
+            .then(response => {
+                console.log('API Response status:', response.status);
+                console.log('API Response headers:', response.headers);
+                console.log('API Response ok:', response.ok);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Error response body:', text);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Medicines loaded:', data);
+                
+                if (data.success && data.medicines && data.medicines.length > 0) {
+                    // Display medicines
+                    medicinesDiv.innerHTML = data.medicines.map(med => {
+                        const medicineName = med.medicine_name || 'Unknown Medicine';
+                        const quantity = med.quantity || 0;
+                        const unitPrice = med.unit_price ? `₱${parseFloat(med.unit_price).toFixed(2)}` : 'No price';
+                        const totalPrice = med.total_price ? `₱${parseFloat(med.total_price).toFixed(2)}` : 'No total';
+                        const dispensedAt = med.dispensed_at || 'Unknown date';
+                        const dispensedBy = med.dispensed_by || 'Unknown';
+                        const notes = med.notes ? `<div class="medicine-notes"><strong>Notes:</strong> ${med.notes}</div>` : '';
+                        
+                        return `
+                            <div class="medicine-item">
+                                <div class="medicine-header">
+                                    <strong>${medicineName}</strong>
+                                    <span class="medicine-quantity">${quantity} units</span>
+                                </div>
+                                <div class="medicine-details">
+                                    <div class="medicine-price">Unit: ${unitPrice} | Total: ${totalPrice}</div>
+                                    <div class="medicine-meta">Dispensed: ${dispensedAt} by ${dispensedBy}</div>
+                                    ${notes}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    medicineSection.style.display = 'block';
+                } else {
+                    // No medicines found
+                    medicinesDiv.innerHTML = '<div class="no-medicines">No medicines dispensed yet</div>';
+                    medicineSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading patient medicines:', error);
+                console.error('Error details:', error.message);
+                console.error('Error stack:', error.stack);
+                medicinesDiv.innerHTML = `<div class="error-medicines">Failed to load medicines: ${error.message}</div>`;
+                medicineSection.style.display = 'block';
+            });
     }
 
     function clearActive(){
@@ -158,26 +448,43 @@ document.addEventListener('DOMContentLoaded', function () {
 
     rows.forEach(row => {
         const btn = row.querySelector('.js-open-patient');
-        btn.addEventListener('click', function(){
-            const payload = row.getAttribute('data-patient');
-            try {
-                const patient = JSON.parse(payload);
-                clearActive();
-                row.classList.add('active');
-                detailsEmpty.style.display = 'none';
-                detailsContent.style.display = '';
-                renderPatient(patient);
-
-                // update "Open Full" link to go to patient page if route exists
-                const btnFull = document.getElementById('detailsViewFull');
-                if (btnFull) {
-                    // now handled via edit button/modal
-                    btnFull.href = `#`;
+        if (btn) {
+            btn.addEventListener('click', function(){
+                try {
+                    const payload = row.getAttribute('data-patient');
+                    console.log('Raw patient data:', payload); // Debug log
+                    console.log('Payload length:', payload ? payload.length : 0);
+                    console.log('First 100 chars:', payload ? payload.substring(0, 100) : 'null');
+                    
+                    if (!payload) {
+                        throw new Error('No patient data found');
+                    }
+                    
+                    if (payload.trim() === '') {
+                        throw new Error('Empty patient data');
+                    }
+                    
+                    const patient = JSON.parse(payload);
+                    console.log('Parsed patient:', patient); // Debug log
+                    
+                    clearActive();
+                    row.classList.add('active');
+                    detailsEmpty.style.display = 'none';
+                    detailsContent.style.display = 'block';
+                    renderPatient(patient);
+                    // update "Open Full" link to go to patient page if route exists
+                    const btnFull = document.getElementById('detailsViewFull');
+                    if (btnFull) {
+                        // now handled via edit button/modal
+                        btnFull.href = `#`;
+                    }
+                } catch (error) {
+                    console.error('Error parsing patient data:', error);
+                    console.log('Failed data attribute:', row.getAttribute('data-patient'));
+                    nurseError('Data Error', 'Failed to load patient details: ' + error.message);
                 }
-            } catch(e){
-                console.error('Invalid patient JSON', e);
-            }
-        });
+            });
+        }
     });
 
     // optionally auto-select first row
@@ -195,39 +502,72 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    function openEditModal(patient){
-        const form = document.getElementById('editPatientForm');
-        form.patient_no = patient.patient_no;
-        
-        // Use getElementById for modal fields with edit_ prefix
-        document.getElementById('edit_first_name').value = patient.first_name || '';
-        document.getElementById('edit_last_name').value = patient.last_name || '';
-        document.getElementById('edit_middle_name').value = patient.middle_name || '';
-        // Handle date_of_birth - it may come as ISO string or date object
-        let dobValue = '';
-        if (patient.date_of_birth) {
-            try {
-                // If it's an ISO string, parse it and format for input[type="date"]
-                const dobDate = new Date(patient.date_of_birth);
-                if (!isNaN(dobDate.getTime())) {
-                    dobValue = dobDate.toISOString().split('T')[0];
-                }
-            } catch (e) {
-                // Fallback: try splitting if it's already in YYYY-MM-DD format
-                dobValue = patient.date_of_birth.split(' ')[0];
-            }
+    // Helper function to safely set element value
+    function safeSetValue(elementId, value) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.value = value || '';
+            return true;
+        } else {
+            console.warn(`Element with id '${elementId}' not found`);
+            return false;
         }
-        document.getElementById('edit_date_of_birth').value = dobValue;
-        document.getElementById('edit_province').value = patient.province || '';
-        document.getElementById('edit_city').value = patient.city || '';
-        document.getElementById('edit_barangay').value = patient.barangay || '';
-        document.getElementById('edit_nationality').value = patient.nationality || '';
-        document.getElementById('edit_room_no').value = patient.room_no || '';
-        document.getElementById('edit_admission_type').value = patient.admission_type || '';
-        document.getElementById('edit_service').value = patient.service || '';
-        document.getElementById('edit_doctor_name').value = patient.doctor_name || '';
-        document.getElementById('edit_doctor_type').value = patient.doctor_type || '';
-        document.getElementById('edit_admission_diagnosis').value = patient.admission_diagnosis || '';
+    }
+
+    function openEditModal(patient){
+        try {
+            if (!patient) {
+                throw new Error('Patient data is null or undefined');
+            }
+            
+            console.log('Opening edit modal for patient:', patient);
+            
+            const form = document.getElementById('editPatientForm');
+            if (!form) {
+                throw new Error('Edit patient form not found');
+            }
+            
+            form.patient_no = patient.patient_no;
+        
+            // Use safeSetValue for modal fields with edit_ prefix
+            safeSetValue('edit_first_name', patient.first_name);
+            safeSetValue('edit_last_name', patient.last_name);
+            safeSetValue('edit_middle_name', patient.middle_name);
+            
+            // Handle date_of_birth - it may come as ISO string or date object
+            let dobValue = '';
+            if (patient.date_of_birth) {
+                try {
+                    // If it's already in YYYY-MM-DD format, use it directly
+                    if (patient.date_of_birth.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        dobValue = patient.date_of_birth;
+                    } else {
+                        // If it's an ISO string, parse it and format for input[type="date"]
+                        const dobDate = new Date(patient.date_of_birth);
+                        if (!isNaN(dobDate.getTime())) {
+                            dobValue = dobDate.toISOString().split('T')[0];
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Error parsing date_of_birth:', e);
+                    dobValue = '';
+                }
+            }
+            safeSetValue('edit_date_of_birth', dobValue);
+            
+            safeSetValue('edit_province', patient.province);
+            safeSetValue('edit_city', patient.city);
+            safeSetValue('edit_barangay', patient.barangay);
+            safeSetValue('edit_nationality', patient.nationality);
+            safeSetValue('edit_room_no', patient.room_no);
+            safeSetValue('edit_admission_type', patient.admission_type);
+            
+            // Note: edit_service field doesn't exist in the modal, so we skip it
+            // safeSetValue('edit_service', patient.service);
+            
+            safeSetValue('edit_doctor_name', patient.doctor_name);
+            safeSetValue('edit_doctor_type', patient.doctor_type);
+            safeSetValue('edit_admission_diagnosis', patient.admission_diagnosis);
         
         // Dynamically populate admission diagnosis description based on the ICD-10 code
         const diagDescField = document.getElementById('edit_admission_diagnosis_description');
@@ -270,8 +610,17 @@ document.addEventListener('DOMContentLoaded', function () {
             diagDescField.value = '';
         }
         
+        // Initialize doctor field to ensure suggestions are hidden
+        if (typeof window.initializeDoctorField === 'function') {
+            window.initializeDoctorField();
+        }
+        
         modal.classList.add('open');
         modal.classList.add('show');
+        } catch (error) {
+            console.error('Error in openEditModal:', error);
+            nurseError('Modal Error', 'Failed to open edit modal: ' + error.message);
+        }
     }
 
     function closeModal(){ 
@@ -406,7 +755,15 @@ document.addEventListener('DOMContentLoaded', function () {
             // find the row with that patient_no
             const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
             if(!row) { nurseError('Search Error', 'Patient not found'); return; }
-            try{ const patient = JSON.parse(row.getAttribute('data-patient')); openEditModal(patient); }catch(e){ console.error(e); nurseError('Modal Error', 'Failed to open edit modal'); }
+            try{ 
+                const patient = JSON.parse(row.getAttribute('data-patient')); 
+                console.log('Patient data:', patient); // Debug log
+                openEditModal(patient); 
+            } catch(e) { 
+                console.error('JSON parse error:', e); 
+                console.log('Raw data:', row.getAttribute('data-patient')); 
+                nurseError('Modal Error', 'Failed to open edit modal: ' + e.message); 
+            }
         });
     }
 });

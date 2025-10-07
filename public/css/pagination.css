@@ -19,14 +19,14 @@
 .pagination-container {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: right;
 }
 
 /* Custom Pagination Component Styles */
 .custom-pagination {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: right;
     gap: 15px;
     margin: 20px 0;
     padding: 10px;

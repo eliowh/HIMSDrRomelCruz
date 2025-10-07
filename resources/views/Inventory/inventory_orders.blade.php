@@ -150,6 +150,7 @@
     </div>
 
     @include('Inventory.modals.encode_stock_modal')
+    @include('Inventory.modals.notification_system')
 
     <script>
         function toggleDropdown(orderId) {
