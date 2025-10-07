@@ -96,7 +96,7 @@ class LabOrderController extends Controller
             if ($request->hasFile('results_pdf')) {
                 $file = $request->file('results_pdf');
                 $filename = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('lab-results', $filename, 'public');
+                $path = $file->storeAs('lab-results', $filename, 'local');
                 $updateData['results_pdf_path'] = $path;
             }
             
@@ -138,7 +138,7 @@ class LabOrderController extends Controller
         return response()->json([
             'success' => true,
             'order' => $order,
-            'pdf_url' => $order->results_pdf_path ? Storage::url($order->results_pdf_path) : null
+            'pdf_url' => $order->results_pdf_path ? route('labtech.order.viewPdf', $id) : null
         ]);
     }
 
@@ -146,11 +146,11 @@ class LabOrderController extends Controller
     {
         $order = LabOrder::findOrFail($id);
         
-        if (!$order->results_pdf_path || !Storage::disk('public')->exists($order->results_pdf_path)) {
+        if (!$order->results_pdf_path || !Storage::exists($order->results_pdf_path)) {
             return response()->json(['error' => 'PDF file not found'], 404);
         }
         
-        return Storage::disk('public')->download($order->results_pdf_path, 
+        return Storage::download($order->results_pdf_path, 
             'Lab_Results_' . $order->patient_name . '_' . $order->id . '.pdf');
     }
     

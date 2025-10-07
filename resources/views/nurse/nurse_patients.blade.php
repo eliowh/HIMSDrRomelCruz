@@ -114,6 +114,28 @@
     color: #6c757d;
 }
 
+.view-more-medicines {
+    padding: 10px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.view-medicine-summary-btn {
+    background: #fff;
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-medicine-summary-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
 .patient-details dt {
     font-weight: 600;
     color: #555;
@@ -402,14 +424,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Medicines loaded:', data);
                 
                 if (data.success && data.medicines && data.medicines.length > 0) {
+                    // Limit display to first 3 medicines
+                    const displayMedicines = data.medicines.slice(0, 3);
+                    const hasMore = data.medicines.length > 3;
+                    
                     // Display medicines
-                    medicinesDiv.innerHTML = data.medicines.map(med => {
+                    medicinesDiv.innerHTML = displayMedicines.map(med => {
                         const medicineName = med.medicine_name || 'Unknown Medicine';
                         const quantity = med.quantity || 0;
                         const unitPrice = med.unit_price ? `₱${parseFloat(med.unit_price).toFixed(2)}` : 'No price';
                         const totalPrice = med.total_price ? `₱${parseFloat(med.total_price).toFixed(2)}` : 'No total';
-                        const dispensedAt = med.dispensed_at || 'Unknown date';
-                        const dispensedBy = med.dispensed_by || 'Unknown';
+                        const dispensedAt = med.dispensed_at ? formatDateTime(med.dispensed_at) : 'Unknown date';
+                        const dispensedBy = med.dispensed_by ? formatName(med.dispensed_by) : 'Unknown';
                         const notes = med.notes ? `<div class="medicine-notes"><strong>Notes:</strong> ${med.notes}</div>` : '';
                         
                         return `
@@ -426,6 +452,19 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         `;
                     }).join('');
+                    
+                    // Add "View Medicine Summary" button if there are more than 3 medicines
+                    if (hasMore) {
+                        medicinesDiv.innerHTML += `
+                            <div class="view-more-medicines">
+                                <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn">
+                                    <i class="fas fa-pills"></i> 
+                                    View Medicine Summary (${data.medicines.length} total)
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
                     medicineSection.style.display = 'block';
                 } else {
                     // No medicines found
