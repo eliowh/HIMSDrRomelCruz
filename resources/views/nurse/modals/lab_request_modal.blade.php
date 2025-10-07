@@ -70,68 +70,55 @@
 </div>
 
 <script>
-// Find the original updateTestOptions function and patch it directly
+// Lab request modal functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if updateTestOptions exists in the global scope
-    if (typeof window.updateTestOptions === 'function') {
-        const originalUpdateTestOptions = window.updateTestOptions;
+    // Define updateTestOptions function for this modal only
+    window.updateTestOptions = function() {
+        const category = document.getElementById('testCategory').value;
+        const specificTest = document.getElementById('specificTest');
         
-        // Override the updateTestOptions function
-        window.updateTestOptions = function() {
-            const category = document.getElementById('testCategory').value;
-            const specificTest = document.getElementById('specificTest');
-            
-            // Clear existing options
-            specificTest.innerHTML = '';
-            
-            // Always add a disabled placeholder as the first option
-            const placeholderOption = document.createElement('option');
-            placeholderOption.value = '';
-            placeholderOption.disabled = true;
-            placeholderOption.selected = true;
-            placeholderOption.textContent = 'Select specific test';
-            specificTest.appendChild(placeholderOption);
-            
-            if (!category) {
-                specificTest.disabled = true;
-                return;
-            }
-            
-            // Add loading option
-            specificTest.innerHTML = '';
-            const loadingOption = document.createElement('option');
-            loadingOption.value = '';
-            loadingOption.disabled = true;
-            loadingOption.selected = true;
-            loadingOption.textContent = 'Loading procedures...';
-            specificTest.appendChild(loadingOption);
+        // Clear existing options
+        specificTest.innerHTML = '';
+        
+        // Always add a disabled placeholder as the first option
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        placeholderOption.textContent = 'Select specific test';
+        specificTest.appendChild(placeholderOption);
+        
+        if (!category) {
             specificTest.disabled = true;
-            
-            // Fetch procedures from database
-            fetch(`/procedures/category?category=${category}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Clear and re-add placeholder
-                    specificTest.innerHTML = '';
-                    const newPlaceholder = document.createElement('option');
-                    newPlaceholder.value = '';
-                    newPlaceholder.disabled = true;
-                    newPlaceholder.selected = true;
-                    newPlaceholder.textContent = 'Select specific test';
-                    specificTest.appendChild(newPlaceholder);
-                    
-                    if (data.error) {
-                        console.error('Error fetching procedures:', data.error);
-                        const errorOption = document.createElement('option');
-                        errorOption.value = '';
-                        errorOption.disabled = true;
-                        errorOption.textContent = 'Error loading procedures';
-                        specificTest.appendChild(errorOption);
-                        specificTest.disabled = true;
-                        return;
-                    }
-                    
-                    // Add actual options
+            return;
+        }
+        
+        // Show loading state
+        placeholderOption.textContent = 'Loading procedures...';
+        specificTest.disabled = true;
+        
+        // Fetch procedures from database
+        fetch(`/procedures/category?category=${category}`)
+            .then(response => response.json())
+            .then(data => {
+                // Clear and re-add placeholder
+                specificTest.innerHTML = '';
+                const newPlaceholder = document.createElement('option');
+                newPlaceholder.value = '';
+                newPlaceholder.disabled = true;
+                newPlaceholder.selected = true;
+                newPlaceholder.textContent = 'Select specific test';
+                specificTest.appendChild(newPlaceholder);
+                
+                if (data.error) {
+                    console.error('Error fetching procedures:', data.error);
+                    newPlaceholder.textContent = 'Error loading procedures';
+                    specificTest.disabled = true;
+                    return;
+                }
+                
+                // Add actual options
+                if (Array.isArray(data)) {
                     data.forEach(procedure => {
                         const option = document.createElement('option');
                         option.value = procedure.name;
@@ -141,19 +128,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Enable the dropdown after successfully loading procedures
                     specificTest.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Error fetching procedures:', error);
-                    specificTest.innerHTML = '';
-                    const placeholderAfterError = document.createElement('option');
-                    placeholderAfterError.value = '';
-                    placeholderAfterError.disabled = true;
-                    placeholderAfterError.selected = true;
-                    placeholderAfterError.textContent = 'Error loading procedures';
-                    specificTest.appendChild(placeholderAfterError);
+                } else {
+                    newPlaceholder.textContent = 'No procedures available';
                     specificTest.disabled = true;
-                });
-        };
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching procedures:', error);
+                const errorPlaceholder = specificTest.querySelector('option');
+                if (errorPlaceholder) {
+                    errorPlaceholder.textContent = 'Error loading procedures';
+                }
+                specificTest.disabled = true;
+            });
+    };
+    
+    // Enable/disable additional tests textarea based on checkbox
+    const enableAdditionalTests = document.getElementById('enableAdditionalTests');
+    const additionalTests = document.getElementById('additionalTests');
+    
+    if (enableAdditionalTests && additionalTests) {
+        enableAdditionalTests.addEventListener('change', function() {
+            additionalTests.disabled = !this.checked;
+            if (!this.checked) {
+                additionalTests.value = '';
+            }
+        });
     }
 });
 </script>

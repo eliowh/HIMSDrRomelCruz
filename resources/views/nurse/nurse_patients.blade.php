@@ -815,9 +815,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Lab Request Modal Functions
 function openLabRequestModal(patientId, patientName, patientNo) {
-    // Set global flag to prevent sidebar height adjustments
-    window.isModalOpen = true;
-    
     document.getElementById('requestPatientId').value = patientId;
     document.getElementById('requestPatientInfo').textContent = `${patientName} (ID: ${patientNo})`;
     const modal = document.getElementById('labRequestModal');
@@ -829,21 +826,21 @@ function openLabRequestModal(patientId, patientName, patientNo) {
     // Ensure additional tests textarea is disabled by default
     const additionalTestsCheckbox = document.getElementById('enableAdditionalTests');
     const additionalTestsTextarea = document.getElementById('additionalTests');
-    additionalTestsCheckbox.checked = false;
-    additionalTestsTextarea.disabled = true;
+    if (additionalTestsCheckbox && additionalTestsTextarea) {
+        additionalTestsCheckbox.checked = false;
+        additionalTestsTextarea.disabled = true;
+    }
     
-    updateTestOptions(); // Reset the specific test dropdown
+    // Reset the specific test dropdown
+    if (typeof updateTestOptions === 'function') {
+        updateTestOptions();
+    }
 }
 
 function closeLabRequestModal() {
     const modal = document.getElementById('labRequestModal');
     modal.classList.remove('show');
     document.getElementById('labRequestForm').reset();
-    
-    // Clear global flag after a delay to ensure modal is fully closed
-    setTimeout(() => {
-        window.isModalOpen = false;
-    }, 300);
 }
 
 // Update test options based on selected category
