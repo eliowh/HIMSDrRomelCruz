@@ -21,14 +21,14 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('billings.index') }}"
-                   class="sidebar-btn{{ request()->routeIs('billings.*') ? ' active' : '' }}">
+                <a href="{{ route('billing.index') }}"
+                   class="sidebar-btn{{ request()->routeIs('billing.index', 'billing.show', 'billing.edit') ? ' active' : '' }}">
                     <span class="icon">📋</span> <span class="text">Patient Billing</span>
                 </a>
             </li>
             <li>
-                <a href="{{ route('billings.create') }}"
-                   class="sidebar-btn{{ request()->routeIs('billings.create') ? ' active' : '' }}">
+                <a href="{{ route('billing.create') }}"
+                   class="sidebar-btn{{ request()->routeIs('billing.create') ? ' active' : '' }}">
                     <span class="icon">➕</span> <span class="text">New Billing</span>
                 </a>
             </li>

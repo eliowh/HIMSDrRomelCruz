@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-plus-circle text-primary"></i> Create New Billing</h2>
-                <a href="{{ route('billings.index') }}" class="btn btn-secondary">
+                <a href="{{ route('billing.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Billings
                 </a>
             </div>
@@ -25,7 +25,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('billings.store') }}" method="POST" id="billingForm">
+            <form action="{{ route('billing.store') }}" method="POST" id="billingForm">
                 @csrf
                 
                 <!-- Patient Information -->

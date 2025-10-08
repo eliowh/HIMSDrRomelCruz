@@ -464,7 +464,15 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     })->name('billing.dashboard');
     
     // Comprehensive Billing Management
-    Route::resource('billings', App\Http\Controllers\BillingController::class);
+    Route::resource('billing/billings', App\Http\Controllers\BillingController::class)->names([
+        'index' => 'billing.index',
+        'create' => 'billing.create', 
+        'store' => 'billing.store',
+        'show' => 'billing.show',
+        'edit' => 'billing.edit',
+        'update' => 'billing.update',
+        'destroy' => 'billing.destroy'
+    ]);
     
     // AJAX endpoints for billing
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');

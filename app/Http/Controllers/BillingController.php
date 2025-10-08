@@ -21,7 +21,7 @@ class BillingController extends Controller
                           ->orderBy('created_at', 'desc')
                           ->paginate(20);
         
-        return view('billings.index', compact('billings'));
+        return view('billing.index', compact('billings'));
     }
 
     public function create()
@@ -29,7 +29,7 @@ class BillingController extends Controller
         $patients = Patient::orderBy('first_name')->get();
         $icdRates = Icd10NamePriceRate::getAllCodes();
         
-        return view('billings.create', compact('patients', 'icdRates'));
+        return view('billing.create', compact('patients', 'icdRates'));
     }
 
     public function store(Request $request)
@@ -134,7 +134,7 @@ class BillingController extends Controller
             
             DB::commit();
             
-            return redirect()->route('billings.show', $billing)
+            return redirect()->route('billing.show', $billing)
                            ->with('success', 'Billing created successfully.');
                            
         } catch (\Exception $e) {
@@ -147,7 +147,7 @@ class BillingController extends Controller
     {
         $billing->load(['patient', 'billingItems.icd10PriceRate', 'createdBy']);
         
-        return view('billings.show', compact('billing'));
+        return view('billing.show', compact('billing'));
     }
 
     public function edit(Billing $billing)
@@ -156,7 +156,7 @@ class BillingController extends Controller
         $patients = Patient::orderBy('first_name')->get();
         $icdRates = Icd10NamePriceRate::getAllCodes();
         
-        return view('billings.edit', compact('billing', 'patients', 'icdRates'));
+        return view('billing.edit', compact('billing', 'patients', 'icdRates'));
     }
 
     public function update(Request $request, Billing $billing)
@@ -211,7 +211,7 @@ class BillingController extends Controller
             
             DB::commit();
             
-            return redirect()->route('billings.show', $billing)
+            return redirect()->route('billing.show', $billing)
                            ->with('success', 'Billing updated successfully.');
                            
         } catch (\Exception $e) {
@@ -226,7 +226,7 @@ class BillingController extends Controller
             $billing->billingItems()->delete();
             $billing->delete();
             
-            return redirect()->route('billings.index')
+            return redirect()->route('billing.index')
                            ->with('success', 'Billing deleted successfully.');
                            
         } catch (\Exception $e) {
@@ -261,7 +261,7 @@ class BillingController extends Controller
     {
         $billing->load(['patient', 'billingItems', 'createdBy']);
         
-        $pdf = Pdf::loadView('billings.receipt', compact('billing'));
+        $pdf = Pdf::loadView('billing.receipt', compact('billing'));
         $pdf->setPaper('A4', 'portrait');
         
         return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
