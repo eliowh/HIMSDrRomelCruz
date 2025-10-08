@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratory Templates - Romel Cruz Hospital</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .header p {
+            color: #666;
+            margin: 5px 0 0 0;
+        }
+        
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .template-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .template-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+        }
+        
+        .template-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .template-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        
+        .instructions ul {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .template-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Laboratory Result Templates</h1>
+        <p>Romel Cruz Hospital - Laboratory Department</p>
+    </div>
+    
+    <div class="instructions">
+        <h3>How to Use Laboratory Templates</h3>
+        <ul>
+            <li><strong>View Template:</strong> Click "View Template" to see the blank form layout</li>
+            <li><strong>Get HTML:</strong> Click "Get HTML" to retrieve the template code for integration</li>
+            <li><strong>Use in System:</strong> Templates are automatically loaded when completing lab orders</li>
+            <li><strong>Print Ready:</strong> All templates are optimized for printing and PDF generation</li>
+        </ul>
+    </div>
+    
+    <div class="templates-grid">
+        <!-- Hematology Template -->
+        <div class="template-card">
+            <div class="template-title">Hematology Laboratory Result Form</div>
+            <div class="template-description">
+                Complete blood count with differential count including WBC, RBC, HGB, HCT, PLT, lymphocytes, neutrophils, clotting and bleeding time measurements.
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/hematology/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/hematology" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+        
+        <!-- Blood Typing Template -->
+        <div class="template-card">
+            <div class="template-title">Blood Typing Result Form</div>
+            <div class="template-description">
+                Simple blood type determination form for ABO grouping (A, B, AB, O) and Rh factor testing (positive/negative).
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/blood_typing/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/blood_typing" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+        
+        <!-- Fecal Occult Blood Template -->
+        <div class="template-card">
+            <div class="template-title">Fecal Occult Blood Test Result Form</div>
+            <div class="template-description">
+                Stool examination for hidden blood detection with simple positive/negative result display.
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/fecal_occult_blood/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/fecal_occult_blood" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+        
+        <!-- Pregnancy Test Template -->
+        <div class="template-card">
+            <div class="template-title">Pregnancy Test Result Form</div>
+            <div class="template-description">
+                Pregnancy test result form with clear positive/negative result display for urine or blood-based testing.
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/pregnancy_test/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/pregnancy_test" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+        
+        <!-- Urinalysis Template -->
+        <div class="template-card">
+            <div class="template-title">Urine Analysis Result Form</div>
+            <div class="template-description">
+                Comprehensive urinalysis including physical characteristics (color, clarity, pH), chemical tests, and microscopic findings (RBC, WBC, bacteria, casts).
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/urinalysis/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/urinalysis" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+        
+        <!-- Clinical Chemistry Template -->
+        <div class="template-card">
+            <div class="template-title">Clinical Chemistry Laboratory Result Form</div>
+            <div class="template-description">
+                Blood chemistry panel with normal values in both SI and traditional units. Includes glucose, cholesterol, liver function, kidney function, and electrolyte tests.
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/clinical_chemistry/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/clinical_chemistry" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+        
+        <!-- Coagulation Test Template -->
+        <div class="template-card">
+            <div class="template-title">Coagulation Test Result Form</div>
+            <div class="template-description">
+                Blood clotting function tests including PT, PTT, INR with reference values. Features pathologist and medical technologist signature sections.
+            </div>
+            <div class="template-actions">
+                <a href="/labtech/templates/coagulation_test/view" class="btn btn-primary" target="_blank">View Template</a>
+                <a href="/labtech/templates/coagulation_test" class="btn btn-secondary">Get HTML</a>
+            </div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666;">
+        <p>&copy; 2025 Romel Cruz Hospital - Laboratory Department</p>
+        <p>All templates are designed to match official medical laboratory standards</p>
+    </div>
+</body>
+</html>

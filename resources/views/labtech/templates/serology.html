@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serology Laboratory Result Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c5234;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+        
+        .hospital-info p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .form-title {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-bottom: 2px solid #000;
+        }
+        
+        .form-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+        
+        .patient-info {
+            border-bottom: 2px solid #000;
+        }
+        
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .patient-info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .label-cell {
+            background: #f0f0f0;
+            width: 25%;
+            text-align: center;
+        }
+        
+        .value-cell {
+            width: 25%;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .results-table th {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 10px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .results-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .test-name {
+            text-align: left;
+            width: 40%;
+            font-weight: bold;
+            padding-left: 10px;
+        }
+        
+        .result-col {
+            width: 60%;
+        }
+        
+        .result-input {
+            width: 100%;
+            border: none;
+            text-align: center;
+            font-size: 11px;
+            background: transparent;
+            padding: 2px;
+            font-weight: bold;
+        }
+        
+        .result-input:focus {
+            outline: 1px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        .sub-test {
+            padding-left: 20px;
+            font-weight: normal;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .result-input {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Hospital Header -->
+        <div class="hospital-header">
+            <div class="hospital-logo">
+                LOGO
+            </div>
+            <div class="hospital-info">
+                <h1>ROMEL CRUZ HOSPITAL</h1>
+                <p>702 Matimbo, Malolos, Bulacan</p>
+                <p>DOH-BRL LICENSE NO. 2480</p>
+            </div>
+        </div>
+        
+        <!-- Form Title -->
+        <div class="form-title">
+            <h2>SEROLOGY LABORATORY RESULT FORM</h2>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <table class="patient-info-table">
+                <tr>
+                    <td class="label-cell">NAME OF PATIENT</td>
+                    <td class="value-cell" contenteditable="true">[PATIENT_NAME]</td>
+                    <td class="label-cell">AGE/SEX</td>
+                    <td class="value-cell" contenteditable="true">[AGE_SEX]</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">WARD</td>
+                    <td class="value-cell" contenteditable="true">[WARD]</td>
+                    <td class="label-cell">DATE</td>
+                    <td class="value-cell" contenteditable="true">[DATE]</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Test Results -->
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th class="test-name">TEST</th>
+                    <th class="result-col">RESULT</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="3" class="test-name" style="vertical-align: middle;">DENGUE DUO</td>
+                    <td class="sub-test">IgG</td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="result-input" name="dengue_igg" placeholder="POSITIVE"></td>
+                </tr>
+                <tr>
+                    <td class="sub-test">IgM</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="text" class="result-input" name="dengue_igm" placeholder="NEGATIVE"></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td class="sub-test">Ns1 Ag</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="text" class="result-input" name="dengue_ns1" placeholder="WEAKLY POSITIVE"></td>
+                </tr>
+                <tr>
+                    <td rowspan="2" class="test-name" style="vertical-align: middle;">Typhidot</td>
+                    <td class="sub-test">IgG</td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="result-input" name="typhidot_igg"></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td class="sub-test">IgM</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="text" class="result-input" name="typhidot_igm"></td>
+                </tr>
+                <tr>
+                    <td rowspan="2" class="test-name" style="vertical-align: middle;">INFLUENZA A + B</td>
+                    <td class="sub-test">INFLUENZA A</td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="result-input" name="influenza_a"></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td class="sub-test">INFLUENZA B</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="text" class="result-input" name="influenza_b"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">HBsAg</td>
+                    <td><input type="text" class="result-input" name="hbsag"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">HBsAb</td>
+                    <td><input type="text" class="result-input" name="hbsab"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">ANTI - HCV</td>
+                    <td><input type="text" class="result-input" name="anti_hcv"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">ASO TITER</td>
+                    <td><input type="text" class="result-input" name="aso_titer"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">SYPHILIS</td>
+                    <td><input type="text" class="result-input" name="syphilis"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

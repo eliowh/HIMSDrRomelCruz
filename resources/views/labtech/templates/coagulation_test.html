@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coagulation Test Result Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c5234;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+        
+        .hospital-info p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .form-title {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-bottom: 2px solid #000;
+        }
+        
+        .form-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+        
+        .patient-info {
+            border-bottom: 2px solid #000;
+        }
+        
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .patient-info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .label-cell {
+            background: #f0f0f0;
+            width: 25%;
+            text-align: center;
+        }
+        
+        .value-cell {
+            width: 25%;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .results-table th {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 10px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .results-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .test-name {
+            text-align: left;
+            width: 40%;
+            font-weight: bold;
+            padding-left: 10px;
+        }
+        
+        .result-col {
+            width: 30%;
+        }
+        
+        .normal-value-col {
+            width: 30%;
+        }
+        
+        .result-input {
+            width: 100%;
+            border: none;
+            text-align: center;
+            font-size: 11px;
+            background: transparent;
+            padding: 2px;
+            font-weight: bold;
+        }
+        
+        .result-input:focus {
+            outline: 1px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 30px 20px;
+            border-top: 2px solid #000;
+            margin-top: 20px;
+        }
+        
+        .signature-left, .signature-right {
+            width: 45%;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+        
+        .signature-left p, .signature-right p {
+            margin: 2px 0;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .pathologist-label {
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid #000;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .result-input {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Hospital Header -->
+        <div class="hospital-header">
+            <div class="hospital-logo">
+                LOGO
+            </div>
+            <div class="hospital-info">
+                <h1>ROMEL CRUZ HOSPITAL</h1>
+                <p>702 Matimbo, Malolos, Bulacan</p>
+                <p>DOH-BRL LICENSE NO. 2480</p>
+            </div>
+        </div>
+        
+        <!-- Form Title -->
+        <div class="form-title">
+            <h2>COAGULATION TEST RESULT FORM</h2>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <table class="patient-info-table">
+                <tr>
+                    <td class="label-cell">NAME OF PATIENT</td>
+                    <td class="value-cell" contenteditable="true">[PATIENT_NAME]</td>
+                    <td class="label-cell">AGE/SEX</td>
+                    <td class="value-cell" contenteditable="true">[AGE_SEX]</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">WARD</td>
+                    <td class="value-cell" contenteditable="true">[WARD]</td>
+                    <td class="label-cell">DATE</td>
+                    <td class="value-cell" contenteditable="true">[DATE]</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Test Results -->
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th class="test-name">PROTIME</th>
+                    <th class="result-col">RESULT</th>
+                    <th class="normal-value-col">NORMAL VALUE</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="test-name">PATIENT'S COUNT</td>
+                    <td><input type="text" class="result-input" name="patient_count" placeholder="13.9"></td>
+                    <td>11 - 15 seconds</td>
+                </tr>
+                <tr>
+                    <td class="test-name">CONTROL COUNT</td>
+                    <td><input type="text" class="result-input" name="control_count" placeholder="13.6"></td>
+                    <td>12 - 14 seconds</td>
+                </tr>
+                <tr>
+                    <td class="test-name">% ACTIVITY</td>
+                    <td><input type="text" class="result-input" name="activity_percent" placeholder="91"></td>
+                    <td>70 - 100%</td>
+                </tr>
+                <tr>
+                    <td class="test-name">INR</td>
+                    <td><input type="text" class="result-input" name="inr" placeholder="1.02"></td>
+                    <td>1.0 - 1.2</td>
+                </tr>
+                <tr style="height: 20px;">
+                    <td colspan="3"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">APTT</td>
+                    <td><input type="text" class="result-input" name="aptt" placeholder="31.0"></td>
+                    <td>28-43 seconds</td>
+                </tr>
+                <tr>
+                    <td class="test-name">RATIO</td>
+                    <td><input type="text" class="result-input" name="ratio" placeholder="0.65"></td>
+                    <td>0.8 - 1.2</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Signatures -->
+        <div class="signature-section">
+            <div class="signature-left">
+                <div class="signature-line"></div>
+                <p>Paulo Giovanni Mendoza, M.D.</p>
+                <p>License No. 0098131</p>
+                <p>Pathologist</p>
+            </div>
+            <div class="signature-right">
+                <div class="signature-line"></div>
+                <p>Jhen-Jhen DG. Guevarra, RMT</p>
+                <p>License No. _______</p>
+                <div class="pathologist-label">MEDICAL TECHNOLOGIST</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

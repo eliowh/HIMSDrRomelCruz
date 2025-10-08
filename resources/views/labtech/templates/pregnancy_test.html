@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pregnancy Test Result Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: white;
+            min-height: 600px;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c5234;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+        
+        .hospital-info p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .form-title {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-bottom: 2px solid #000;
+        }
+        
+        .form-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+        
+        .patient-info {
+            border-bottom: 2px solid #000;
+        }
+        
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .patient-info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .label-cell {
+            background: #f0f0f0;
+            width: 25%;
+            text-align: center;
+        }
+        
+        .value-cell {
+            width: 25%;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .result-display {
+            text-align: center;
+            padding: 150px 50px;
+            font-size: 72px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 5px;
+        }
+        
+        .result-input {
+            width: 100%;
+            border: none;
+            text-align: center;
+            font-size: 72px;
+            font-weight: bold;
+            background: transparent;
+            padding: 20px;
+        }
+        
+        .result-input:focus {
+            outline: 2px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .result-input {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Hospital Header -->
+        <div class="hospital-header">
+            <div class="hospital-logo">
+                LOGO
+            </div>
+            <div class="hospital-info">
+                <h1>ROMEL CRUZ HOSPITAL</h1>
+                <p>702 Matimbo, Malolos, Bulacan</p>
+                <p>DOH-BRL LICENSE NO. 2480</p>
+            </div>
+        </div>
+        
+        <!-- Form Title -->
+        <div class="form-title">
+            <h2>PREGNANCY TEST RESULT FORM</h2>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <table class="patient-info-table">
+                <tr>
+                    <td class="label-cell">NAME OF PATIENT</td>
+                    <td class="value-cell" contenteditable="true">[PATIENT_NAME]</td>
+                    <td class="label-cell">AGE/SEX</td>
+                    <td class="value-cell" contenteditable="true">[AGE_SEX]</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">WARD</td>
+                    <td class="value-cell" contenteditable="true">[WARD]</td>
+                    <td class="label-cell">DATE</td>
+                    <td class="value-cell" contenteditable="true">[DATE]</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Result Display -->
+        <div class="result-display">
+            <input type="text" class="result-input" name="pregnancy_result" placeholder="NEGATIVE" maxlength="15">
+        </div>
+    </div>
+</body>
+</html>

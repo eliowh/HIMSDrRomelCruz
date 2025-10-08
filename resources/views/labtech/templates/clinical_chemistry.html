@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Chemistry Laboratory Result Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c5234;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+        
+        .hospital-info p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .form-title {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-bottom: 2px solid #000;
+        }
+        
+        .form-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+        
+        .patient-info {
+            border-bottom: 2px solid #000;
+        }
+        
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .patient-info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .label-cell {
+            background: #f0f0f0;
+            width: 25%;
+            text-align: center;
+        }
+        
+        .value-cell {
+            width: 25%;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .results-table th {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .results-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            font-size: 10px;
+            text-align: center;
+        }
+        
+        .test-name {
+            text-align: left;
+            width: 25%;
+            font-weight: bold;
+        }
+        
+        .normal-values {
+            width: 35%;
+        }
+        
+        .si-unit {
+            width: 20%;
+        }
+        
+        .traditional-unit {
+            width: 20%;
+        }
+        
+        .result-input {
+            width: 100%;
+            border: none;
+            text-align: center;
+            font-size: 10px;
+            background: transparent;
+            padding: 2px;
+        }
+        
+        .result-input:focus {
+            outline: 1px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .result-input {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Hospital Header -->
+        <div class="hospital-header">
+            <div class="hospital-logo">
+                LOGO
+            </div>
+            <div class="hospital-info">
+                <h1>ROMEL CRUZ HOSPITAL</h1>
+                <p>702 Matimbo, Malolos, Bulacan</p>
+                <p>DOH-BRL LICENSE NO. 2480</p>
+            </div>
+        </div>
+        
+        <!-- Form Title -->
+        <div class="form-title">
+            <h2>CLINICAL CHEMISTRY LABORATORY RESULT FORM</h2>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <table class="patient-info-table">
+                <tr>
+                    <td class="label-cell">NAME OF PATIENT</td>
+                    <td class="value-cell" contenteditable="true">[PATIENT_NAME]</td>
+                    <td class="label-cell">AGE/SEX</td>
+                    <td class="value-cell" contenteditable="true">[AGE_SEX]</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">WARD</td>
+                    <td class="value-cell" contenteditable="true">[WARD]</td>
+                    <td class="label-cell">DATE</td>
+                    <td class="value-cell" contenteditable="true">[DATE]</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Test Results -->
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="test-name">TEST</th>
+                    <th colspan="2">NORMAL VALUES</th>
+                    <th rowspan="2">RESULTS</th>
+                </tr>
+                <tr>
+                    <th class="si-unit">SI UNIT</th>
+                    <th class="traditional-unit">TRADITIONAL UNIT</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="test-name">GLUCOSE (RBS)</td>
+                    <td>3.85-6.05 mmol/L</td>
+                    <td>70-110 mg/dl</td>
+                    <td><input type="text" class="result-input" name="glucose_rbs"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">GLUCOSE (FBS)</td>
+                    <td>3.87-6.50 mmol/L</td>
+                    <td>150-200 mg/dl</td>
+                    <td><input type="text" class="result-input" name="glucose_fbs"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">CHOLESTEROL</td>
+                    <td>0.21-0.42 mmol/L</td>
+                    <td>3.5-7.2 mg/dl</td>
+                    <td><input type="text" class="result-input" name="cholesterol"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">URIC ACID (MALE)</td>
+                    <td>0.15-0.35 mmol/L</td>
+                    <td>2.6-6.0 mg/dl</td>
+                    <td><input type="text" class="result-input" name="uric_acid_male"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">URIC ACID (FEMALE)</td>
+                    <td>61.88-132.6 mmol/L</td>
+                    <td>0.7-1.7 mg dl</td>
+                    <td><input type="text" class="result-input" name="uric_acid_female"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">CREATININE</td>
+                    <td>2.5-7.14 mmol/L</td>
+                    <td>7-20 mg/dl</td>
+                    <td><input type="text" class="result-input" name="creatinine" placeholder="3.5"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">BUN/UREA NITROGEN</td>
+                    <td>0.45-1.68 mmol/L</td>
+                    <td>40-150 mg/dl</td>
+                    <td><input type="text" class="result-input" name="bun"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">TRIGLYCERIDES</td>
+                    <td>0.78-1.95 mmol/L</td>
+                    <td>30-70 mg/dl</td>
+                    <td><input type="text" class="result-input" name="triglycerides"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">HDL CHOLESTEROL</td>
+                    <td>1.56-4.68 mmol/L</td>
+                    <td>60-180 mg/dl</td>
+                    <td><input type="text" class="result-input" name="hdl_cholesterol"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">LDL CHOLESTEROL</td>
+                    <td>135-145 mmol/L</td>
+                    <td>135-145 mEq/L</td>
+                    <td><input type="text" class="result-input" name="ldl_cholesterol"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">SODIUM</td>
+                    <td>3.4-5.3 mmol/L</td>
+                    <td>3.4-5.4 mEq/L</td>
+                    <td><input type="text" class="result-input" name="sodium"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">POTASSIUM</td>
+                    <td>98.0-107.0 mmol/L</td>
+                    <td>98.0-107.0 mEq/L</td>
+                    <td><input type="text" class="result-input" name="potassium"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">CHLORIDE</td>
+                    <td>1.13 - 1.32 mmol/L</td>
+                    <td>1.13 - 1.32 mEq/L</td>
+                    <td><input type="text" class="result-input" name="chloride"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">IONIZE CALCIUM</td>
+                    <td>10.0-40.0 IU/L</td>
+                    <td>10.0-40.0 IU/L</td>
+                    <td><input type="text" class="result-input" name="ionize_calcium"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">SGPT/ALT</td>
+                    <td>5.0-35.0 IU/L</td>
+                    <td>5.0-35.0 IU/L</td>
+                    <td><input type="text" class="result-input" name="sgpt_alt"></td>
+                </tr>
+                <tr>
+                    <td class="test-name">SGOT/AST</td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="text" class="result-input" name="sgot_ast"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

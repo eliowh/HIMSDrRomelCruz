@@ -9,6 +9,7 @@ use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LabOrderController;
+use App\Http\Controllers\LabTemplateController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PharmacyController;
@@ -241,11 +242,18 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     
     // Order Management
     Route::get('/labtech/orders', [LabOrderController::class, 'index'])->name('labtech.orders');
+    Route::get('/labtech/orders/{id}', [LabOrderController::class, 'show'])->name('labtech.orders.show');
     Route::post('/labtech/orders/update-status/{id}', [LabOrderController::class, 'updateStatus'])->name('labtech.orders.updateStatus');
+    Route::post('/labtech/orders/complete-with-pdf/{id}', [LabOrderController::class, 'completeWithPdf'])->name('labtech.orders.completeWithPdf');
     Route::get('/labtech/orders/view/{id}', [LabOrderController::class, 'viewOrder'])->name('labtech.orders.view');
     Route::get('/labtech/orders/download-pdf/{id}', [LabOrderController::class, 'downloadPdf'])->name('labtech.orders.downloadPdf');
-    Route::get('/labtech/orders/{id}/details', [LabOrderController::class, 'getOrderDetails'])->name('labtech.orders.details');
-    Route::post('/labtech/orders/complete-with-pdf/{id}', [LabOrderController::class, 'completeWithPdf'])->name('labtech.orders.completeWithPdf');
+    Route::get('/labtech/orders/generate-pdf/{id}', [LabOrderController::class, 'generateLabResultPDF'])->name('labtech.orders.generatePdf');
+    
+    // Template Management
+    Route::get('/labtech/templates', [LabTemplateController::class, 'getAvailableTemplates'])->name('labtech.templates.list');
+    Route::get('/labtech/templates/{type}', [LabTemplateController::class, 'getTemplate'])->name('labtech.templates.get');
+    Route::get('/labtech/templates/{type}/view', [LabTemplateController::class, 'viewTemplate'])->name('labtech.templates.view');
+    Route::get('/labtech/templates/{type}/order/{orderId}', [LabTemplateController::class, 'generateFilledTemplate'])->name('labtech.templates.filled');
     
     // Patient Management
     Route::get('/labtech/patients', [PatientController::class, 'labtechPatients'])->name('labtech.patients');

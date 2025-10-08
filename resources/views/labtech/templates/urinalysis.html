@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urine Analysis Result Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c5234;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+        
+        .hospital-info p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .form-title {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-bottom: 2px solid #000;
+        }
+        
+        .form-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+        
+        .patient-info {
+            border-bottom: 2px solid #000;
+        }
+        
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .patient-info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .label-cell {
+            background: #f0f0f0;
+            width: 25%;
+            text-align: center;
+        }
+        
+        .value-cell {
+            width: 25%;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .section-header {
+            background: #f0f0f0;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #000;
+            font-size: 12px;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .results-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+        
+        .test-name {
+            text-align: left;
+            width: 40%;
+            background: #f8f8f8;
+        }
+        
+        .result-cell {
+            width: 60%;
+            text-align: center;
+        }
+        
+        .result-input {
+            width: 100%;
+            border: none;
+            text-align: center;
+            font-size: 11px;
+            background: transparent;
+            padding: 2px;
+        }
+        
+        .result-input:focus {
+            outline: 1px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        .microscopic-section {
+            display: flex;
+        }
+        
+        .microscopic-left {
+            width: 50%;
+        }
+        
+        .microscopic-right {
+            width: 50%;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .result-input {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Hospital Header -->
+        <div class="hospital-header">
+            <div class="hospital-logo">
+                LOGO
+            </div>
+            <div class="hospital-info">
+                <h1>ROMEL CRUZ HOSPITAL</h1>
+                <p>702 Matimbo, Malolos, Bulacan</p>
+                <p>DOH-BRL LICENSE NO. 2480</p>
+            </div>
+        </div>
+        
+        <!-- Form Title -->
+        <div class="form-title">
+            <h2>URINE ANALYSIS RESULT FORM</h2>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <table class="patient-info-table">
+                <tr>
+                    <td class="label-cell">NAME OF PATIENT</td>
+                    <td class="value-cell" contenteditable="true">[PATIENT_NAME]</td>
+                    <td class="label-cell">AGE/SEX</td>
+                    <td class="value-cell" contenteditable="true">[AGE_SEX]</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">WARD</td>
+                    <td class="value-cell" contenteditable="true">[WARD]</td>
+                    <td class="label-cell">DATE</td>
+                    <td class="value-cell" contenteditable="true">[DATE]</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Physical Characteristics Section -->
+        <div class="section-header">PHYSICAL CHARACTERISTICS</div>
+        <table class="results-table">
+            <tr>
+                <td class="test-name">COLOR</td>
+                <td class="result-cell"><input type="text" class="result-input" name="color" placeholder="YELLOW"></td>
+            </tr>
+            <tr>
+                <td class="test-name">TRANSPARENCY</td>
+                <td class="result-cell"><input type="text" class="result-input" name="transparency" placeholder="CLEAR"></td>
+            </tr>
+            <tr>
+                <td class="test-name">REACTION/Ph</td>
+                <td class="result-cell"><input type="text" class="result-input" name="ph" placeholder="6.0"></td>
+            </tr>
+            <tr>
+                <td class="test-name">Specific Gravity</td>
+                <td class="result-cell"><input type="text" class="result-input" name="specific_gravity" placeholder="1.030"></td>
+            </tr>
+            <tr>
+                <td class="test-name">ALBUMIN</td>
+                <td class="result-cell"><input type="text" class="result-input" name="albumin" placeholder="NEGATIVE"></td>
+            </tr>
+            <tr>
+                <td class="test-name">GLUCOSE</td>
+                <td class="result-cell"><input type="text" class="result-input" name="glucose" placeholder="NEGATIVE"></td>
+            </tr>
+        </table>
+        
+        <!-- Microscopic Findings Section -->
+        <div class="section-header">MICROSCOPIC FINDINGS</div>
+        <div class="microscopic-section">
+            <div class="microscopic-left">
+                <table class="results-table">
+                    <tr>
+                        <td class="test-name">RED BLOOD CELLS</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="rbc" placeholder="0-2 /HPF"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">PUS CELLS</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="pus_cells" placeholder="1-3 /HPF"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">EPITHELIAL CELLS</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="epithelial_cells" placeholder="FEW"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">MUCUS THREAD</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="mucus_thread"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">YEAST CELLS</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="yeast_cells"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">PREGNANCY TEST</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="pregnancy_test"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="microscopic-right">
+                <table class="results-table">
+                    <tr>
+                        <td class="test-name">A.PHOSPHATES</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="phosphates"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">BACTERIA</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="bacteria" placeholder="FEW"></td>
+                    </tr>
+                    <tr>
+                        <td class="test-name">CAST</td>
+                        <td class="result-cell"><input type="text" class="result-input" name="cast"></td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 6px 8px; font-size: 11px; font-weight: bold;">OTHERS</td>
+                        <td class="test-name">OVAL FAT BODY</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="test-name">CaOx</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="test-name">CYSTINE CRYSTAL</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td class="test-name">T. VAGINALIS</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Notes Section -->
+        <table class="results-table">
+            <tr>
+                <td class="test-name" style="width: 15%;">NOTE :</td>
+                <td class="result-cell" style="width: 85%;"><input type="text" class="result-input" name="notes" style="text-align: left;"></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

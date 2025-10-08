@@ -328,21 +328,170 @@
 
         function showCompleteModal(orderId) {
             currentOrderId = orderId;
+            
+            // Show loading section and hide all templates
+            showLoadingSection();
             document.getElementById('completeModal').classList.add('show');
+            
+            // Fetch order details to determine test type
+            fetch(`/labtech/orders/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.order) {
+                    populatePatientInfo(data.order);
+                    determineAndShowTemplate(data.order);
+                } else {
+                    showLabtechError('Failed to load order details', 'Error');
+                    closeCompleteModal();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching order details:', error);
+                showLabtechError('Network error occurred while loading order details', 'Connection Error');
+                closeCompleteModal();
+            });
         }
 
         function closeCompleteModal() {
             document.getElementById('completeModal').classList.remove('show');
-            document.getElementById('results').value = '';
-            document.getElementById('resultsPdf').value = '';
+            resetFormAndTemplates();
             currentOrderId = null;
+        }
+
+        function showLoadingSection() {
+            // Hide all templates
+            document.getElementById('cbc-template').style.display = 'none';
+            document.getElementById('chemistry-template').style.display = 'none';
+            document.getElementById('urinalysis-template').style.display = 'none';
+            document.getElementById('general-template').style.display = 'none';
+            document.getElementById('original-template').style.display = 'none';
+            
+            // Show loading
+            document.getElementById('loading-section').style.display = 'block';
+        }
+
+        function populatePatientInfo(order) {
+            const patientInfo = document.getElementById('modal-patient-info');
+            patientInfo.innerHTML = `
+                <strong>Patient:</strong> ${order.patient_name} (${order.patient_no})<br>
+                <strong>Test Requested:</strong> ${order.test_requested}
+            `;
+            
+            // Set hidden fields
+            document.getElementById('order-id').value = order.id;
+        }
+
+        function determineAndShowTemplate(order) {
+            const testRequested = order.test_requested.toLowerCase();
+            let templateType = 'general';
+            
+            // Check for X-ray or imaging tests first
+            if (testRequested.includes('x-ray') || 
+                testRequested.includes('xray') ||
+                testRequested.includes('imaging') ||
+                testRequested.includes('radiograph') ||
+                testRequested.includes('ultrasound') ||
+                testRequested.includes('ct scan') ||
+                testRequested.includes('mri')) {
+                templateType = 'original';
+            }
+            // Determine laboratory test types
+            else if (testRequested.includes('cbc') || 
+                testRequested.includes('complete blood count') || 
+                testRequested.includes('hematology') ||
+                testRequested.includes('blood count') ||
+                testRequested.includes('hemoglobin') ||
+                testRequested.includes('hematocrit')) {
+                templateType = 'cbc';
+            } else if (testRequested.includes('chemistry') ||
+                       testRequested.includes('glucose') ||
+                       testRequested.includes('cholesterol') ||
+                       testRequested.includes('fbs') ||
+                       testRequested.includes('lipid') ||
+                       testRequested.includes('liver') ||
+                       testRequested.includes('kidney') ||
+                       testRequested.includes('bun') ||
+                       testRequested.includes('creatinine') ||
+                       testRequested.includes('alt') ||
+                       testRequested.includes('ast')) {
+                templateType = 'chemistry';
+            } else if (testRequested.includes('urine') ||
+                       testRequested.includes('urinalysis') ||
+                       testRequested.includes('ua')) {
+                templateType = 'urinalysis';
+            }
+            
+            // Set test type and show appropriate template
+            document.getElementById('test-type').value = templateType;
+            showTemplate(templateType);
+        }
+
+        function showTemplate(templateType) {
+            // Hide loading section
+            document.getElementById('loading-section').style.display = 'none';
+            
+            // Hide all templates first
+            document.getElementById('cbc-template').style.display = 'none';
+            document.getElementById('chemistry-template').style.display = 'none';
+            document.getElementById('urinalysis-template').style.display = 'none';
+            document.getElementById('general-template').style.display = 'none';
+            document.getElementById('original-template').style.display = 'none';
+            
+            // Show/hide common fields based on template type
+            const commonFields = document.getElementById('lab-common-fields');
+            if (templateType === 'original') {
+                // Hide common fields for X-ray/imaging
+                commonFields.style.display = 'none';
+            } else {
+                // Show common fields for laboratory tests
+                commonFields.style.display = 'block';
+            }
+            
+            // Show the appropriate template
+            switch(templateType) {
+                case 'cbc':
+                    document.getElementById('cbc-template').style.display = 'block';
+                    break;
+                case 'chemistry':
+                    document.getElementById('chemistry-template').style.display = 'block';
+                    break;
+                case 'urinalysis':
+                    document.getElementById('urinalysis-template').style.display = 'block';
+                    break;
+                case 'original':
+                    document.getElementById('original-template').style.display = 'block';
+                    break;
+                default:
+                    document.getElementById('general-template').style.display = 'block';
+            }
+        }
+
+        function resetFormAndTemplates() {
+            // Reset form
+            document.getElementById('completeForm').reset();
+            
+            // Hide all templates and show loading
+            showLoadingSection();
+            
+            // Clear patient info
+            document.getElementById('modal-patient-info').innerHTML = '';
+            
+            // Clear file input specifically for original template
+            const resultsPdf = document.getElementById('resultsPdf');
+            if (resultsPdf) {
+                resultsPdf.value = '';
+            }
         }
 
         // Complete form submission
         document.getElementById('completeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const formData = new FormData(this);
             const submitBtn = this.querySelector('.complete-btn');
             const btnText = submitBtn.querySelector('.btn-text');
             const btnLoading = submitBtn.querySelector('.btn-loading');
@@ -352,38 +501,88 @@
             btnLoading.style.display = 'inline-block';
             submitBtn.disabled = true;
             
-            // Add status and order ID to form data
-            formData.append('status', 'completed');
-            formData.append('order_id', currentOrderId);
+            const testType = document.getElementById('test-type').value;
             
-            fetch(`/labtech/orders/update-status/${currentOrderId}`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    closeCompleteModal();
-                    showLabtechSuccess('Order has been completed successfully!', 'Order Completed', () => {
-                        location.reload();
-                    });
-                } else {
-                    showLabtechError(data.message || 'Failed to complete order', 'Completion Failed');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showLabtechError('Network error occurred. Please try again.', 'Connection Error');
-            })
-            .finally(() => {
-                // Reset button state
-                btnText.style.display = 'inline-block';
-                btnLoading.style.display = 'none';
-                submitBtn.disabled = false;
-            });
+            // Handle original template (X-ray/imaging) with file upload
+            if (testType === 'original') {
+                const formData = new FormData(this);
+                formData.append('status', 'completed');
+                formData.append('order_id', currentOrderId);
+                
+                fetch(`/labtech/orders/update-status/${currentOrderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeCompleteModal();
+                        showLabtechSuccess('Order has been completed successfully!', 'Order Completed', () => {
+                            location.reload();
+                        });
+                    } else {
+                        showLabtechError(data.message || 'Failed to complete order', 'Completion Failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showLabtechError('Network error occurred. Please try again.', 'Connection Error');
+                })
+                .finally(() => {
+                    // Reset button state
+                    btnText.style.display = 'inline-block';
+                    btnLoading.style.display = 'none';
+                    submitBtn.disabled = false;
+                });
+            } else {
+                // Handle structured laboratory forms with PDF generation
+                const formData = new FormData(this);
+                
+                // Convert FormData to JSON
+                const resultsData = {};
+                formData.forEach((value, key) => {
+                    resultsData[key] = value;
+                });
+                
+                // Add additional data
+                resultsData.order_id = currentOrderId;
+                resultsData.status = 'completed';
+                resultsData.test_type = testType;
+                
+                // Send data as JSON for PDF generation
+                fetch(`/labtech/orders/complete-with-pdf/${currentOrderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(resultsData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeCompleteModal();
+                        showLabtechSuccess('Lab results completed and PDF generated successfully!', 'Order Completed', () => {
+                            location.reload();
+                        });
+                    } else {
+                        showLabtechError(data.message || 'Failed to complete order and generate PDF', 'Completion Failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showLabtechError('Network error occurred. Please try again.', 'Connection Error');
+                })
+                .finally(() => {
+                    // Reset button state
+                    btnText.style.display = 'inline-block';
+                    btnLoading.style.display = 'none';
+                    submitBtn.disabled = false;
+                });
+            }
         });
 
         // Cancel order function - Show modal instead of confirm

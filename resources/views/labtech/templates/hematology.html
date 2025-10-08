@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hematology Laboratory Result Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border-bottom: 2px solid #000;
+            background: white;
+        }
+        
+        .hospital-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c5234;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+        }
+        
+        .hospital-info p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .form-title {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-bottom: 2px solid #000;
+        }
+        
+        .form-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 1px;
+        }
+        
+        .patient-info {
+            border-bottom: 2px solid #000;
+        }
+        
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .patient-info-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .label-cell {
+            background: #f0f0f0;
+            width: 25%;
+            text-align: center;
+        }
+        
+        .value-cell {
+            width: 25%;
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .results-table th {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 10px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .results-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .test-name {
+            text-align: left;
+            padding-left: 10px;
+            width: 30%;
+        }
+        
+        .value-col {
+            width: 20%;
+        }
+        
+        .unit-col {
+            width: 15%;
+        }
+        
+        .reference-col {
+            width: 35%;
+        }
+        
+        .result-input {
+            width: 100%;
+            border: none;
+            text-align: center;
+            font-size: 11px;
+            background: transparent;
+            padding: 2px;
+        }
+        
+        .result-input:focus {
+            outline: 1px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 30px 20px;
+            border-top: 1px solid #000;
+        }
+        
+        .signature-left, .signature-right {
+            width: 45%;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+        
+        .signature-left p, .signature-right p {
+            margin: 2px 0;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .result-input {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Hospital Header -->
+        <div class="hospital-header">
+            <div class="hospital-logo">
+                LOGO
+            </div>
+            <div class="hospital-info">
+                <h1>ROMEL CRUZ HOSPITAL</h1>
+                <p>702 Matimbo, Malolos, Bulacan</p>
+                <p>DOH-BRL LICENSE NO. 2480</p>
+            </div>
+        </div>
+        
+        <!-- Form Title -->
+        <div class="form-title">
+            <h2>HEMATOLOGY LABORATORY RESULT FORM</h2>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="patient-info">
+            <table class="patient-info-table">
+                <tr>
+                    <td class="label-cell">NAME OF PATIENT</td>
+                    <td class="value-cell" contenteditable="true">[PATIENT_NAME]</td>
+                    <td class="label-cell">AGE/SEX</td>
+                    <td class="value-cell" contenteditable="true">[AGE_SEX]</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">WARD</td>
+                    <td class="value-cell" contenteditable="true">[WARD]</td>
+                    <td class="label-cell">DATE</td>
+                    <td class="value-cell" contenteditable="true">[DATE]</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Test Results -->
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th class="test-name">EXAMINATION</th>
+                    <th class="value-col">VALUE</th>
+                    <th class="unit-col">UNIT</th>
+                    <th class="reference-col">REFERENCE VALUE</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="test-name">WBC</td>
+                    <td><input type="text" class="result-input" name="wbc" placeholder="5.9"></td>
+                    <td>/L</td>
+                    <td>4.0 - 10.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">Lymph#</td>
+                    <td><input type="text" class="result-input" name="lymph_number"></td>
+                    <td>/L</td>
+                    <td>0.8 - 4.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">Mid#</td>
+                    <td><input type="text" class="result-input" name="mid_number"></td>
+                    <td>/L</td>
+                    <td>0.1 - 1.5</td>
+                </tr>
+                <tr>
+                    <td class="test-name">Gran#</td>
+                    <td><input type="text" class="result-input" name="gran_number"></td>
+                    <td>/L</td>
+                    <td>2.0 - 7.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">Lymph%</td>
+                    <td><input type="text" class="result-input" name="lymph_percent" placeholder="32"></td>
+                    <td>%</td>
+                    <td>20.0 - 40.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">Mid%</td>
+                    <td><input type="text" class="result-input" name="mid_percent" placeholder="13"></td>
+                    <td>%</td>
+                    <td>3.0 - 15.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">Gran%</td>
+                    <td><input type="text" class="result-input" name="gran_percent" placeholder="55"></td>
+                    <td>%</td>
+                    <td>50.0 - 70.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">RBC</td>
+                    <td><input type="text" class="result-input" name="rbc" placeholder="3.40"></td>
+                    <td>/L</td>
+                    <td>3.50 - 5.50</td>
+                </tr>
+                <tr>
+                    <td class="test-name">HGB</td>
+                    <td><input type="text" class="result-input" name="hgb" placeholder="109"></td>
+                    <td>g/L</td>
+                    <td>110 - 160</td>
+                </tr>
+                <tr>
+                    <td class="test-name">HCT</td>
+                    <td><input type="text" class="result-input" name="hct" placeholder="32"></td>
+                    <td>%</td>
+                    <td>37.0 - 54.0</td>
+                </tr>
+                <tr>
+                    <td class="test-name">PLT</td>
+                    <td><input type="text" class="result-input" name="plt" placeholder="216"></td>
+                    <td>/L</td>
+                    <td>100 - 300</td>
+                </tr>
+                <tr>
+                    <td class="test-name">CLOTTING TIME</td>
+                    <td><input type="text" class="result-input" name="clotting_time"></td>
+                    <td>Min.; Sec</td>
+                    <td>2'00" - 7'00"</td>
+                </tr>
+                <tr>
+                    <td class="test-name">BLEEDING TIME</td>
+                    <td><input type="text" class="result-input" name="bleeding_time"></td>
+                    <td>Min.; Sec</td>
+                    <td>1'00" - 5'00"</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Signatures -->
+        <div class="signature-section">
+            <div class="signature-left">
+                <div class="signature-line"></div>
+                <p>Paulo Giovanni Mendoza, M.D.</p>
+                <p>License No. 0098131</p>
+            </div>
+            <div class="signature-right">
+                <div class="signature-line"></div>
+                <p>Jhen-Jhen DG. Guevarra, RMT</p>
+                <p>License No. _______</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
