@@ -18,6 +18,7 @@ class LabOrder extends Model
         'notes',
         'status',
         'priority',
+        'price',
         'requested_at',
         'started_at',
         'completed_at',

@@ -24,9 +24,28 @@
                 
                 <div class="form-group">
                     <label for="specificTest">Specific Test/Procedure: *</label>
-                    <select id="specificTest" name="specific_test" required disabled>
+                    <select id="specificTest" name="specific_test" required disabled onchange="updatePrice()">
                         <option value="" disabled selected>Select test first</option>
                     </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="testPrice">Test Price:</label>
+                    <div class="price-display">
+                        <span class="currency">₱</span>
+                        <span id="testPrice" class="price-amount">0.00</span>
+                    </div>
+                    <input type="hidden" id="testPriceValue" name="test_price" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="totalPrice">Total Price:</label>
+                    <div class="price-display total-price">
+                        <span class="currency">₱</span>
+                        <span id="totalPrice" class="price-amount">0.00</span>
+                    </div>
                 </div>
             </div>
             
@@ -69,16 +88,71 @@
     </div>
 </div>
 
+<style>
+.price-display {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.price-display .currency {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.price-display .price-amount {
+    color: #333;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.price-display.total-price {
+    background: #e7f3ff;
+    border-color: #2196f3;
+}
+
+.price-display.total-price .currency,
+.price-display.total-price .price-amount {
+    color: #1976d2;
+    font-weight: 700;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.checkbox-label-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+</style>
+
 <script>
 // Lab request modal functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Store procedure data with prices
+    let proceduresData = [];
+    
     // Define updateTestOptions function for this modal only
     window.updateTestOptions = function() {
         const category = document.getElementById('testCategory').value;
         const specificTest = document.getElementById('specificTest');
         
-        // Clear existing options
+        // Clear existing options and reset price
         specificTest.innerHTML = '';
+        resetPrice();
         
         // Always add a disabled placeholder as the first option
         const placeholderOption = document.createElement('option');
@@ -117,12 +191,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
+                // Store procedures data for price lookup
+                proceduresData = Array.isArray(data) ? data : [];
+                
                 // Add actual options
                 if (Array.isArray(data)) {
                     data.forEach(procedure => {
                         const option = document.createElement('option');
                         option.value = procedure.name;
-                        option.textContent = procedure.name;
+                        option.textContent = `${procedure.name} - ₱${parseFloat(procedure.price || 0).toFixed(2)}`;
+                        option.setAttribute('data-price', procedure.price || 0);
                         specificTest.appendChild(option);
                     });
                     
@@ -142,6 +220,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 specificTest.disabled = true;
             });
     };
+    
+    // Define updatePrice function
+    window.updatePrice = function() {
+        const specificTest = document.getElementById('specificTest');
+        const selectedOption = specificTest.options[specificTest.selectedIndex];
+        
+        if (selectedOption && selectedOption.value) {
+            const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+            setPrice(price);
+        } else {
+            resetPrice();
+        }
+    };
+    
+    // Helper functions for price management
+    function setPrice(price) {
+        document.getElementById('testPrice').textContent = price.toFixed(2);
+        document.getElementById('testPriceValue').value = price;
+        document.getElementById('totalPrice').textContent = price.toFixed(2);
+    }
+    
+    function resetPrice() {
+        setPrice(0);
+    }
     
     // Enable/disable additional tests textarea based on checkbox
     const enableAdditionalTests = document.getElementById('enableAdditionalTests');

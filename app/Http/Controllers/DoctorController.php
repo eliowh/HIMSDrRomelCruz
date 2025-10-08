@@ -19,62 +19,25 @@ class DoctorController extends Controller
     }
 
     /**
-     * Display the list of patients assigned to the current doctor.
+     * Display the list of patients - same database as nurses for synchronized information
      */
     public function patients(Request $request)
     {
-        $doctor = Auth::user();
-        
-        // Start with base query
-        $patientsQuery = $doctor->patients()->with(['doctors']);
-        
-        // Apply search filter if provided
-        if ($request->has('query') && !empty(trim($request->query))) {
-            $query = trim($request->query);
-            $patientsQuery->where(function($q) use ($query) {
-                $q->where('first_name', 'LIKE', "%{$query}%")
-                  ->orWhere('last_name', 'LIKE', "%{$query}%")
-                  ->orWhere('patient_no', 'LIKE', "%{$query}%")
-                  ->orWhere('room_number', 'LIKE', "%{$query}%")
-                  ->orWhere('primary_diagnosis', 'LIKE', "%{$query}%")
-                  ->orWhere('medical_history', 'LIKE', "%{$query}%")
-                  ->orWhere('email', 'LIKE', "%{$query}%")
-                  ->orWhere('phone', 'LIKE', "%{$query}%")
-                  ->orWhere('emergency_contact', 'LIKE', "%{$query}%")
-                  ->orWhere('blood_type', 'LIKE', "%{$query}%")
-                  // Search in allergies JSON field
-                  ->orWhereRaw('JSON_SEARCH(allergies, "one", ?) IS NOT NULL', ["%{$query}%"])
-                  // Search in medications JSON field
-                  ->orWhereRaw('JSON_SEARCH(medications, "one", ?) IS NOT NULL', ["%{$query}%"]);
-            });
-        }
-        
-        // Apply status filter if provided
-        if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
-            $patientsQuery->where('status', $request->status);
-        }
-        
-        // Get paginated results
-        $patients = $patientsQuery
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->paginate(10);
+        // Use the exact same logic as PatientController@index for nurses
+        $q = $request->query('q');
+        $patients = Patient::when($q, function ($query, $q) {
+                $query->where(function ($s) use ($q) {
+                    $s->where('first_name','like',"%{$q}%")
+                      ->orWhere('last_name','like',"%{$q}%")
+                      ->orWhere('middle_name','like',"%{$q}%")
+                      ->orWhere('patient_no','like',"%{$q}%");
+                });
+            })
+            ->orderByDesc('patient_no')
+            ->paginate(10)
+            ->withQueryString();
 
-        // Calculate statistics (for all patients, not filtered)
-        $totalPatients = $doctor->patients()->count();
-        $admittedPatients = $doctor->patients()->where('status', 'admitted')->count();
-        $outpatients = $doctor->patients()->where('status', 'outpatient')->count();
-        $criticalPatients = $doctor->patients()
-            ->whereIn('status', ['emergency'])
-            ->count();
-
-        return view('doctor.doctor_patients', compact(
-            'patients', 
-            'totalPatients', 
-            'admittedPatients', 
-            'outpatients', 
-            'criticalPatients'
-        ));
+        return view('doctor.doctor_patients', compact('patients','q'));
     }
 
     /**
