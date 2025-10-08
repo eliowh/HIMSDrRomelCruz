@@ -272,16 +272,34 @@ class BillingController extends Controller
      */
     public function getPatientServices(Request $request)
     {
-        $patient = Patient::with(['labOrders', 'pharmacyRequests'])->findOrFail($request->patient_id);
+        \Log::info('Getting patient services for patient ID: ' . $request->patient_id);
         
-        return response()->json([
-            'patient' => [
-                'id' => $patient->id,
-                'name' => $patient->display_name,
-                'patient_no' => $patient->patient_no,
-                'admission_diagnosis' => $patient->admission_diagnosis
-            ],
-            'services' => $patient->billable_services
-        ]);
+        try {
+            $patient = Patient::with(['labOrders', 'pharmacyRequests'])->findOrFail($request->patient_id);
+            
+            \Log::info('Patient found: ' . $patient->display_name);
+            \Log::info('Admission diagnosis: ' . $patient->admission_diagnosis);
+            \Log::info('Lab orders count: ' . $patient->labOrders->count());
+            
+            $billableServices = $patient->billable_services;
+            \Log::info('Billable services count: ' . count($billableServices));
+            
+            if (count($billableServices) > 0) {
+                \Log::info('First service: ' . json_encode($billableServices[0]));
+            }
+            
+            return response()->json([
+                'patient' => [
+                    'id' => $patient->id,
+                    'name' => $patient->display_name,
+                    'patient_no' => $patient->patient_no,
+                    'admission_diagnosis' => $patient->admission_diagnosis
+                ],
+                'services' => $billableServices
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting patient services: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

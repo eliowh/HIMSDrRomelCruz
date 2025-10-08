@@ -189,21 +189,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadPatientServices() {
     const patientId = document.getElementById('patient_id').value;
-    if (!patientId) return;
+    console.log('Loading patient services for patient ID:', patientId);
+    
+    if (!patientId) {
+        console.log('No patient ID provided');
+        return;
+    }
     
     try {
         showBillingLoading('Loading patient services...');
         
+        console.log('Fetching from URL:', `/billing/patient-services/${patientId}`);
         const response = await fetch(`/billing/patient-services/${patientId}`);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('Patient services data:', data);
         
         closeBillingNotification();
         
         if (data.services && data.services.length > 0) {
+            console.log('Displaying', data.services.length, 'services');
             displayPatientServices(data.services);
             document.getElementById('selectPatientAlert').style.display = 'none';
             document.getElementById('noServicesAlert').style.display = 'none';
         } else {
+            console.log('No services found for patient');
             document.getElementById('selectPatientAlert').style.display = 'none';
             document.getElementById('noServicesAlert').style.display = 'block';
             clearPatientServices();
@@ -211,7 +226,7 @@ async function loadPatientServices() {
         
     } catch (error) {
         closeBillingNotification();
-        showBillingNotification('error', 'Error', 'Failed to load patient services');
+        showBillingNotification('error', 'Error', 'Failed to load patient services: ' + error.message);
         console.error('Error loading patient services:', error);
     }
 }
