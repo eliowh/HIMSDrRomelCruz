@@ -169,14 +169,20 @@ let itemIndex = 0;
 let philhealthMember = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up event listeners');
+    
     // Patient selection change
     document.getElementById('patient_id').addEventListener('change', function() {
         const patientId = this.value;
+        console.log('Patient selected:', patientId);
+        
         if (patientId) {
+            console.log('Enabling load services button and loading services');
             document.getElementById('loadServicesBtn').disabled = false;
             loadPatientServices();
             checkPhilhealthStatus();
         } else {
+            console.log('No patient selected, clearing services');
             document.getElementById('loadServicesBtn').disabled = true;
             clearPatientServices();
         }
@@ -307,8 +313,13 @@ function getServiceIcon(type) {
 }
 
 function clearPatientServices() {
+    console.log('Clearing patient services');
     document.getElementById('patientServicesContainer').innerHTML = '';
-    document.getElementById('selectPatientAlert').style.display = 'block';
+    // Only show select patient alert if no patient is actually selected
+    const patientId = document.getElementById('patient_id').value;
+    if (!patientId) {
+        document.getElementById('selectPatientAlert').style.display = 'block';
+    }
     document.getElementById('noServicesAlert').style.display = 'none';
     calculateTotals();
 }
@@ -494,6 +505,22 @@ document.querySelector('form').addEventListener('submit', function(e) {
     
     showBillingLoading('Creating billing record...');
 });
+
+// Define missing notification functions
+function showBillingLoading(message) {
+    console.log('Loading:', message);
+    // You can add a loading spinner here if needed
+}
+
+function closeBillingNotification() {
+    console.log('Closing notification');
+    // Close any loading spinners here
+}
+
+function showBillingNotification(type, title, message) {
+    console.log(`${type.toUpperCase()}: ${title} - ${message}`);
+    alert(`${title}: ${message}`);
+}
 </script>
 
 @endsection
