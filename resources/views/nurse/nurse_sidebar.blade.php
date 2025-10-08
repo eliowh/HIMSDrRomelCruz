@@ -27,9 +27,15 @@
                 </a>
             </li>
             <li>
+                <a href="/nurse/medicine-request-history" 
+                   class="sidebar-btn{{ request()->is('nurse/medicine-request-history') ? ' active' : '' }}">
+                    <span class="icon">📋</span> <span class="text">Request History</span>
+                </a>
+            </li>
+            <li>
                 <form action="/logout" method="POST" id="nurse-logout-form" class="logout-form">
                     @csrf
-                    <button type="button" class="sidebar-btn" onclick="confirmLogout('nurse-logout-form')">
+                    <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout('nurse-logout-form')">
                         <span class="icon">🚪</span> <span class="text">Logout</span>
                     </button>
                 </form>

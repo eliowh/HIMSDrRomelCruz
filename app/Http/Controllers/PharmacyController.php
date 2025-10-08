@@ -383,8 +383,20 @@ class PharmacyController extends Controller
         $perPage = $request->get('per_page', 10);
 
         try {
-            // Show pharmacy staff the requests submitted by nurses
+            // Main (active) requests: exclude dispensed & completed when viewing 'all'
             $query = PharmacyRequest::with(['requestedBy', 'patient']);
+
+            $includeCompletedSection = ($status === 'all');
+            if ($status === 'all') {
+                $query->whereNotIn('status', [
+                    PharmacyRequest::STATUS_DISPENSED,
+                    PharmacyRequest::STATUS_COMPLETED,
+                ]);
+            } else {
+                // If specific status requested, filter directly (may include dispensed/completed)
+                $query->where('status', $status);
+                $includeCompletedSection = false; // don't show history section when explicitly filtered
+            }
 
             // Add search functionality like stocks
             if ($q) {
@@ -397,10 +409,7 @@ class PharmacyController extends Controller
                 });
             }
 
-            // Add status filtering
-            if ($status !== 'all') {
-                $query->where('status', $status);
-            }
+            // (status filtering already applied above)
 
             // Add sorting functionality
             $allowedSorts = ['requested_at', 'patient_name', 'generic_name', 'brand_name', 'status', 'quantity', 'priority'];
@@ -412,6 +421,28 @@ class PharmacyController extends Controller
 
             $requests = $query->paginate($perPage)->appends($request->query());
 
+            // History (completed/dispensed) requests list
+            $completedRequests = collect();
+            if ($includeCompletedSection) {
+                $completedRequests = PharmacyRequest::with(['requestedBy', 'patient', 'dispensedBy'])
+                    ->whereIn('status', [
+                        PharmacyRequest::STATUS_DISPENSED,
+                        PharmacyRequest::STATUS_COMPLETED,
+                    ])
+                    ->when($q, function($builder) use ($q) {
+                        $builder->where(function($b) use ($q) {
+                            $b->where('item_code', 'like', "%{$q}%")
+                              ->orWhere('generic_name', 'like', "%{$q}%")
+                              ->orWhere('brand_name', 'like', "%{$q}%")
+                              ->orWhere('patient_name', 'like', "%{$q}%")
+                              ->orWhere('patient_no', 'like', "%{$q}%");
+                        });
+                    })
+                    ->orderByRaw('COALESCE(dispensed_at, completed_at, updated_at) DESC')
+                    ->limit(50)
+                    ->get();
+            }
+
             $statusCounts = [
                 'all' => PharmacyRequest::count(),
                 'pending' => PharmacyRequest::where('status', PharmacyRequest::STATUS_PENDING)->count(),
@@ -421,7 +452,7 @@ class PharmacyController extends Controller
                 'dispensed' => PharmacyRequest::where('status', PharmacyRequest::STATUS_DISPENSED)->count(),
             ];
 
-            return view('pharmacy.pharmacy_requests', compact('requests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage'));
+            return view('pharmacy.pharmacy_requests', compact('requests', 'completedRequests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage'));
         } catch (\Throwable $e) {
             // Log the error and return an empty collection so the page doesn't crash.
             \Log::error('Pharmacy requests load failed: ' . $e->getMessage());
@@ -439,7 +470,76 @@ class PharmacyController extends Controller
                 'cancelled' => 0,
                 'dispensed' => 0,
             ];
-            return view('pharmacy.pharmacy_requests', compact('requests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage', 'dbError'));
+            $completedRequests = collect();
+            return view('pharmacy.pharmacy_requests', compact('requests', 'completedRequests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage', 'dbError'));
+        }
+    }
+
+    /**
+     * Show medicine request history for nurses (dispensed and cancelled requests)
+     */
+    public function nurseRequestHistory(Request $request)
+    {
+        $q = $request->get('q', '');
+        $status = $request->get('status', 'all');
+        $sort = $request->get('sort', 'dispensed_at');
+        $direction = $request->get('direction', 'desc');
+        $perPage = $request->get('per_page', 15);
+
+        try {
+            // Show only dispensed and cancelled requests for nurse history
+            $query = PharmacyRequest::with(['requestedBy', 'patient', 'dispensedBy', 'cancelledBy'])
+                ->whereIn('status', [PharmacyRequest::STATUS_DISPENSED, PharmacyRequest::STATUS_CANCELLED]);
+
+            // Add search functionality
+            if ($q) {
+                $query->where(function($builder) use ($q) {
+                    $builder->where('item_code', 'like', "%{$q}%")
+                            ->orWhere('generic_name', 'like', "%{$q}%")
+                            ->orWhere('brand_name', 'like', "%{$q}%")
+                            ->orWhere('patient_name', 'like', "%{$q}%")
+                            ->orWhere('patient_no', 'like', "%{$q}%");
+                });
+            }
+
+            // Add status filtering
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+
+            // Add sorting functionality
+            $allowedSorts = ['requested_at', 'dispensed_at', 'cancelled_at', 'patient_name', 'generic_name', 'brand_name', 'status', 'quantity'];
+            if (in_array($sort, $allowedSorts)) {
+                $query->orderBy($sort, $direction === 'asc' ? 'asc' : 'desc');
+            } else {
+                // Default sort by most recent processed date
+                $query->orderByRaw('COALESCE(dispensed_at, cancelled_at) DESC');
+            }
+
+            $requests = $query->paginate($perPage)->appends($request->query());
+
+            $statusCounts = [
+                'all' => PharmacyRequest::whereIn('status', [PharmacyRequest::STATUS_DISPENSED, PharmacyRequest::STATUS_CANCELLED])->count(),
+                'dispensed' => PharmacyRequest::where('status', PharmacyRequest::STATUS_DISPENSED)->count(),
+                'cancelled' => PharmacyRequest::where('status', PharmacyRequest::STATUS_CANCELLED)->count(),
+            ];
+
+            return view('nurse.medicine_request_history', compact('requests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage'));
+        } catch (\Throwable $e) {
+            // Log the error and return an empty collection so the page doesn't crash.
+            \Log::error('Nurse request history load failed: ' . $e->getMessage());
+
+            // Create a paginator from an empty array
+            $requests = new \Illuminate\Pagination\LengthAwarePaginator(
+                [], 0, 15, 1, ['path' => $request->url()]
+            );
+            $dbError = $e->getMessage();
+            $statusCounts = [
+                'all' => 0,
+                'dispensed' => 0,
+                'cancelled' => 0,
+            ];
+            return view('nurse.medicine_request_history', compact('requests', 'statusCounts', 'q', 'status', 'sort', 'direction', 'perPage', 'dbError'));
         }
     }
 
