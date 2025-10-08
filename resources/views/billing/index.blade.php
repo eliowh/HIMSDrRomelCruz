@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-file-invoice-dollar text-primary"></i> Billing Management</h2>
-                <a href="{{ route('billings.create') }}" class="btn btn-primary">
+                <a href="{{ route('billing.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Create New Billing
                 </a>
             </div>
@@ -101,12 +101,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ route('billings.show', $billing) }}" 
+                                            <a href="{{ route('billing.show', $billing) }}" 
                                                class="btn btn-sm btn-outline-primary" 
                                                title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('billings.edit', $billing) }}" 
+                                            <a href="{{ route('billing.edit', $billing) }}" 
                                                class="btn btn-sm btn-outline-warning" 
                                                title="Edit">
                                                 <i class="fas fa-edit"></i>
@@ -117,7 +117,7 @@
                                                target="_blank">
                                                 <i class="fas fa-file-pdf"></i>
                                             </a>
-                                            <form action="{{ route('billings.destroy', $billing) }}" 
+                                            <form action="{{ route('billing.destroy', $billing) }}" 
                                                   method="POST" 
                                                   class="d-inline"
                                                   onsubmit="return handleBillingDelete(event, this)">
@@ -138,7 +138,7 @@
                                         <div class="text-muted">
                                             <i class="fas fa-inbox fa-3x mb-3"></i>
                                             <p>No billing records found.</p>
-                                            <a href="{{ route('billings.create') }}" class="btn btn-primary">
+                                            <a href="{{ route('billing.create') }}" class="btn btn-primary">
                                                 Create First Billing
                                             </a>
                                         </div>
@@ -215,7 +215,7 @@
     </div>
 </div>
 
-@include('billings.modals.notification_system')
+@include('billing.modals.notification_system')
 
 <script>
 // Handle billing deletion with notification system

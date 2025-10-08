@@ -134,46 +134,89 @@ class Patient extends Model
     {
         $services = collect();
         
-        // Add admission diagnosis as a service
+        // Add room charges if patient has a room assigned
+        if ($this->room_no) {
+            $room = \App\Models\Room::where('COL 1', $this->room_no)->first();
+            if ($room) {
+                // Safely get room price and clean it
+                $rawPrice = $room->getAttributes()['COL 2'] ?? '0';
+                $cleanPrice = is_string($rawPrice) ? str_replace(',', '', $rawPrice) : $rawPrice;
+                $roomPrice = is_numeric($cleanPrice) ? (float)$cleanPrice : 0.00;
+                
+                $services->push([
+                    'type' => 'room',
+                    'description' => 'Room: ' . $this->room_no,
+                    'icd_code' => null,
+                    'unit_price' => $roomPrice,
+                    'quantity' => 1,
+                    'source' => 'room'
+                ]);
+            }
+        }
+        
+        // Add admission diagnosis as professional fee (ICD Code only)
         if ($this->admission_diagnosis) {
             $icd = \App\Models\Icd10NamePriceRate::where('COL 1', $this->admission_diagnosis)->first();
             if ($icd) {
+                // COL 3 is Case Rate (higher amount), COL 4 is Professional Fee (lower amount)
+                $rawCaseRate = $icd->getAttributes()['COL 3'] ?? '0';
+                $cleanCaseRate = is_string($rawCaseRate) ? str_replace(',', '', $rawCaseRate) : $rawCaseRate;
+                $caseRate = is_numeric($cleanCaseRate) ? (float)$cleanCaseRate : 0.00;
+                
+                $rawProfFee = $icd->getAttributes()['COL 4'] ?? '0';
+                $cleanProfFee = is_string($rawProfFee) ? str_replace(',', '', $rawProfFee) : $rawProfFee;
+                $professionalFee = is_numeric($cleanProfFee) ? (float)$cleanProfFee : 0.00;
+                
                 $services->push([
-                    'type' => 'diagnosis',
-                    'description' => $icd->description ?? 'Admission Diagnosis',
+                    'type' => 'professional',
+                    'description' => $this->admission_diagnosis . ' - ' . ($icd->description ?? 'Diagnosis'),
                     'icd_code' => $this->admission_diagnosis,
-                    'professional_fee' => $icd->professional_fee ?? 0,
+                    'unit_price' => $professionalFee, // This will be the editable professional fee
+                    'case_rate' => $caseRate, // This will be read-only
                     'quantity' => 1,
                     'source' => 'admission'
                 ]);
             }
         }
         
-        // Add completed lab orders
+        // Add completed lab orders with their specific prices
         foreach ($this->labOrders()->where('status', 'completed')->get() as $lab) {
+            $rawPrice = $lab->price ?? 0;
+            $cleanPrice = is_string($rawPrice) ? str_replace(',', '', $rawPrice) : $rawPrice;
+            $labPrice = is_numeric($cleanPrice) ? (float)$cleanPrice : 0.00;
+            
             $services->push([
                 'type' => 'laboratory',
-                'description' => $lab->test_requested,
+                'description' => 'Lab: ' . $lab->test_requested,
                 'icd_code' => null,
-                'professional_fee' => $lab->price ?? 0,
+                'unit_price' => $labPrice,
                 'quantity' => 1,
                 'source' => 'lab_order'
             ]);
         }
         
-        // Add pharmacy requests (dispensed medicines)
+        // Add dispensed medicines with their pharmacy prices
         foreach ($this->pharmacyRequests()->where('status', 'dispensed')->get() as $pharmacy) {
+            // Get medicine price from pharmacy stocks
+            $stock = \App\Models\PharmacyStock::where('generic_name', $pharmacy->medicine_name)
+                                            ->orWhere('brand_name', $pharmacy->medicine_name)
+                                            ->first();
+            
+            $rawPrice = $stock ? $stock->price : ($pharmacy->price ?? 0);
+            $cleanPrice = is_string($rawPrice) ? str_replace(',', '', $rawPrice) : $rawPrice;
+            $medicinePrice = is_numeric($cleanPrice) ? (float)$cleanPrice : 0.00;
+            
             $services->push([
                 'type' => 'medicine',
-                'description' => $pharmacy->medicine_name ?? 'Medicine',
+                'description' => 'Medicine: ' . ($pharmacy->medicine_name ?? 'Medicine'),
                 'icd_code' => null,
-                'professional_fee' => $pharmacy->price ?? 0,
+                'unit_price' => $medicinePrice,
                 'quantity' => $pharmacy->quantity ?? 1,
                 'source' => 'pharmacy'
             ]);
         }
         
-        return $services;
+        return $services->toArray();
     }
 
     /**

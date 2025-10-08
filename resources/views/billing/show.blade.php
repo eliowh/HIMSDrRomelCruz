@@ -9,10 +9,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-file-invoice text-primary"></i> Billing Details</h2>
                 <div class="btn-group">
-                    <a href="{{ route('billings.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('billing.index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Billings
                     </a>
-                    <a href="{{ route('billings.edit', $billing) }}" class="btn btn-warning">
+                    <a href="{{ route('billing.edit', $billing) }}" class="btn btn-warning">
                         <i class="fas fa-edit"></i> Edit
                     </a>
                     <a href="{{ route('billing.export.receipt', $billing) }}" class="btn btn-success" target="_blank">
@@ -167,8 +167,8 @@
                                             </td>
                                             <td>{{ $item->quantity }}</td>
                                             <td>₱{{ number_format($item->unit_price, 2) }}</td>
-                                            <td><strong>₱{{ number_format($item->total_amount, 2) }}</strong></td>
-                                            <td>{{ $item->date_charged->format('M d, Y') }}</td>
+                                            <td><strong>₱{{ number_format($item->total_price, 2) }}</strong></td>
+                                            <td>{{ $item->service_date ? $item->service_date->format('M d, Y') : 'N/A' }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -269,14 +269,14 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{{ route('billings.edit', $billing) }}" class="btn btn-warning">
+                                <a href="{{ route('billing.edit', $billing) }}" class="btn btn-warning">
                                     <i class="fas fa-edit"></i> Edit Billing
                                 </a>
                                 <a href="{{ route('billing.export.receipt', $billing) }}" class="btn btn-success" target="_blank">
                                     <i class="fas fa-file-pdf"></i> Download Receipt
                                 </a>
                                 @if($billing->status === 'pending')
-                                    <form action="{{ route('billings.update', $billing) }}" method="POST" class="d-inline">
+                                    <form action="{{ route('billing.update', $billing) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('PUT')
                                         <input type="hidden" name="status" value="paid">
@@ -321,7 +321,7 @@
 }
 </style>
 
-@include('billings.modals.notification_system')
+@include('billing.modals.notification_system')
 
 <script>
 // Handle payment confirmation with notification system

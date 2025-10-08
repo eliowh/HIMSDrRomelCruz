@@ -12,19 +12,23 @@ class BillingItem extends Model
     protected $fillable = [
         'billing_id',
         'item_type',
+        'item_code',
+        'item_name',
         'description',
         'quantity',
         'unit_price',
-        'total_amount',
-        'icd_code',
-        'date_charged'
+        'total_price',
+        'case_rate',
+        'service_date',
+        'icd_code'
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:2',
+        'quantity' => 'integer',
         'unit_price' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'date_charged' => 'datetime'
+        'total_price' => 'decimal:2',
+        'case_rate' => 'decimal:2',
+        'service_date' => 'date'
     ];
 
     const ITEM_TYPES = [

@@ -9,10 +9,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-edit text-warning"></i> Edit Billing</h2>
                 <div class="btn-group">
-                    <a href="{{ route('billings.show', $billing) }}" class="btn btn-secondary">
+                    <a href="{{ route('billing.show', $billing) }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Details
                     </a>
-                    <a href="{{ route('billings.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-list"></i> All Billings
                     </a>
                 </div>
@@ -30,7 +30,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('billings.update', $billing) }}" method="POST" id="editBillingForm">
+            <form action="{{ route('billing.update', $billing) }}" method="POST" id="editBillingForm">
                 @csrf
                 @method('PUT')
                 
@@ -287,7 +287,7 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="{{ route('billings.show', $billing) }}" class="btn btn-secondary">
+                            <a href="{{ route('billing.show', $billing) }}" class="btn btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="btn btn-warning">
@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 
-@include('billings.modals.notification_system')
+@include('billing.modals.notification_system')
 
 <script>
 // Show notifications for session messages

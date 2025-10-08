@@ -302,4 +302,35 @@ class BillingController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Search patients for autocomplete
+     */
+    public function searchPatients(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json(['patients' => []]);
+        }
+
+        $patients = Patient::where('first_name', 'like', "%{$query}%")
+                          ->orWhere('last_name', 'like', "%{$query}%")
+                          ->orWhere('patient_no', 'like', "%{$query}%")
+                          ->orderBy('first_name')
+                          ->limit(20)
+                          ->get()
+                          ->map(function ($patient) {
+                              return [
+                                  'id' => $patient->id,
+                                  'text' => $patient->display_name . ' - P' . $patient->patient_no . 
+                                           ($patient->date_of_birth ? ' (' . $patient->date_of_birth->format('M d, Y') . ')' : ' (N/A)'),
+                                  'display_name' => $patient->display_name,
+                                  'patient_no' => $patient->patient_no,
+                                  'date_of_birth' => $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : 'N/A'
+                              ];
+                          });
+
+        return response()->json(['patients' => $patients]);
+    }
 }

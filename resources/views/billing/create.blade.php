@@ -36,19 +36,18 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <label for="patient_id" class="form-label">Select Patient <span class="text-danger">*</span></label>
-                                <select name="patient_id" id="patient_id" class="form-select" required>
-                                    <option value="">Choose a patient...</option>
-                                    @foreach($patients as $patient)
-                                        <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
-                                            {{ $patient->display_name }} - P{{ $patient->patient_no }} ({{ $patient->date_of_birth->format('M d, Y') }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <label for="patient_search" class="form-label">Select Patient <span class="text-danger">*</span></label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="patient_search" placeholder="Type to search patients..." autocomplete="off">
+                                    <input type="hidden" name="patient_id" id="patient_id" required>
+                                    <div id="patient_dropdown" class="dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto;">
+                                    </div>
+                                </div>
+                                <small class="text-muted">Search by name or patient number</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Patient Status</label>
-                                <div class="d-flex gap-3 align-items-center mt-2">
+                                <label class="form-label">Patient Status & Discounts</label>
+                                <div class="d-flex gap-3 align-items-center mt-2 flex-wrap">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="is_senior_citizen" id="is_senior_citizen" {{ old('is_senior_citizen') ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_senior_citizen">
@@ -61,6 +60,12 @@
                                             PWD (20% Discount)
                                         </label>
                                     </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_philhealth_member" id="is_philhealth_member" {{ old('is_philhealth_member') ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="is_philhealth_member">
+                                            PhilHealth Member
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -71,7 +76,7 @@
                                 <div class="alert alert-info">
                                     <i class="fas fa-shield-alt"></i> 
                                     <strong>PhilHealth Status:</strong> 
-                                    <span id="philhealthMessage">Checking...</span>
+                                    <span id="philhealthMessage">Not a PhilHealth Member</span>
                                 </div>
                             </div>
                         </div>
@@ -149,7 +154,7 @@
 
                 <!-- Submit Button -->
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ route('billings.index') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ route('billing.index') }}" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Create Billing
                     </button>
@@ -163,7 +168,7 @@
 
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 let itemIndex = 0;
 let philhealthMember = null;
@@ -171,21 +176,16 @@ let philhealthMember = null;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
     
-    // Patient selection change
-    document.getElementById('patient_id').addEventListener('change', function() {
-        const patientId = this.value;
-        console.log('Patient selected:', patientId);
-        
-        if (patientId) {
-            console.log('Enabling load services button and loading services');
-            document.getElementById('loadServicesBtn').disabled = false;
-            loadPatientServices();
-            checkPhilhealthStatus();
-        } else {
-            console.log('No patient selected, clearing services');
-            document.getElementById('loadServicesBtn').disabled = true;
-            clearPatientServices();
-        }
+    // Patient search functionality
+    setupPatientSearch();
+    
+    // Initialize totals to zero on page load
+    calculateTotals();
+    
+    // PhilHealth checkbox
+    document.getElementById('is_philhealth_member').addEventListener('change', function() {
+        updatePhilhealthStatus();
+        calculateTotals();
     });
     
     // Discount checkboxes
@@ -247,36 +247,66 @@ function displayPatientServices(services) {
                 <input type="hidden" name="billing_items[${index}][item_type]" value="${service.type}">
                 <input type="hidden" name="billing_items[${index}][description]" value="${service.description}">
                 <input type="hidden" name="billing_items[${index}][icd_code]" value="${service.icd_code || ''}">
-                <input type="hidden" name="billing_items[${index}][quantity]" value="${service.quantity}">
-                <input type="hidden" name="billing_items[${index}][unit_price]" class="service-unit-price" value="${service.professional_fee}">
+                <input type="hidden" name="billing_items[${index}][quantity]" value="${parseFloat(service.quantity) || 1}">
+                <input type="hidden" name="billing_items[${index}][unit_price]" class="service-unit-price" value="${parseFloat(service.unit_price) || 0}">
+                <input type="hidden" name="billing_items[${index}][case_rate]" value="${parseFloat(service.case_rate) || 0}">
                 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        ${service.type === 'professional' ? `
+                        <h6 class="text-primary mb-1">
+                            <i class="fas ${getServiceIcon(service.type)}"></i>
+                            ICD-10 - ${service.icd_code}
+                        </h6>
+                        <small class="text-muted">
+                            ${service.description.split(' - ')[1] || service.description} - Source: ${service.source}
+                        </small>
+                        ` : `
                         <h6 class="text-primary mb-1">
                             <i class="fas ${getServiceIcon(service.type)}"></i>
                             ${service.description}
                         </h6>
                         <small class="text-muted">
                             ${service.type.charAt(0).toUpperCase() + service.type.slice(1)} 
-                            ${service.icd_code ? '(ICD: ' + service.icd_code + ')' : ''}
                             - Source: ${service.source}
                         </small>
+                        `}
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Professional Fee</label>
+                    ${service.type === 'professional' ? `
+                    <div class="col-md-2">
+                        <label class="form-label">Case Rate</label>
                         <input type="number" step="0.01" min="0" 
-                               class="form-control professional-fee-input" 
-                               value="${service.professional_fee}"
-                               onchange="updateServiceFee(this, ${index})">
+                               class="form-control case-rate-input" 
+                               value="${service.case_rate || 0}"
+                               readonly>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-control" value="${service.quantity}" readonly>
+                        <label class="form-label">Professional Fee</label>
+                        <input type="number" step="0.01" min="0" 
+                               class="form-control unit-price-input" 
+                               value="${service.unit_price || 0}"
+                               onchange="updateServicePrice(this, ${index})">
                     </div>
-                    <div class="col-md-1">
+                    ` : `
+                    <div class="col-md-4">
+                        <label class="form-label">${service.type === 'room' ? 'Room Price' : service.type === 'laboratory' ? 'Lab Fee' : service.type === 'medicine' ? 'Medicine Price' : 'Unit Price'}</label>
+                        <input type="number" step="0.01" min="0" 
+                               class="form-control unit-price-input" 
+                               value="${service.unit_price || 0}"
+                               onchange="updateServicePrice(this, ${index})">
+                    </div>
+                    `}
+                    <div class="col-md-2">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control quantity-input" value="${service.quantity}" readonly>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">Total</label>
                         <div class="form-control-plaintext fw-bold" id="service-total-${index}">
-                            ₱${(service.professional_fee * service.quantity).toFixed(2)}
+                            ${service.type === 'professional' ? 
+                                '₱' + ((parseFloat(service.case_rate || 0) + parseFloat(service.unit_price || 0)) * parseFloat(service.quantity || 1)).toFixed(2) :
+                                '₱' + (parseFloat(service.unit_price || 0) * parseFloat(service.quantity || 1)).toFixed(2)
+                            }
                         </div>
                     </div>
                 </div>
@@ -288,13 +318,27 @@ function displayPatientServices(services) {
     calculateTotals();
 }
 
-function updateServiceFee(input, index) {
-    const newFee = parseFloat(input.value) || 0;
-    const quantity = parseFloat(input.closest('.patient-service').querySelector('input[type="number"][readonly]').value) || 1;
-    const total = newFee * quantity;
+function updateServicePrice(input, index) {
+    const newPrice = parseFloat(input.value) || 0;
+    const service = input.closest('.patient-service');
+    const quantity = parseFloat(service.querySelector('.quantity-input').value) || 1;
+    
+    // Check if this is a professional service (has case rate input)
+    const caseRateInput = service.querySelector('.case-rate-input');
+    let total;
+    
+    if (caseRateInput) {
+        // Professional service: add case rate + professional fee
+        const caseRate = parseFloat(caseRateInput.value) || 0;
+        const totalPrice = caseRate + newPrice;
+        total = totalPrice * quantity;
+    } else {
+        // Other services: just use unit price
+        total = newPrice * quantity;
+    }
     
     // Update hidden input
-    input.closest('.patient-service').querySelector('.service-unit-price').value = newFee;
+    service.querySelector('.service-unit-price').value = newPrice.toFixed(2);
     
     // Update total display
     document.getElementById(`service-total-${index}`).textContent = `₱${total.toFixed(2)}`;
@@ -302,8 +346,118 @@ function updateServiceFee(input, index) {
     calculateTotals();
 }
 
+// Patient search functionality
+function setupPatientSearch() {
+    const searchInput = document.getElementById('patient_search');
+    const patientIdInput = document.getElementById('patient_id');
+    const dropdown = document.getElementById('patient_dropdown');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            searchPatients(query);
+        }, 300);
+    });
+
+    searchInput.addEventListener('blur', function() {
+        // Hide dropdown after a delay to allow clicks
+        setTimeout(() => {
+            dropdown.style.display = 'none';
+        }, 150);
+    });
+
+    searchInput.addEventListener('focus', function() {
+        if (this.value.length >= 2) {
+            searchPatients(this.value.trim());
+        }
+    });
+}
+
+async function searchPatients(query) {
+    try {
+        const response = await fetch(`/billing/search-patients?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        displayPatientDropdown(data.patients);
+    } catch (error) {
+        console.error('Error searching patients:', error);
+    }
+}
+
+function displayPatientDropdown(patients) {
+    const dropdown = document.getElementById('patient_dropdown');
+    
+    if (patients.length === 0) {
+        dropdown.innerHTML = '<div class="dropdown-item-text">No patients found</div>';
+        dropdown.style.display = 'block';
+        return;
+    }
+
+    dropdown.innerHTML = '';
+    patients.forEach(patient => {
+        const item = document.createElement('a');
+        item.className = 'dropdown-item';
+        item.href = '#';
+        item.textContent = patient.text;
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            selectPatient(patient);
+        });
+        dropdown.appendChild(item);
+    });
+    
+    dropdown.style.display = 'block';
+}
+
+function selectPatient(patient) {
+    document.getElementById('patient_search').value = patient.text;
+    document.getElementById('patient_id').value = patient.id;
+    document.getElementById('patient_dropdown').style.display = 'none';
+    
+    // Update PhilHealth status display
+    updatePhilhealthStatus();
+    
+    // Load patient services
+    const loadBtn = document.getElementById('loadServicesBtn');
+    if (loadBtn) {
+        loadBtn.disabled = false;
+    }
+    loadPatientServices();
+}
+
+// PhilHealth status management
+function updatePhilhealthStatus() {
+    const checkbox = document.getElementById('is_philhealth_member');
+    const statusDiv = document.getElementById('philhealthStatus');
+    const messageSpan = document.getElementById('philhealthMessage');
+    const patientId = document.getElementById('patient_id').value;
+    
+    // Only show PhilHealth status if both patient is selected and checkbox is checked
+    if (patientId && checkbox.checked) {
+        statusDiv.style.display = 'block';
+        messageSpan.textContent = 'PhilHealth Member - Applicable discounts will be applied';
+        messageSpan.parentElement.className = 'alert alert-success';
+    } else if (patientId && !checkbox.checked) {
+        statusDiv.style.display = 'block';
+        messageSpan.textContent = 'Not a PhilHealth Member';
+        messageSpan.parentElement.className = 'alert alert-info';
+    } else {
+        // Hide PhilHealth status if no patient is selected
+        statusDiv.style.display = 'none';
+    }
+}
+
 function getServiceIcon(type) {
     switch(type) {
+        case 'professional': return 'fa-stethoscope';
         case 'diagnosis': return 'fa-stethoscope';
         case 'laboratory': return 'fa-vial';
         case 'medicine': return 'fa-pills';
@@ -330,31 +484,61 @@ function calculateTotals() {
     const services = document.querySelectorAll('.patient-service');
     let subtotal = 0;
     
-    services.forEach(service => {
-        const quantity = parseFloat(service.querySelector('input[type="number"][readonly]').value) || 0;
-        const unitPrice = parseFloat(service.querySelector('.service-unit-price').value) || 0;
-        subtotal += quantity * unitPrice;
-    });
+    // Only calculate if we have services
+    if (services.length === 0) {
+        // Reset to zero if no services
+        subtotal = 0;
+    } else {
+        services.forEach((service, index) => {
+            const quantityInput = service.querySelector('.quantity-input');
+            const quantity = quantityInput ? parseFloat(quantityInput.value) || 0 : 0;
+            
+            // Check if this is a professional service (has both case rate and professional fee)
+            const caseRateInput = service.querySelector('.case-rate-input');
+            const professionalFeeInput = service.querySelector('.unit-price-input');
+            
+            let serviceTotal = 0;
+            
+            if (caseRateInput && professionalFeeInput) {
+                // Professional service: add case rate + professional fee
+                const caseRate = parseFloat(caseRateInput.value) || 0;
+                const professionalFee = parseFloat(professionalFeeInput.value) || 0;
+                const totalPrice = caseRate + professionalFee;
+                serviceTotal = quantity * totalPrice;
+            } else {
+                // Other services: just use unit price
+                const unitPrice = professionalFeeInput ? parseFloat(professionalFeeInput.value) || 0 : 0;
+                serviceTotal = quantity * unitPrice;
+            }
+            
+            subtotal += serviceTotal;
+        });
+    }
     
-    // PhilHealth deduction (simplified - would need actual rates)
+    // PhilHealth deduction
     let philhealthDeduction = 0;
-    if (philhealthMember) {
-        philhealthDeduction = subtotal * 0.30; // Assume 30% coverage
+    if (document.getElementById('is_philhealth_member').checked) {
+        philhealthDeduction = parseFloat(subtotal) * 0.30; // Assume 30% coverage
     }
     
     // Senior/PWD discount
     let seniorPwdDiscount = 0;
     if (document.getElementById('is_senior_citizen').checked || document.getElementById('is_pwd').checked) {
-        seniorPwdDiscount = subtotal * 0.20;
+        seniorPwdDiscount = parseFloat(parseFloat(subtotal) - parseFloat(philhealthDeduction)) * 0.20;
     }
     
-    const netAmount = subtotal - philhealthDeduction - seniorPwdDiscount;
+    const netAmount = Math.max(0, parseFloat(subtotal) - parseFloat(philhealthDeduction) - parseFloat(seniorPwdDiscount));
     
-    // Update display
-    document.getElementById('subtotalAmount').textContent = '₱' + subtotal.toFixed(2);
-    document.getElementById('philhealthDeduction').textContent = '₱' + philhealthDeduction.toFixed(2);
-    document.getElementById('seniorPwdDiscount').textContent = '₱' + seniorPwdDiscount.toFixed(2);
-    document.getElementById('netAmount').textContent = '₱' + netAmount.toFixed(2);
+    // Update display with fallback elements
+    const subtotalEl = document.getElementById('subtotalAmount');
+    const philhealthEl = document.getElementById('philhealthDeduction');
+    const seniorPwdEl = document.getElementById('seniorPwdDiscount');
+    const netEl = document.getElementById('netAmount');
+    
+    if (subtotalEl) subtotalEl.textContent = '₱' + subtotal.toFixed(2);
+    if (philhealthEl) philhealthEl.textContent = '₱' + philhealthDeduction.toFixed(2);
+    if (seniorPwdEl) seniorPwdEl.textContent = '₱' + seniorPwdDiscount.toFixed(2);
+    if (netEl) netEl.textContent = '₱' + netAmount.toFixed(2);
 }
 
 async function checkPhilhealthStatus() {
@@ -480,7 +664,7 @@ document.addEventListener('click', function(e) {
 }
 </style>
 
-@include('billings.modals.notification_system')
+@include('billing.modals.notification_system')
 
 <script>
 // Show notifications for session messages
@@ -523,4 +707,4 @@ function showBillingNotification(type, title, message) {
 }
 </script>
 
-@endsection
+@endpush
