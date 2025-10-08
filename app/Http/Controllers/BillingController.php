@@ -266,4 +266,22 @@ class BillingController extends Controller
         
         return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
     }
+
+    /**
+     * Get patient services for billing
+     */
+    public function getPatientServices(Request $request)
+    {
+        $patient = Patient::with(['labOrders', 'pharmacyRequests'])->findOrFail($request->patient_id);
+        
+        return response()->json([
+            'patient' => [
+                'id' => $patient->id,
+                'name' => $patient->display_name,
+                'patient_no' => $patient->patient_no,
+                'admission_diagnosis' => $patient->admission_diagnosis
+            ],
+            'services' => $patient->billable_services
+        ]);
+    }
 }

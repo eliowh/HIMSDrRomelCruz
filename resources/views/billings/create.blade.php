@@ -41,7 +41,7 @@
                                     <option value="">Choose a patient...</option>
                                     @foreach($patients as $patient)
                                         <option value="{{ $patient->id }}" {{ old('patient_id') == $patient->id ? 'selected' : '' }}>
-                                            {{ $patient->firstName }} {{ $patient->lastName }} - {{ $patient->dateOfBirth }}
+                                            {{ $patient->display_name }} - P{{ $patient->patient_no }} ({{ $patient->date_of_birth->format('M d, Y') }})
                                         </option>
                                     @endforeach
                                 </select>
@@ -78,22 +78,27 @@
                     </div>
                 </div>
 
-                <!-- Billing Items -->
+                <!-- Patient Services -->
                 <div class="card shadow mb-4">
                     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list-ul"></i> Billing Items</h5>
-                        <button type="button" class="btn btn-light btn-sm" onclick="addBillingItem()">
-                            <i class="fas fa-plus"></i> Add Item
+                        <h5 class="mb-0"><i class="fas fa-list-ul"></i> Patient Services & Charges</h5>
+                        <button type="button" class="btn btn-light btn-sm" onclick="loadPatientServices()" id="loadServicesBtn" disabled>
+                            <i class="fas fa-sync"></i> Load Patient Services
                         </button>
                     </div>
                     <div class="card-body">
-                        <div id="billingItemsContainer">
-                            <!-- Billing items will be added here dynamically -->
+                        <div id="patientServicesContainer">
+                            <!-- Patient services will be loaded here automatically -->
                         </div>
                         
-                        <div class="alert alert-warning mt-3" id="noItemsAlert">
+                        <div class="alert alert-info mt-3" id="selectPatientAlert">
+                            <i class="fas fa-info-circle"></i> 
+                            Please select a patient first to load their services and charges.
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3" id="noServicesAlert" style="display: none;">
                             <i class="fas fa-exclamation-triangle"></i> 
-                            No billing items added yet. Click "Add Item" to add charges.
+                            No billable services found for this patient. Patient may not have completed any procedures yet.
                         </div>
                     </div>
                 </div>
@@ -154,52 +159,7 @@
     </div>
 </div>
 
-<!-- Billing Item Template -->
-<template id="billingItemTemplate">
-    <div class="billing-item border rounded p-3 mb-3" style="background-color: #f8f9fa;">
-        <div class="row">
-            <div class="col-md-2">
-                <label class="form-label">Type</label>
-                <select name="billing_items[INDEX][item_type]" class="form-select item-type" required>
-                    <option value="">Select type...</option>
-                    <option value="room">Room Charges</option>
-                    <option value="medicine">Medicine</option>
-                    <option value="laboratory">Laboratory</option>
-                    <option value="professional">Professional Fee</option>
-                    <option value="other">Other Charges</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Description</label>
-                <input type="text" name="billing_items[INDEX][description]" class="form-control" placeholder="Item description" required>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Quantity</label>
-                <input type="number" name="billing_items[INDEX][quantity]" class="form-control quantity" min="0.01" step="0.01" value="1" required>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Unit Price</label>
-                <input type="number" name="billing_items[INDEX][unit_price]" class="form-control unit-price" min="0" step="0.01" required>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Total</label>
-                <input type="text" class="form-control item-total bg-light" readonly>
-            </div>
-            <div class="col-md-1 d-flex align-items-end">
-                <button type="button" class="btn btn-danger btn-sm remove-item" onclick="removeBillingItem(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-        <div class="row mt-2">
-            <div class="col-md-6">
-                <label class="form-label">ICD-10 Code (Optional)</label>
-                <input type="text" name="billing_items[INDEX][icd_code]" class="form-control icd-code" placeholder="Search ICD-10 code...">
-                <div class="icd-suggestions position-relative"></div>
-            </div>
-        </div>
-    </div>
-</template>
+
 
 @endsection
 
@@ -209,76 +169,144 @@ let itemIndex = 0;
 let philhealthMember = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Add first billing item
-    addBillingItem();
-    
     // Patient selection change
-    document.getElementById('patient_id').addEventListener('change', checkPhilhealthStatus);
+    document.getElementById('patient_id').addEventListener('change', function() {
+        const patientId = this.value;
+        if (patientId) {
+            document.getElementById('loadServicesBtn').disabled = false;
+            loadPatientServices();
+            checkPhilhealthStatus();
+        } else {
+            document.getElementById('loadServicesBtn').disabled = true;
+            clearPatientServices();
+        }
+    });
     
     // Discount checkboxes
     document.getElementById('is_senior_citizen').addEventListener('change', calculateTotals);
     document.getElementById('is_pwd').addEventListener('change', calculateTotals);
 });
 
-function addBillingItem() {
-    const template = document.getElementById('billingItemTemplate');
-    const container = document.getElementById('billingItemsContainer');
-    const newItem = template.content.cloneNode(true);
+async function loadPatientServices() {
+    const patientId = document.getElementById('patient_id').value;
+    if (!patientId) return;
     
-    // Replace INDEX with actual index
-    const inputs = newItem.querySelectorAll('input, select');
-    inputs.forEach(input => {
-        if (input.name) {
-            input.name = input.name.replace('INDEX', itemIndex);
+    try {
+        showBillingLoading('Loading patient services...');
+        
+        const response = await fetch(`/billing/patient-services/${patientId}`);
+        const data = await response.json();
+        
+        closeBillingNotification();
+        
+        if (data.services && data.services.length > 0) {
+            displayPatientServices(data.services);
+            document.getElementById('selectPatientAlert').style.display = 'none';
+            document.getElementById('noServicesAlert').style.display = 'none';
+        } else {
+            document.getElementById('selectPatientAlert').style.display = 'none';
+            document.getElementById('noServicesAlert').style.display = 'block';
+            clearPatientServices();
         }
+        
+    } catch (error) {
+        closeBillingNotification();
+        showBillingNotification('error', 'Error', 'Failed to load patient services');
+        console.error('Error loading patient services:', error);
+    }
+}
+
+function displayPatientServices(services) {
+    const container = document.getElementById('patientServicesContainer');
+    container.innerHTML = '';
+    
+    services.forEach((service, index) => {
+        const serviceHtml = `
+            <div class="patient-service mb-3 p-3 border rounded">
+                <input type="hidden" name="billing_items[${index}][item_type]" value="${service.type}">
+                <input type="hidden" name="billing_items[${index}][description]" value="${service.description}">
+                <input type="hidden" name="billing_items[${index}][icd_code]" value="${service.icd_code || ''}">
+                <input type="hidden" name="billing_items[${index}][quantity]" value="${service.quantity}">
+                <input type="hidden" name="billing_items[${index}][unit_price]" class="service-unit-price" value="${service.professional_fee}">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-1">
+                            <i class="fas ${getServiceIcon(service.type)}"></i>
+                            ${service.description}
+                        </h6>
+                        <small class="text-muted">
+                            ${service.type.charAt(0).toUpperCase() + service.type.slice(1)} 
+                            ${service.icd_code ? '(ICD: ' + service.icd_code + ')' : ''}
+                            - Source: ${service.source}
+                        </small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Professional Fee</label>
+                        <input type="number" step="0.01" min="0" 
+                               class="form-control professional-fee-input" 
+                               value="${service.professional_fee}"
+                               onchange="updateServiceFee(this, ${index})">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" value="${service.quantity}" readonly>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Total</label>
+                        <div class="form-control-plaintext fw-bold" id="service-total-${index}">
+                            ₱${(service.professional_fee * service.quantity).toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += serviceHtml;
     });
     
-    container.appendChild(newItem);
-    
-    // Add event listeners
-    const newItemElement = container.lastElementChild;
-    const quantityInput = newItemElement.querySelector('.quantity');
-    const unitPriceInput = newItemElement.querySelector('.unit-price');
-    const icdCodeInput = newItemElement.querySelector('.icd-code');
-    
-    quantityInput.addEventListener('input', calculateItemTotal);
-    unitPriceInput.addEventListener('input', calculateItemTotal);
-    icdCodeInput.addEventListener('input', searchIcdCodes);
-    
-    itemIndex++;
-    updateItemsVisibility();
     calculateTotals();
 }
 
-function removeBillingItem(button) {
-    button.closest('.billing-item').remove();
-    updateItemsVisibility();
-    calculateTotals();
-}
-
-function updateItemsVisibility() {
-    const items = document.querySelectorAll('.billing-item');
-    const noItemsAlert = document.getElementById('noItemsAlert');
-    noItemsAlert.style.display = items.length === 0 ? 'block' : 'none';
-}
-
-function calculateItemTotal(event) {
-    const item = event.target.closest('.billing-item');
-    const quantity = parseFloat(item.querySelector('.quantity').value) || 0;
-    const unitPrice = parseFloat(item.querySelector('.unit-price').value) || 0;
-    const total = quantity * unitPrice;
+function updateServiceFee(input, index) {
+    const newFee = parseFloat(input.value) || 0;
+    const quantity = parseFloat(input.closest('.patient-service').querySelector('input[type="number"][readonly]').value) || 1;
+    const total = newFee * quantity;
     
-    item.querySelector('.item-total').value = '₱' + total.toFixed(2);
+    // Update hidden input
+    input.closest('.patient-service').querySelector('.service-unit-price').value = newFee;
+    
+    // Update total display
+    document.getElementById(`service-total-${index}`).textContent = `₱${total.toFixed(2)}`;
+    
     calculateTotals();
 }
+
+function getServiceIcon(type) {
+    switch(type) {
+        case 'diagnosis': return 'fa-stethoscope';
+        case 'laboratory': return 'fa-vial';
+        case 'medicine': return 'fa-pills';
+        case 'room': return 'fa-bed';
+        default: return 'fa-medical';
+    }
+}
+
+function clearPatientServices() {
+    document.getElementById('patientServicesContainer').innerHTML = '';
+    document.getElementById('selectPatientAlert').style.display = 'block';
+    document.getElementById('noServicesAlert').style.display = 'none';
+    calculateTotals();
+}
+
+
 
 function calculateTotals() {
-    const items = document.querySelectorAll('.billing-item');
+    const services = document.querySelectorAll('.patient-service');
     let subtotal = 0;
     
-    items.forEach(item => {
-        const quantity = parseFloat(item.querySelector('.quantity').value) || 0;
-        const unitPrice = parseFloat(item.querySelector('.unit-price').value) || 0;
+    services.forEach(service => {
+        const quantity = parseFloat(service.querySelector('input[type="number"][readonly]').value) || 0;
+        const unitPrice = parseFloat(service.querySelector('.service-unit-price').value) || 0;
         subtotal += quantity * unitPrice;
     });
     

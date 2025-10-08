@@ -120,6 +120,63 @@ class Patient extends Model
     }
 
     /**
+     * Get the lab orders for this patient
+     */
+    public function labOrders()
+    {
+        return $this->hasMany(LabOrder::class);
+    }
+
+    /**
+     * Get all billable services for this patient
+     */
+    public function getBillableServicesAttribute()
+    {
+        $services = collect();
+        
+        // Add admission diagnosis as a service
+        if ($this->admission_diagnosis) {
+            $icd = \App\Models\Icd10NamePriceRate::where('COL 1', $this->admission_diagnosis)->first();
+            if ($icd) {
+                $services->push([
+                    'type' => 'diagnosis',
+                    'description' => $icd->description ?? 'Admission Diagnosis',
+                    'icd_code' => $this->admission_diagnosis,
+                    'professional_fee' => $icd->professional_fee ?? 0,
+                    'quantity' => 1,
+                    'source' => 'admission'
+                ]);
+            }
+        }
+        
+        // Add completed lab orders
+        foreach ($this->labOrders()->where('status', 'completed')->get() as $lab) {
+            $services->push([
+                'type' => 'laboratory',
+                'description' => $lab->test_requested,
+                'icd_code' => null,
+                'professional_fee' => $lab->price ?? 0,
+                'quantity' => 1,
+                'source' => 'lab_order'
+            ]);
+        }
+        
+        // Add pharmacy requests (dispensed medicines)
+        foreach ($this->pharmacyRequests()->where('status', 'dispensed')->get() as $pharmacy) {
+            $services->push([
+                'type' => 'medicine',
+                'description' => $pharmacy->medicine_name ?? 'Medicine',
+                'icd_code' => null,
+                'professional_fee' => $pharmacy->price ?? 0,
+                'quantity' => $pharmacy->quantity ?? 1,
+                'source' => 'pharmacy'
+            ]);
+        }
+        
+        return $services;
+    }
+
+    /**
      * Get display name for billing
      */
     public function getDisplayNameAttribute()

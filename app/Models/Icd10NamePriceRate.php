@@ -37,6 +37,12 @@ class Icd10NamePriceRate extends Model
     public function getProfessionalFeeAttribute()
     {
         $value = $this->attributes['professional_fee'] ?? $this->attributes['COL 3'] ?? 0;
+        
+        // Clean the value - remove commas and convert to float
+        if (is_string($value)) {
+            $value = str_replace(',', '', $value);
+        }
+        
         return is_numeric($value) ? (float)$value : 0.00;
     }
 
@@ -44,6 +50,12 @@ class Icd10NamePriceRate extends Model
     public function getAdditionalRateAttribute()
     {
         $value = $this->attributes['additional_rate'] ?? $this->attributes['COL 4'] ?? 0;
+        
+        // Clean the value - remove commas and convert to float
+        if (is_string($value)) {
+            $value = str_replace(',', '', $value);
+        }
+        
         return is_numeric($value) ? (float)$value : 0.00;
     }
 
@@ -79,11 +91,16 @@ class Icd10NamePriceRate extends Model
                   ->orderBy('COL 1')
                   ->get()
                   ->map(function($item) {
-                      // Return as a simple object without accessors
+                      // Clean and convert professional fee
+                      $fee = $item->getAttributes()['professional_fee'] ?? 0;
+                      if (is_string($fee)) {
+                          $fee = str_replace(',', '', $fee);
+                      }
+                      
                       return (object)[
                           'icd_code' => $item->getAttributes()['icd_code'],
                           'description' => $item->getAttributes()['description'],
-                          'professional_fee' => (float)($item->getAttributes()['professional_fee'] ?? 0)
+                          'professional_fee' => is_numeric($fee) ? (float)$fee : 0.00
                       ];
                   });
     }
