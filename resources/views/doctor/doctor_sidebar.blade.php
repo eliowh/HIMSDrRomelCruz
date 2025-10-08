@@ -20,12 +20,7 @@
                     <span class="icon">👥</span> <span class="text">Patients</span>
                 </a>
             </li>
-            <li>
-                <a href="/doctor/account"
-                   class="sidebar-btn{{ request()->is('doctor/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
+         
             <li>
                 <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">
                     @csrf

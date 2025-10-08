@@ -288,11 +288,6 @@ class InventoryController extends Controller
         }
     }
 
-    public function account()
-    {
-        return view('Inventory.inventory_account');
-    }
-
     /**
      * Add quantity to an existing stock item or create a new stock entry.
      * Now uses stocks reference data for validation and defaults.

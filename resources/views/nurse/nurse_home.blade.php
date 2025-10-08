@@ -45,7 +45,7 @@
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-icon">�️</div>
+                    <div class="stat-icon">🏠</div>
                     <div class="stat-content">
                         <h3>In Rooms</h3>
                         <p class="stat-number">{{ $admittedPatients }}</p>

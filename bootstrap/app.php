@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'cors' => \App\Http\Middleware\CorsMiddleware::class,
         ]);
         
+        // Trust Railway proxies for HTTPS detection
+        $middleware->trustProxies(at: '*');
+        
         // Add CORS middleware globally
         $middleware->web(prepend: [
             \App\Http\Middleware\CorsMiddleware::class,
