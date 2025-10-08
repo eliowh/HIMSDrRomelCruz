@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.billing')
 
 @section('title', 'Create New Billing')
 
