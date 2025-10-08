@@ -18,35 +18,42 @@ return new class extends Migration
         $patients = DB::table('patients')->limit(3)->get();
         
         foreach ($patients as $patient) {
-            DB::table('lab_orders')->insert([
+            $labOrderData1 = [
                 'patient_id' => $patient->id,
                 'patient_name' => $patient->first_name . ' ' . $patient->last_name,
                 'patient_no' => $patient->patient_no,
                 'test_requested' => 'Complete Blood Count (CBC)',
                 'status' => 'completed',
                 'priority' => 'normal',
-                'price' => 500.00,
                 'requested_by' => 1,
                 'requested_at' => now(),
                 'completed_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
             
-            DB::table('lab_orders')->insert([
+            $labOrderData2 = [
                 'patient_id' => $patient->id,
                 'patient_name' => $patient->first_name . ' ' . $patient->last_name,
                 'patient_no' => $patient->patient_no,
                 'test_requested' => 'Urinalysis',
                 'status' => 'completed',
                 'priority' => 'normal',
-                'price' => 200.00,
                 'requested_by' => 1,
                 'requested_at' => now(),
                 'completed_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+            
+            // Only add price if column exists
+            if (Schema::hasColumn('lab_orders', 'price')) {
+                $labOrderData1['price'] = 500.00;
+                $labOrderData2['price'] = 200.00;
+            }
+            
+            DB::table('lab_orders')->insert($labOrderData1);
+            DB::table('lab_orders')->insert($labOrderData2);
         }
     }
 
