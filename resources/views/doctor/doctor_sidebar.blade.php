@@ -38,12 +38,6 @@
                     <span class="icon">⏰</span> <span class="text">Schedule</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ asset('/doctor/account') }}"
-                   class="sidebar-btn{{ request()->is('doctor/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
         <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">
             @csrf

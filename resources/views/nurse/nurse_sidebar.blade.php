@@ -27,12 +27,6 @@
                 </a>
             </li>
             <li>
-                <a href="/nurse/account"
-                   class="sidebar-btn{{ request()->is('nurse/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
-            <li>
                 <form action="/logout" method="POST" id="nurse-logout-form" class="logout-form">
                     @csrf
                     <button type="button" class="sidebar-btn" onclick="confirmLogout('nurse-logout-form')">

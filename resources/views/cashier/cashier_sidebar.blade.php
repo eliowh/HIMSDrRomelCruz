@@ -32,12 +32,6 @@
                     <span class="icon">📋</span> <span class="text">Transactions</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ asset('/cashier/account') }}"
-                   class="sidebar-btn{{ request()->is('cashier/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
         <form action="/logout" method="POST" id="cashier-logout-form" class="logout-form">
             @csrf

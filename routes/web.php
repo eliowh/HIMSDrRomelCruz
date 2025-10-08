@@ -82,7 +82,7 @@ Route::get('/password-reset-success', [UserController::class, 'passwordResetSucc
 | DOCTOR ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'doctor' role
-| Includes dashboard, appointments, patient management, schedule, and account
+| Includes dashboard, appointments, patient management, and schedule
 |
 */
 
@@ -103,11 +103,6 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     Route::get('/doctor/schedule', function () {
         return view('doctor.doctor_schedule');
     });
-
-    // Account Management
-    Route::get('/doctor/account', function () {
-        return view('doctor.doctor_account');
-    });
 });
 
 /*
@@ -115,7 +110,7 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
 | NURSE ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'nurse' role
-| Includes dashboard, appointments, patient management, schedule, and account
+| Includes dashboard, appointments, patient management, and schedule
 |
 */
 
@@ -142,11 +137,6 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
         return view('nurse.nurse_schedule');
     });
     
-    // Account Management
-    Route::get('/nurse/account', function () {
-        return view('nurse.nurse_account');
-    });
-    Route::post('/account/send-reset-email', [App\Http\Controllers\UserController::class, 'sendAccountResetEmail'])->name('account.sendResetEmail');
     // Doctors autosuggest (used by nurse forms)
     Route::get('/doctors/search', function (\Illuminate\Http\Request $request) {
         $q = $request->query('q', '');
@@ -223,7 +213,7 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
 | LAB TECHNICIAN ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'lab_technician' role
-| Includes dashboard, order management, patient records, and account
+| Includes dashboard, order management, and patient records
 |
 */
 
@@ -244,11 +234,6 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::get('/labtech/patients/{patient}/test-history', [LabOrderController::class, 'getPatientTestHistory'])->name('labtech.patient.testHistory');
     Route::get('/labtech/orders/{orderId}/check-pdf', [LabOrderController::class, 'checkPdf'])->name('labtech.order.checkPdf');
     Route::get('/labtech/orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('labtech.order.viewPdf');
-    
-    // Account Management
-    Route::get('/labtech/account', function () {
-        return view('labtech.labtech_account');
-    });
 });
 
 /*
@@ -270,7 +255,7 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
 | CASHIER ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'cashier' role
-| Includes dashboard, billing, transactions, and account management
+| Includes dashboard, billing, and transactions
 |
 */
 
@@ -289,11 +274,6 @@ Route::middleware(['auth', 'role:cashier'])->group(function () {
     Route::get('/cashier/transactions', function () {
         return view('cashier.cashier_transactions');
     });
-    
-    // Account Management
-    Route::get('/cashier/account', function () {
-        return view('cashier.cashier_account');
-    });
 });
 
 /*
@@ -301,7 +281,7 @@ Route::middleware(['auth', 'role:cashier'])->group(function () {
 | ADMIN ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'admin' role
-| Includes dashboard, user management, room management, patient records, reports, and account
+| Includes dashboard, user management, room management, patient records, and reports
 |
 */
 
@@ -371,11 +351,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/reports/{report}', [ReportController::class, 'destroy'])->name('admin.reports.destroy');
     Route::get('/admin/reports/{report}/export', [ReportController::class, 'export'])->name('admin.reports.export');
     
-    // Account Management
-    Route::get('/admin/account', function () {
-        return view('admin.admin_account');
-    });
-    
     // ICD-10 Data Import
     Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->name('admin.icd10.import');
 });
@@ -411,8 +386,6 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
     // Reports
     Route::get('/inventory/reports', [App\Http\Controllers\InventoryController::class, 'reports'])->name('inventory.reports');
     
-    // Account Management
-    Route::get('/inventory/account', [App\Http\Controllers\InventoryController::class, 'account'])->name('inventory.account');
     Route::post('/inventory/stocks/add-from-order', [App\Http\Controllers\InventoryController::class, 'addStockFromOrder'])->name('inventory.stocks.addFromOrder');
 });
 
@@ -421,7 +394,7 @@ Route::middleware(['auth', 'role:inventory'])->group(function () {
 | PHARMACY ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'pharmacy' role
-| Includes dashboard, order management, and account management
+| Includes dashboard and order management
 |
 */
 
@@ -440,11 +413,6 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
     Route::get('/pharmacy/stocks-reference', [App\Http\Controllers\PharmacyController::class, 'getStocksReference'])->name('pharmacy.stocks.reference');
     Route::get('/pharmacy/stocks-reference/{itemCode}', [App\Http\Controllers\PharmacyController::class, 'getStockByItemCode'])->name('pharmacy.stocks.item');
     
-    // Account Management
-    Route::get('/pharmacy/account', function () {
-        return view('pharmacy.pharmacy_account');
-    })->name('pharmacy.account');
-
     // Nurse-submitted medicine requests (new tab)
     Route::get('/pharmacy/requests', [App\Http\Controllers\PharmacyController::class, 'nurseRequests'])->name('pharmacy.requests');
     Route::get('/pharmacy/requests/{id}', [App\Http\Controllers\PharmacyController::class, 'showRequest'])->name('pharmacy.requests.show');
@@ -467,7 +435,7 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
 | BILLING ROUTES
 |--------------------------------------------------------------------------
 | Routes accessible only by users with 'billing' role
-| Includes dashboard, invoice management, payment processing, and account
+| Includes dashboard, invoice management, and payment processing
 |
 */
 
@@ -486,11 +454,6 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     Route::get('/billing/payments', function () {
         return view('billing.billing_payments');
     })->name('billing.payments');
-    
-    // Account Management
-    Route::get('/billing/account', function () {
-        return view('billing.billing_account');
-    })->name('billing.account');
 });
 
 /*

@@ -32,12 +32,6 @@
                     <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ asset('/labtech/account') }}"
-                   class="sidebar-btn{{ request()->is('labtech/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
         <form action="/logout" method="POST" id="labtech-logout-form" class="logout-form">
             @csrf

@@ -32,12 +32,6 @@
                     <span class="icon">💰</span> <span class="text">Payments</span>
                 </a>
             </li>
-            <li>
-                <a href="/billing/account"
-                   class="sidebar-btn{{ request()->is('billing/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
         <form action="/logout" method="POST" id="billing-logout-form" class="logout-form">
             @csrf

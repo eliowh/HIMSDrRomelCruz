@@ -38,12 +38,6 @@
                     <span class="icon">📦</span> <span class="text">Stocks</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ asset('/pharmacy/account') }}"
-                   class="sidebar-btn{{ request()->is('pharmacy/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
         <form action="/logout" method="POST" id="pharmacy-logout-form" class="logout-form">
             @csrf

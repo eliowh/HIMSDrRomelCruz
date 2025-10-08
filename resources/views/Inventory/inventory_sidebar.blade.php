@@ -15,28 +15,23 @@
     <nav>
         <ul>
             <li>
-                                <a href="/inventory/home" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
-                    <span class="btn-icon">🏠</span> Home
+                <a href="/inventory/home" class="sidebar-btn{{ request()->is('inventory/home') ? ' active' : '' }}">
+                    <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
                 <a href="/inventory/stocks" class="sidebar-btn{{ request()->is('inventory/stocks') ? ' active' : '' }}">
-                    <span class="btn-icon">📦</span> Stocks
+                    <span class="icon">📦</span> <span class="text">Stocks</span>
                 </a>
             </li>
             <li>
                 <a href="/inventory/orders" class="sidebar-btn{{ request()->is('inventory/orders') ? ' active' : '' }}">
-                    <span class="btn-icon">�</span> Orders
+                    <span class="icon">📝</span> <span class="text">Orders</span>
                 </a>
             </li>
             <li>
                 <a href="/inventory/reports" class="sidebar-btn{{ request()->is('inventory/reports') ? ' active' : '' }}">
-                    <span class="btn-icon">�</span> Reports
-                </a>
-            </li>
-            <li>
-                <a href="/inventory/account" class="sidebar-btn{{ request()->is('inventory/account') ? ' active' : '' }}">
-                    <span class="btn-icon">⚙️</span> Account
+                    <span class="icon">📊</span> <span class="text">Reports</span>
                 </a>
             </li>
         </ul>
