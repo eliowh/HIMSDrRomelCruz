@@ -381,7 +381,7 @@ function loadMedicineHistory(patientId) {
     showMedicineHistoryLoading();
     
     // Fetch complete medicine history
-    fetch(`/api/patients/${patientId}/medicines`)
+    fetch(`/doctor/api/patients/${patientId}/medicines`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);

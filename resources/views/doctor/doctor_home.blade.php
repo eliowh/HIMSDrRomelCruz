@@ -1,23 +1,18 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard</title>
-    <link rel="stylesheet" href="{{asset('css/doctorcss/doctor.css')}}">
-</head>
-<body>
-    @php
-        $doctorName = auth()->user()->name ?? 'Doctor';
-    @endphp
-    @include('doctor.doctor_header')
-    <div class="doctor-layout">
-        @include('doctor.doctor_sidebar')
-        <div class="main-content">
-            <h2>Welcome, Dr. {{ $doctorName }}!</h2>
-            
-            <!-- Dashboard Statistics Cards -->
-            <div class="dashboard-stats">
-                <div class="stat-card">
+@extends('layouts.doctor')
+
+@section('title','Doctor Dashboard')
+
+@section('content')
+@php
+    $doctorName = auth()->user()->name ?? 'Doctor';
+@endphp
+
+<div style="padding: 20px;">
+    <h2>Welcome, Dr. {{ $doctorName }}!</h2>
+    
+    <!-- Dashboard Statistics Cards -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
                     <div class="stat-icon">👥</div>
                     <div class="stat-content">
                         <h3>Today's Patients</h3>
@@ -333,5 +328,4 @@
         setInterval(updateDashboardTime, 60000);
     </script>
 
-</body>
-</html>
+@endsection

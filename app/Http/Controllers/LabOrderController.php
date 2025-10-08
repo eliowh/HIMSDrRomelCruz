@@ -8,6 +8,8 @@ use App\Models\Patient;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class LabOrderController extends Controller
 {
@@ -42,7 +44,8 @@ class LabOrderController extends Controller
             'patient_id' => 'required|exists:patients,id',
             'test_requested' => 'required|string|max:500',
             'notes' => 'nullable|string|max:1000',
-            'priority' => 'required|in:normal,urgent,stat'
+            'priority' => 'required|in:normal,urgent,stat',
+            'test_price' => 'nullable|numeric|min:0'
         ]);
 
         $patient = Patient::findOrFail($request->patient_id);
@@ -55,6 +58,7 @@ class LabOrderController extends Controller
             'test_requested' => $request->test_requested,
             'notes' => $request->notes,
             'priority' => $request->priority,
+            'price' => $request->test_price ?? 0.00,
             'requested_at' => Carbon::now(),
             'status' => 'pending'
         ]);
@@ -169,9 +173,22 @@ class LabOrderController extends Controller
                 ->orderBy('requested_at', 'desc')
                 ->get();
             
+            // Add price information to each test (use stored price or fallback to lookup)
+            $testHistoryWithPrices = $testHistory->map(function($test) {
+                $testData = $test->toArray();
+                
+                // Use stored price if available, otherwise try to find from pricing tables
+                $price = $test->price ?? $this->findTestPrice($test->test_requested);
+                $testData['price'] = $price;
+                $testData['procedure_price'] = $price;
+                $testData['cost'] = $price;
+                
+                return $testData;
+            });
+            
             return response()->json([
                 'success' => true,
-                'tests' => $testHistory
+                'tests' => $testHistoryWithPrices
             ]);
         } catch (\Exception $e) {
             \Log::error('Error fetching patient test history: ' . $e->getMessage());
@@ -180,6 +197,76 @@ class LabOrderController extends Controller
                 'message' => 'Error retrieving test history: ' . $e->getMessage()
             ], 500);
         }
+    }
+    
+    /**
+     * Find price for a test procedure from pricing tables
+     *
+     * @param string $testName
+     * @return float
+     */
+    private function findTestPrice($testName)
+    {
+        if (!$testName) {
+            return 0.0;
+        }
+        
+        // List of pricing tables to search
+        $pricingTables = [
+            'laboratory_prices',
+            'xray_prices', 
+            'ultrasound_prices'
+        ];
+        
+        foreach ($pricingTables as $table) {
+            try {
+                // Check if table exists
+                if (!Schema::hasTable($table)) {
+                    continue;
+                }
+                
+                // Get table columns to determine the correct column names
+                $columns = Schema::getColumnListing($table);
+                
+                // Find name and price columns
+                $nameColumns = ['procedure_name', 'test_name', 'name', 'procedure', 'test'];
+                $priceColumns = ['price', 'procedure_price', 'test_price', 'cost'];
+                
+                $nameColumn = null;
+                $priceColumn = null;
+                
+                foreach ($nameColumns as $col) {
+                    if (in_array($col, $columns)) {
+                        $nameColumn = $col;
+                        break;
+                    }
+                }
+                
+                foreach ($priceColumns as $col) {
+                    if (in_array($col, $columns)) {
+                        $priceColumn = $col;
+                        break;
+                    }
+                }
+                
+                // If we found both columns, search for the test
+                if ($nameColumn && $priceColumn) {
+                    $result = DB::table($table)
+                        ->where($nameColumn, 'LIKE', "%{$testName}%")
+                        ->first();
+                    
+                    if ($result && isset($result->{$priceColumn})) {
+                        return (float) $result->{$priceColumn};
+                    }
+                }
+                
+            } catch (\Exception $e) {
+                \Log::warning("Error searching price in table {$table}: " . $e->getMessage());
+                continue;
+            }
+        }
+        
+        return 0.0; // Default price if not found
     }
 
     /**

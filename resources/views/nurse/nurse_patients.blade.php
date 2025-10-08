@@ -151,6 +151,7 @@
 @include('nurse.modals.medicine_request_modal')
 @include('nurse.modals.edit_patient_modal')
 @include('nurse.modals.medicine_history_modal')
+@include('nurse.modals.lab_results_modal')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -297,48 +298,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Medicines loaded:', data);
                 
                 if (data.success && data.medicines && data.medicines.length > 0) {
-                    // Limit display to first 2 medicines
-                    const displayMedicines = data.medicines.slice(0, 2);
-                    const hasMore = data.medicines.length > 2;
-                    
-                    // Display medicines
-                    medicinesDiv.innerHTML = displayMedicines.map(med => {
-                        const medicineName = med.medicine_name || 'Unknown Medicine';
-                        const quantity = med.quantity || 0;
-                        const unitPrice = med.unit_price ? `₱${parseFloat(med.unit_price).toFixed(2)}` : 'No price';
-                        const totalPrice = med.total_price ? `₱${parseFloat(med.total_price).toFixed(2)}` : 'No total';
-                        const dispensedAt = med.dispensed_at ? formatDateTime(med.dispensed_at) : 'Unknown date';
-                        const dispensedBy = med.dispensed_by ? formatName(med.dispensed_by) : 'Unknown';
-                        const notes = med.notes ? `<div class="medicine-notes"><strong>Notes:</strong> ${med.notes}</div>` : '';
-                        
-                        return `
-                            <div class="medicine-item">
-                                <div class="medicine-header">
-                                    <strong>${medicineName}</strong>
-                                    <span class="medicine-quantity">${quantity} units</span>
-                                </div>
-                                <div class="medicine-details">
-                                    <div class="medicine-price">Unit: ${unitPrice} | Total: ${totalPrice}</div>
-                                    <div class="medicine-meta">Dispensed: ${dispensedAt} by ${dispensedBy}</div>
-                                    ${notes}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                    
-                    // Add "View Medicine Summary" button if there are more than 2 medicines
-                    if (hasMore) {
-                        const patientName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
-                        const patientNo = patient.patient_no || '';
-                        medicinesDiv.innerHTML += `
-                            <div class="view-more-medicines">
-                                <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openMedicineHistoryModal(${patientId}, '${patientName}', '${patientNo}')">
-                                    <i class="fas fa-pills"></i> 
-                                    View Medicine Summary (${data.medicines.length} total)
-                                </button>
-                            </div>
-                        `;
-                    }
+                    // Only show "View Medicine Summary" button, no individual medicine display
+                    const patientName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
+                    const patientNo = patient.patient_no || '';
+                    medicinesDiv.innerHTML = `
+                        <div class="view-more-medicines">
+                            <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openMedicineHistoryModal(${patientId}, '${patientName}', '${patientNo}')">
+                                <i class="fas fa-pills"></i> 
+                                View Medicine Summary (${data.medicines.length} total)
+                            </button>
+                        </div>
+                    `;
                     
                     medicineSection.style.display = 'block';
                 } else {
@@ -388,48 +358,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Lab results loaded:', data);
                 
                 if (data.success && data.tests && data.tests.length > 0) {
-                    // Display lab results
-                    labResultsDiv.innerHTML = data.tests.map(result => {
-                        const testName = result.test_requested || 'Unknown Test';
-                        const status = result.status || 'unknown';
-                        const priority = result.priority || 'medium';
-                        const requestedBy = result.requestedBy ? formatName(result.requestedBy.name) : 'Unknown';
-                        const requestedAt = result.requested_at ? formatDateTime(result.requested_at) : 'Unknown date';
-                        const completedAt = result.completed_at ? formatDateTime(result.completed_at) : null;
-                        const labTech = result.labTech ? formatName(result.labTech.name) : null;
-                        const results = result.results || '';
-                        const hasPdf = result.results_pdf_path ? true : false;
-                        
-                        const statusClass = status.toLowerCase().replace('_', '-');
-                        const priorityClass = priority.toLowerCase();
-                        
-                        let statusButtons = '';
-                        if (hasPdf && status === 'completed') {
-                            statusButtons = `
-                                <button type="button" class="view-pdf-btn" onclick="viewLabResultPdf(${result.id})">
-                                    <i class="fas fa-file-pdf"></i> View PDF
-                                </button>
-                            `;
-                        }
-                        
-                        return `
-                            <div class="lab-result-item">
-                                <div class="lab-result-header">
-                                    <strong>${testName}</strong>
-                                    <div style="display: flex; gap: 6px; align-items: center;">
-                                        <span class="lab-result-status ${statusClass}">${status.replace('_', ' ')}</span>
-                                        ${statusButtons}
-                                    </div>
-                                </div>
-                                <div class="lab-result-details">
-                                    <div class="lab-result-priority ${priorityClass}">Priority: ${priority.toUpperCase()}</div>
-                                    <div class="lab-result-meta">Requested: ${requestedAt} by ${requestedBy}</div>
-                                    ${completedAt ? `<div class="lab-result-meta">Completed: ${completedAt}${labTech ? ` by ${labTech}` : ''}</div>` : ''}
-                                    ${results ? `<div style="margin-top: 6px; padding: 6px 8px; background: #e9ecef; border-radius: 4px; font-size: 11px;"><strong>Results:</strong> ${results}</div>` : ''}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    // Only show "View Lab Results Summary" button, no individual lab result display
+                    labResultsDiv.innerHTML = `
+                        <div class="view-more-medicines">
+                            <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openLabResultsModal(${patientId})">
+                                <i class="fas fa-flask"></i> 
+                                View Lab Results Summary (${data.tests.length} total)
+                            </button>
+                        </div>
+                    `;
                     
                     labResultsSection.style.display = 'block';
                 } else {
@@ -795,6 +732,13 @@ function openLabRequestModal(patientId, patientName, patientNo) {
     // Reset form
     document.getElementById('labRequestForm').reset();
     document.getElementById('requestPatientId').value = patientId; // Reset this after form reset
+    
+    // Reset price display
+    if (document.getElementById('testPrice')) {
+        document.getElementById('testPrice').textContent = '0.00';
+        document.getElementById('totalPrice').textContent = '0.00';
+        document.getElementById('testPriceValue').value = '0';
+    }
     
     // Ensure additional tests textarea is disabled by default
     const additionalTestsCheckbox = document.getElementById('enableAdditionalTests');

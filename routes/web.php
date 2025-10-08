@@ -96,13 +96,28 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
         return view('doctor.doctor_appointments');
     });
 
-    // Patient Management
-    Route::get('/doctor/patients', [App\Http\Controllers\DoctorController::class, 'patients'])->name('doctor.patients');
+    // Patient Management - same database access as nurses
+    Route::get('/doctor/patients', [PatientController::class, 'doctorIndex'])->name('doctor.patients');
     Route::get('/doctor/patients/{id}', [App\Http\Controllers\DoctorController::class, 'showPatient'])->name('doctor.patients.show');
+    Route::put('/doctor/patients/{patient_no}', [PatientController::class, 'update'])->name('doctor.patients.update');
+
+    // Allow doctors to view patient medicines (read-only access)
+    Route::get('/doctor/api/patients/{patientId}/medicines', [PharmacyController::class, 'getPatientMedicinesApi'])->name('api.patient.medicines.doctor');
+    
+    // Allow doctors to view patient lab results (read-only access)
+    Route::get('/doctor/api/patients/{patientId}/lab-results', [LabOrderController::class, 'getPatientTestHistory'])->name('api.patient.lab-results.doctor');
+    
+    // Allow doctors to view lab result PDFs
+    Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
 
     // Schedule
     Route::get('/doctor/schedule', function () {
         return view('doctor.doctor_schedule');
+    });
+    
+    // Test route
+    Route::get('/doctor/test', function () {
+        return view('doctor.test');
     });
 });
 
@@ -229,6 +244,8 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::post('/labtech/orders/update-status/{id}', [LabOrderController::class, 'updateStatus'])->name('labtech.orders.updateStatus');
     Route::get('/labtech/orders/view/{id}', [LabOrderController::class, 'viewOrder'])->name('labtech.orders.view');
     Route::get('/labtech/orders/download-pdf/{id}', [LabOrderController::class, 'downloadPdf'])->name('labtech.orders.downloadPdf');
+    Route::get('/labtech/orders/{id}/details', [LabOrderController::class, 'getOrderDetails'])->name('labtech.orders.details');
+    Route::post('/labtech/orders/complete-with-pdf/{id}', [LabOrderController::class, 'completeWithPdf'])->name('labtech.orders.completeWithPdf');
     
     // Patient Management
     Route::get('/labtech/patients', [PatientController::class, 'labtechPatients'])->name('labtech.patients');

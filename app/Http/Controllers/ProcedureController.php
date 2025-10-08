@@ -119,17 +119,67 @@ class ProcedureController extends Controller
 
             $columns = Schema::getColumnListing($table);
             
-            // Use first column as the procedure name
-            $nameColumn = $columns[0] ?? 'name';
+            // For these specific pricing tables, we know the structure:
+            // COL 1 = procedure name, COL 2 = price
+            $nameColumn = 'COL 1';
+            $priceColumn = 'COL 2';
+            
+            // Check if the expected columns exist
+            if (!in_array($nameColumn, $columns) || !in_array($priceColumn, $columns)) {
+                // Fallback to dynamic detection if standard columns don't exist
+                $nameColumns = ['procedure_name', 'test_name', 'name', 'procedure', 'test'];
+                $priceColumns = ['price', 'procedure_price', 'test_price', 'cost'];
+                
+                $nameColumn = null;
+                $priceColumn = null;
+                
+                foreach ($nameColumns as $col) {
+                    if (in_array($col, $columns)) {
+                        $nameColumn = $col;
+                        break;
+                    }
+                }
+                
+                foreach ($priceColumns as $col) {
+                    if (in_array($col, $columns)) {
+                        $priceColumn = $col;
+                        break;
+                    }
+                }
+                
+                // Default to first column if no specific name column found
+                if (!$nameColumn) {
+                    $nameColumn = $columns[0] ?? 'name';
+                }
+            }
 
-            $rows = DB::table($table)
-                ->select(DB::raw("`{$nameColumn}` as name"))
+            $query = DB::table($table)
+                ->select(
+                    DB::raw("`{$nameColumn}` as name"),
+                    DB::raw("`{$priceColumn}` as price")
+                )
                 ->where($nameColumn, '!=', 'Laboratory')  // Skip header rows
                 ->where($nameColumn, '!=', 'Ultrasound')
                 ->where($nameColumn, '!=', 'X-ray')
                 ->where($nameColumn, '!=', 'Price')
-                ->orderBy($nameColumn)
-                ->get();
+                ->whereNotNull($nameColumn)
+                ->where($nameColumn, '!=', '')
+                ->orderBy($nameColumn);
+
+            $rows = $query->get();
+
+            // Clean and format the price data
+            $rows = $rows->map(function($row) {
+                $item = (array) $row;
+                
+                // Clean price field - remove commas and convert to float
+                $price = isset($item['price']) ? $item['price'] : '0';
+                $price = str_replace(',', '', $price); // Remove commas
+                $price = preg_replace('/[^0-9.]/', '', $price); // Remove non-numeric characters except decimal
+                $item['price'] = (float) $price;
+                
+                return $item;
+            });
 
             return response()->json($rows);
 
