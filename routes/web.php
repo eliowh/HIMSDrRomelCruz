@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BillingController;
 use App\Models\User;
 use App\Notifications\ResetPasswordMail;
 use App\Http\Controllers\LabtechController;
@@ -445,12 +446,19 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
         return view('billing.billing_dashboard');
     })->name('billing.dashboard');
     
-    // Invoice Management
+    // Comprehensive Billing Management
+    Route::resource('billings', App\Http\Controllers\BillingController::class);
+    
+    // AJAX endpoints for billing
+    Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
+    Route::get('/billing/icd-rates', [App\Http\Controllers\BillingController::class, 'getIcdRates'])->name('billing.icd.rates');
+    Route::get('/billing/{billing}/receipt', [App\Http\Controllers\BillingController::class, 'exportReceipt'])->name('billing.export.receipt');
+    
+    // Legacy routes (keep for backward compatibility)
     Route::get('/billing/invoices', function () {
         return view('billing.billing_invoices');
     })->name('billing.invoices');
     
-    // Payment Processing
     Route::get('/billing/payments', function () {
         return view('billing.billing_payments');
     })->name('billing.payments');

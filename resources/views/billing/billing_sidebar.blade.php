@@ -21,15 +21,27 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('billings.index') }}"
+                   class="sidebar-btn{{ request()->routeIs('billings.*') ? ' active' : '' }}">
+                    <span class="icon">📋</span> <span class="text">Patient Billing</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('billings.create') }}"
+                   class="sidebar-btn{{ request()->routeIs('billings.create') ? ' active' : '' }}">
+                    <span class="icon">➕</span> <span class="text">New Billing</span>
+                </a>
+            </li>
+            <li>
                 <a href="/billing/invoices"
                    class="sidebar-btn{{ request()->is('billing/invoices') ? ' active' : '' }}">
-                    <span class="icon">💳</span> <span class="text">Invoices</span>
+                    <span class="icon">💳</span> <span class="text">Legacy Invoices</span>
                 </a>
             </li>
             <li>
                 <a href="/billing/payments"
                    class="sidebar-btn{{ request()->is('billing/payments') ? ' active' : '' }}">
-                    <span class="icon">💰</span> <span class="text">Payments</span>
+                    <span class="icon">💰</span> <span class="text">Legacy Payments</span>
                 </a>
             </li>
         </ul>
