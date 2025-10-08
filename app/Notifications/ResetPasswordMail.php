@@ -28,12 +28,20 @@ class ResetPasswordMail extends Notification
 
     public function toMail($notifiable)
     {
-        return (new MailMessage)
+        $mail = (new MailMessage)
+            ->from(config('mail.from.address'), config('mail.from.name'))
             ->subject('Reset Password')
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('We received a request to reset your password. If you did not make this request, please ignore this email.')
             ->action('Reset Password', route('reset-password', ['token' => $this->token]))
-            ->line('Best regards, Dr. Romel Cruz Hospital');
+            ->line('Best regards, ' . config('app.name'));
+        
+        // Add admin test email as BCC for testing purposes
+        if (env('ADMIN_TEST_EMAIL')) {
+            $mail->bcc(env('ADMIN_TEST_EMAIL'));
+        }
+        
+        return $mail;
     }
 }
 
