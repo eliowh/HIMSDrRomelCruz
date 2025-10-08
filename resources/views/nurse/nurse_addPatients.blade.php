@@ -312,6 +312,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(e => console.error('ICD fetch error', e));
         }
         
+        // Add dynamic search functionality on input
+        input.addEventListener('input', () => {
+            icdIsValid = false;
+            clearTimeout(timer);
+            const val = input.value.trim();
+            if (!val) { 
+                clearSuggestions(); 
+                hideError(); 
+                if (descField) descField.value = '';
+                return; 
+            }
+            
+            timer = setTimeout(() => {
+                fetch('/icd10/search?q=' + encodeURIComponent(val))
+                    .then(async r => {
+                        const ct = (r.headers.get('content-type') || '').toLowerCase();
+                        const text = await r.text();
+                        if (ct.includes('application/json')) {
+                            try {
+                                const items = JSON.parse(text);
+                                renderSuggestions(items); // Show filtered search results
+                            } catch(e) { 
+                                console.error('ICD parse error', e); 
+                            }
+                        }
+                    })
+                    .catch(e => console.error('ICD fetch error', e));
+            }, 300); // 300ms debounce delay
+        });
+        
         input.addEventListener('focus', () => {
             window.isModalOpen = true;
             window.isDropdownOpen = true;
