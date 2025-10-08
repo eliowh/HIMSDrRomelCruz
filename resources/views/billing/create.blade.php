@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-plus-circle text-primary"></i> Create New Billing</h2>
-                <a href="{{ route('billing.index') }}" class="btn btn-secondary">
+                <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Billings
                 </a>
             </div>
@@ -144,7 +144,7 @@
 
                 <!-- Notes -->
                 <div class="card shadow mb-4">
-                    <div class="card-header">
+                    <div class="card-header bg-secondary text-white">
                         <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Notes (Optional)</h6>
                     </div>
                     <div class="card-body">
@@ -154,7 +154,7 @@
 
                 <!-- Submit Button -->
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ route('billing.index') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Create Billing
                     </button>
@@ -353,6 +353,11 @@ function setupPatientSearch() {
     const dropdown = document.getElementById('patient_dropdown');
     let searchTimeout;
 
+    if (!searchInput) {
+        console.error('Patient search input not found');
+        return;
+    }
+
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const query = this.value.trim();
@@ -395,8 +400,8 @@ async function searchPatients(query) {
 function displayPatientDropdown(patients) {
     const dropdown = document.getElementById('patient_dropdown');
     
-    if (patients.length === 0) {
-        dropdown.innerHTML = '<div class="dropdown-item-text">No patients found</div>';
+    if (!patients || patients.length === 0) {
+        dropdown.innerHTML = '<div class="dropdown-item-text text-muted p-2">No patients found</div>';
         dropdown.style.display = 'block';
         return;
     }
@@ -406,6 +411,7 @@ function displayPatientDropdown(patients) {
         const item = document.createElement('a');
         item.className = 'dropdown-item';
         item.href = '#';
+        item.style.cursor = 'pointer';
         item.textContent = patient.text;
         item.addEventListener('click', function(e) {
             e.preventDefault();
@@ -708,3 +714,26 @@ function showBillingNotification(type, title, message) {
 </script>
 
 @endpush
+
+@section('styles')
+<style>
+/* Billing Card & Table Enhancements */
+.card.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Card header color consistency */
+.card-header.bg-primary {
+    background-color: #0d6efd !important;
+}
+.card-header.bg-success {
+    background-color: #198754 !important;
+}
+.card-header.bg-info {
+    background-color: #0dcaf0 !important;
+}
+.card-header.bg-secondary {
+    background-color: #6c757d !important;
+}
+</style>
+@endsection

@@ -41,6 +41,7 @@ class BillingController extends Controller
             'billing_items.*.description' => 'required|string',
             'billing_items.*.quantity' => 'required|numeric|min:0.01',
             'billing_items.*.unit_price' => 'required|numeric|min:0',
+            'billing_items.*.case_rate' => 'nullable|numeric|min:0',
             'billing_items.*.icd_code' => 'nullable|string'
         ]);
 
@@ -65,7 +66,15 @@ class BillingController extends Controller
             $otherCharges = 0;
             
             foreach ($request->billing_items as $item) {
-                $itemTotal = $item['quantity'] * $item['unit_price'];
+                // For professional items, add both case rate and professional fee
+                if ($item['item_type'] === 'professional') {
+                    $caseRate = (float)($item['case_rate'] ?? 0);
+                    $professionalFee = (float)($item['unit_price'] ?? 0);
+                    $itemTotal = $item['quantity'] * ($caseRate + $professionalFee);
+                } else {
+                    $itemTotal = $item['quantity'] * $item['unit_price'];
+                }
+                
                 $totalAmount += $itemTotal;
                 
                 switch ($item['item_type']) {
@@ -108,17 +117,31 @@ class BillingController extends Controller
             
             // Create billing items
             foreach ($request->billing_items as $item) {
+                // Calculate correct total amount based on item type
+                if ($item['item_type'] === 'professional') {
+                    $caseRate = (float)($item['case_rate'] ?? 0);
+                    $professionalFee = (float)($item['unit_price'] ?? 0);
+                    $itemTotalAmount = $item['quantity'] * ($caseRate + $professionalFee);
+                } else {
+                    $itemTotalAmount = $item['quantity'] * $item['unit_price'];
+                }
+                
                 BillingItem::create([
                     'billing_id' => $billing->id,
                     'item_type' => $item['item_type'],
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'total_amount' => $item['quantity'] * $item['unit_price'],
+                    'case_rate' => $item['case_rate'] ?? null,
+                    'total_amount' => $itemTotalAmount,
                     'icd_code' => $item['icd_code'] ?? null,
                     'date_charged' => Carbon::now()
                 ]);
             }
+            
+            // Refresh the billing model to load the newly created items
+            $billing->refresh();
+            $billing->load('billingItems');
             
             // Calculate deductions and discounts
             $philhealthDeduction = $billing->calculatePhilhealthDeduction();
@@ -145,7 +168,7 @@ class BillingController extends Controller
 
     public function show(Billing $billing)
     {
-        $billing->load(['patient', 'billingItems.icd10PriceRate', 'createdBy']);
+        $billing->load(['patient', 'billingItems', 'createdBy']);
         
         return view('billing.show', compact('billing'));
     }
@@ -272,21 +295,10 @@ class BillingController extends Controller
      */
     public function getPatientServices(Request $request)
     {
-        \Log::info('Getting patient services for patient ID: ' . $request->patient_id);
-        
         try {
             $patient = Patient::with(['labOrders', 'pharmacyRequests'])->findOrFail($request->patient_id);
             
-            \Log::info('Patient found: ' . $patient->display_name);
-            \Log::info('Admission diagnosis: ' . $patient->admission_diagnosis);
-            \Log::info('Lab orders count: ' . $patient->labOrders->count());
-            
             $billableServices = $patient->billable_services;
-            \Log::info('Billable services count: ' . count($billableServices));
-            
-            if (count($billableServices) > 0) {
-                \Log::info('First service: ' . json_encode($billableServices[0]));
-            }
             
             return response()->json([
                 'patient' => [
@@ -298,7 +310,6 @@ class BillingController extends Controller
                 'services' => $billableServices
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error getting patient services: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

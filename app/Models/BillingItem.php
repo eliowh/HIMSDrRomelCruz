@@ -17,17 +17,18 @@ class BillingItem extends Model
         'description',
         'quantity',
         'unit_price',
-        'total_price',
+        'total_amount',
         'case_rate',
-        'service_date',
+        'date_charged',
         'icd_code'
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
-        'total_price' => 'decimal:2',
+        'total_amount' => 'decimal:2',
         'case_rate' => 'decimal:2',
+        'date_charged' => 'datetime',
         'service_date' => 'date'
     ];
 

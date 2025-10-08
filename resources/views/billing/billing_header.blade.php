@@ -1,6 +1,6 @@
-<header class="billing-header">
+<div class="billing-header">
     <div class="header-container">
-        <h1 class="hospital-name">Romel Cruz Hospital</h1>
-        <span class="billing-name">{{ auth()->user()->name ?? 'Billing' }}</span>
+        <div class="hospital-name">Romel Cruz Hospital</div>
+        <div class="billing-name">{{ auth()->user()->name ?? 'Billing' }}</div>
     </div>
-</header>
+</div>

@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing Receipt - {{ $billing->billing_number }}</title>
     <style>
         body {
@@ -294,23 +296,23 @@
         <table class="summary-table" style="width: 100%; margin-bottom: 0;">
             <tr>
                 <td class="label">Room Charges:</td>
-                <td class="amount">₱{{ number_format($billing->room_charges, 2) }}</td>
+                <td class="amount">PHP {{ number_format($billing->room_charges, 2) }}</td>
             </tr>
             <tr>
                 <td class="label">Professional Fees:</td>
-                <td class="amount">₱{{ number_format($billing->professional_fees, 2) }}</td>
+                <td class="amount">PHP {{ number_format($billing->professional_fees, 2) }}</td>
             </tr>
             <tr>
                 <td class="label">Medicine Charges:</td>
-                <td class="amount">₱{{ number_format($billing->medicine_charges, 2) }}</td>
+                <td class="amount">PHP {{ number_format($billing->medicine_charges, 2) }}</td>
             </tr>
             <tr>
                 <td class="label">Laboratory Charges:</td>
-                <td class="amount">₱{{ number_format($billing->lab_charges, 2) }}</td>
+                <td class="amount">PHP {{ number_format($billing->lab_charges, 2) }}</td>
             </tr>
             <tr>
                 <td class="label">Other Charges:</td>
-                <td class="amount">₱{{ number_format($billing->other_charges, 2) }}</td>
+                <td class="amount">PHP {{ number_format($billing->other_charges, 2) }}</td>
             </tr>
         </table>
     </div>
@@ -346,8 +348,8 @@
                         @endif
                     </td>
                     <td class="text-center">{{ $item->quantity }}</td>
-                    <td class="text-right">₱{{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right"><strong>₱{{ number_format($item->total_amount, 2) }}</strong></td>
+                    <td class="text-right">PHP {{ number_format($item->unit_price, 2) }}</td>
+                    <td class="text-right"><strong>PHP {{ number_format($item->total_amount, 2) }}</strong></td>
                 </tr>
                 @endforeach
             </tbody>
@@ -361,13 +363,13 @@
         <table class="summary-table">
             <tr>
                 <td class="label">Subtotal (Gross Amount):</td>
-                <td class="amount">₱{{ number_format($billing->total_amount, 2) }}</td>
+                <td class="amount">PHP {{ number_format($billing->total_amount, 2) }}</td>
             </tr>
             
             @if($billing->is_philhealth_member && $billing->philhealth_deduction > 0)
             <tr style="color: #28a745;">
                 <td class="label">Less: PhilHealth Coverage:</td>
-                <td class="amount">-₱{{ number_format($billing->philhealth_deduction, 2) }}</td>
+                <td class="amount">-PHP {{ number_format($billing->philhealth_deduction, 2) }}</td>
             </tr>
             @endif
             
@@ -383,13 +385,13 @@
                         PWD Discount (20%):
                     @endif
                 </td>
-                <td class="amount">-₱{{ number_format($billing->senior_pwd_discount, 2) }}</td>
+                <td class="amount">-PHP {{ number_format($billing->senior_pwd_discount, 2) }}</td>
             </tr>
             @endif
             
             <tr class="total-row" style="background-color: #f8f9fa;">
                 <td class="label">NET AMOUNT DUE:</td>
-                <td class="amount" style="color: #2c5aa0;">₱{{ number_format($billing->net_amount, 2) }}</td>
+                <td class="amount" style="color: #2c5aa0;">PHP {{ number_format($billing->net_amount, 2) }}</td>
             </tr>
         </table>
         
@@ -397,7 +399,7 @@
         <div class="savings-section">
             <div class="savings-title">💰 Patient Savings Summary</div>
             <div style="font-size: 11px;">
-                Total Savings: <strong>₱{{ number_format($billing->philhealth_deduction + $billing->senior_pwd_discount, 2) }}</strong><br>
+                Total Savings: <strong>PHP {{ number_format($billing->philhealth_deduction + $billing->senior_pwd_discount, 2) }}</strong><br>
                 Percentage Saved: <strong>{{ number_format((($billing->philhealth_deduction + $billing->senior_pwd_discount) / $billing->total_amount) * 100, 1) }}%</strong> of total charges
             </div>
         </div>

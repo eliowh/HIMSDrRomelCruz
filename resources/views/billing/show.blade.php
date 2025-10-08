@@ -9,7 +9,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-file-invoice text-primary"></i> Billing Details</h2>
                 <div class="btn-group">
-                    <a href="{{ route('billing.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Billings
                     </a>
                     <a href="{{ route('billing.edit', $billing) }}" class="btn btn-warning">
@@ -125,16 +125,16 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
+                                <table class="table table-hover table-striped">
+                                    <thead class="table-success">
                                         <tr>
-                                            <th>Type</th>
-                                            <th>Description</th>
-                                            <th>ICD-10</th>
-                                            <th>Qty</th>
-                                            <th>Unit Price</th>
-                                            <th>Total</th>
-                                            <th>Date Charged</th>
+                                            <th class="text-white">Type</th>
+                                            <th class="text-white">Description</th>
+                                            <th class="text-white">ICD-10</th>
+                                            <th class="text-white">Qty</th>
+                                            <th class="text-white">Unit Price</th>
+                                            <th class="text-white">Total</th>
+                                            <th class="text-white">Date Charged</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -192,9 +192,25 @@
                                     <div class="col">Room Charges:</div>
                                     <div class="col-auto">₱{{ number_format($billing->room_charges, 2) }}</div>
                                 </div>
+                                @php
+                                    $caseRateTotal = $billing->billingItems->where('item_type', 'professional')->sum('case_rate');
+                                    $professionalFeeTotal = $billing->billingItems->where('item_type', 'professional')->sum('unit_price');
+                                @endphp
+                                @if($caseRateTotal > 0)
                                 <div class="row mb-2">
-                                    <div class="col">Professional Fees:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->professional_fees, 2) }}</div>
+                                    <div class="col ps-3">Case Rate:</div>
+                                    <div class="col-auto text-success">₱{{ number_format($caseRateTotal, 2) }}</div>
+                                </div>
+                                @endif
+                                @if($professionalFeeTotal > 0)
+                                <div class="row mb-2">
+                                    <div class="col ps-3">Professional Fee:</div>
+                                    <div class="col-auto text-primary">₱{{ number_format($professionalFeeTotal, 2) }}</div>
+                                </div>
+                                @endif
+                                <div class="row mb-2">
+                                    <div class="col">Professional Fees Total:</div>
+                                    <div class="col-auto fw-bold">₱{{ number_format($billing->professional_fees, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Medicine Charges:</div>
@@ -264,7 +280,7 @@
 
                     <!-- Quick Actions -->
                     <div class="card shadow">
-                        <div class="card-header">
+                        <div class="card-header bg-warning text-dark">
                             <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
                         </div>
                         <div class="card-body">

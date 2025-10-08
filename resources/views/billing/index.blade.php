@@ -33,18 +33,18 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-dark">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-primary">
                                 <tr>
-                                    <th>Billing #</th>
-                                    <th>Patient</th>
-                                    <th>Total Amount</th>
-                                    <th>PhilHealth</th>
-                                    <th>Discount</th>
-                                    <th>Net Amount</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                    <th>Actions</th>
+                                    <th class="text-white">Billing #</th>
+                                    <th class="text-white">Patient</th>
+                                    <th class="text-white">Total Amount</th>
+                                    <th class="text-white">PhilHealth</th>
+                                    <th class="text-white">Discount</th>
+                                    <th class="text-white">Net Amount</th>
+                                    <th class="text-white">Status</th>
+                                    <th class="text-white">Date</th>
+                                    <th class="text-white">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -247,4 +247,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+@endsection
+
+@section('styles')
+<style>
+/* Billing Card & Table Enhancements */
+.table-primary > th {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+/* Ensure tbody text is dark on light backgrounds */
+.table tbody td {
+    color: #212529 !important;
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Card shadow enhancement */
+.card.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
 @endsection

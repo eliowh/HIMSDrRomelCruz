@@ -12,7 +12,7 @@
                     <a href="{{ route('billing.show', $billing) }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Details
                     </a>
-                    <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('billing.dashboard') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-list"></i> All Billings
                     </a>
                 </div>
@@ -68,6 +68,9 @@
                                     <strong>Note:</strong> You can only edit the professional fees. Other charges are fixed based on the original billing items.
                                 </div>
                                 
+                                @php
+                                    $professionalFeeOnly = $billing->billingItems->where('item_type', 'professional')->sum('unit_price');
+                                @endphp
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label for="professional_fees" class="form-label">
@@ -79,20 +82,33 @@
                                                    name="professional_fees" 
                                                    id="professional_fees" 
                                                    class="form-control" 
-                                                   value="{{ old('professional_fees', $billing->professional_fees) }}" 
+                                                   value="{{ old('professional_fees', $professionalFeeOnly) }}" 
                                                    min="0" 
                                                    step="0.01" 
                                                    required>
                                         </div>
-                                        <small class="text-muted">Current professional fee total</small>
+                                        <small class="text-muted">Editable professional fee portion only</small>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Professional Fee Items</label>
+                                        <label class="form-label">Professional Fee Breakdown</label>
                                         <div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
                                             @forelse($billing->billingItems->where('item_type', 'professional') as $item)
-                                                <div class="d-flex justify-content-between py-1">
-                                                    <span>{{ $item->description }}</span>
-                                                    <span class="text-muted">₱{{ number_format($item->total_amount, 2) }}</span>
+                                                <div class="mb-2">
+                                                    <div class="fw-bold">{{ $item->description }}</div>
+                                                    @if($item->case_rate > 0)
+                                                        <div class="d-flex justify-content-between">
+                                                            <small class="text-muted">Case Rate:</small>
+                                                            <small class="text-success">₱{{ number_format($item->case_rate, 2) }}</small>
+                                                        </div>
+                                                    @endif
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">Professional Fee:</small>
+                                                        <small class="text-primary">₱{{ number_format($item->unit_price, 2) }}</small>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between border-top pt-1">
+                                                        <small class="fw-bold">Total:</small>
+                                                        <small class="fw-bold">₱{{ number_format($item->total_amount, 2) }}</small>
+                                                    </div>
                                                 </div>
                                             @empty
                                                 <span class="text-muted">No professional fee items</span>
@@ -172,7 +188,7 @@
 
                         <!-- Notes -->
                         <div class="card shadow mb-4">
-                            <div class="card-header">
+                            <div class="card-header bg-secondary text-white">
                                 <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Notes</h6>
                             </div>
                             <div class="card-body">
@@ -186,7 +202,7 @@
 
                     <!-- Right Column - Current Billing Summary -->
                     <div class="col-md-4">
-                        <div class="card shadow mb-4 position-sticky" style="top: 20px;">
+                        <div class="card shadow mb-4">
                             <div class="card-header bg-success text-white">
                                 <h5 class="mb-0"><i class="fas fa-calculator"></i> Updated Summary</h5>
                             </div>
@@ -252,7 +268,7 @@
 
                         <!-- All Billing Items (Read-only) -->
                         <div class="card shadow">
-                            <div class="card-header">
+                            <div class="card-header bg-dark text-white">
                                 <h6 class="mb-0"><i class="fas fa-list"></i> All Billing Items</h6>
                             </div>
                             <div class="card-body">
@@ -417,4 +433,40 @@ document.querySelector('form').addEventListener('submit', function(e) {
 });
 </script>
 
+@endsection
+
+@section('styles')
+<style>
+/* Billing Card & Table Enhancements */
+.card.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Card header color consistency */
+.card-header.bg-info {
+    background-color: #0dcaf0 !important;
+}
+.card-header.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+.card-header.bg-primary {
+    background-color: #0d6efd !important;
+}
+.card-header.bg-success {
+    background-color: #198754 !important;
+}
+.card-header.bg-secondary {
+    background-color: #6c757d !important;
+}
+.card-header.bg-dark {
+    background-color: #212529 !important;
+}
+
+/* Input styling enhancements */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
 @endsection
