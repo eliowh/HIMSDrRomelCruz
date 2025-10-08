@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
     <link rel="stylesheet" href="{{asset('css/forgotPass.css')}}">
 </head>
@@ -13,7 +14,7 @@
     </div>
     <div class="right">
         <div class="formbox">
-            <form action="{{ route('update-password', ['token' => $token]) }}" method="post">
+            <form action="{{ secure_url('/reset-password/'.$token) }}" method="post">
                 @csrf
                 <h3 class="header">Reset Password</h3>
                 <p style="margin-bottom: 30px; margin-top: 5px; color: #666; text-align: center; font-size: 0.9em;">

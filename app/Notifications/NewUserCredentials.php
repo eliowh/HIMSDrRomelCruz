@@ -39,8 +39,8 @@ class NewUserCredentials extends Notification
 
     public function toMail($notifiable)
     {
-        // Use just the token in the URL
-        $resetUrl = url('/reset-password/'.$this->token);
+        // Use secure URL for reset password
+        $resetUrl = secure_url('/reset-password/'.$this->token);
 
         $mail = (new MailMessage)
             ->from(config('mail.from.address'), config('mail.from.name'))
