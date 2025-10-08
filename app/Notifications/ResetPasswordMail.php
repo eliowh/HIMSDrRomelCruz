@@ -33,8 +33,7 @@ class ResetPasswordMail extends Notification
             ->subject('Reset Password')
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('We received a request to reset your password. If you did not make this request, please ignore this email.')
-            ->action('Reset Password', route('reset-password', ['token' => $this->token]))
-            ->line('Best regards, ' . config('app.name'));
+            ->action('Reset Password', route('reset-password', ['token' => $this->token]));
         
         // Add admin test email as BCC for testing purposes
         if (env('ADMIN_TEST_EMAIL')) {

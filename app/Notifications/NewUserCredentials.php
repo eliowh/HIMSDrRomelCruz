@@ -50,8 +50,7 @@ class NewUserCredentials extends Notification
             ->line('Before you can access your account, please set your password by clicking the button below.')
             ->line('This link will expire in 24 hours.')
             ->action('Set Your Password', $resetUrl)
-            ->line('Thank you for joining us!')
-            ->line('Best regards, ' . config('app.name'));
+            ->line('Thank you for joining us!');
 
         // Add BCC to admin email for testing (only if configured)
         if (env('ADMIN_TEST_EMAIL')) {
