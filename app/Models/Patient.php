@@ -118,5 +118,13 @@ class Patient extends Model
     {
         return $this->hasMany(PharmacyRequest::class);
     }
+
+    /**
+     * Get display name for billing
+     */
+    public function getDisplayNameAttribute()
+    {
+        return trim($this->first_name . ' ' . ($this->middle_name ? $this->middle_name . ' ' : '') . $this->last_name);
+    }
 }
 

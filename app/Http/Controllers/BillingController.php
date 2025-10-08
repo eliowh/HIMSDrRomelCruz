@@ -26,7 +26,7 @@ class BillingController extends Controller
 
     public function create()
     {
-        $patients = Patient::orderBy('firstName')->get();
+        $patients = Patient::orderBy('first_name')->get();
         $icdRates = Icd10NamePriceRate::getAllCodes();
         
         return view('billings.create', compact('patients', 'icdRates'));
@@ -153,7 +153,7 @@ class BillingController extends Controller
     public function edit(Billing $billing)
     {
         $billing->load(['billingItems']);
-        $patients = Patient::orderBy('firstName')->get();
+        $patients = Patient::orderBy('first_name')->get();
         $icdRates = Icd10NamePriceRate::getAllCodes();
         
         return view('billings.edit', compact('billing', 'patients', 'icdRates'));

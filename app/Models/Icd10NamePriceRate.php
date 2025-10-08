@@ -22,26 +22,28 @@ class Icd10NamePriceRate extends Model
     // Accessor for ICD code
     public function getIcdCodeAttribute()
     {
-        return $this->attributes['COL 1'];
+        // Handle both aliased and raw column access
+        return $this->attributes['icd_code'] ?? $this->attributes['COL 1'] ?? null;
     }
 
     // Accessor for description
     public function getDescriptionAttribute()
     {
-        return $this->attributes['COL 2'];
+        // Handle both aliased and raw column access
+        return $this->attributes['description'] ?? $this->attributes['COL 2'] ?? null;
     }
 
     // Accessor for professional fee (assuming COL 3 is professional fee)
     public function getProfessionalFeeAttribute()
     {
-        $value = $this->attributes['COL 3'];
+        $value = $this->attributes['professional_fee'] ?? $this->attributes['COL 3'] ?? 0;
         return is_numeric($value) ? (float)$value : 0.00;
     }
 
     // Accessor for additional rate (assuming COL 4 is additional rate info)
     public function getAdditionalRateAttribute()
     {
-        $value = $this->attributes['COL 4'];
+        $value = $this->attributes['additional_rate'] ?? $this->attributes['COL 4'] ?? 0;
         return is_numeric($value) ? (float)$value : 0.00;
     }
 
@@ -71,11 +73,19 @@ class Icd10NamePriceRate extends Model
     // Get all active ICD codes for dropdown
     public static function getAllCodes()
     {
-        return self::select('COL 1 as icd_code', 'COL 2 as description')
+        return self::selectRaw('`COL 1` as icd_code, `COL 2` as description, `COL 3` as professional_fee')
                   ->whereNotNull('COL 1')
                   ->where('COL 1', '!=', '')
                   ->orderBy('COL 1')
-                  ->get();
+                  ->get()
+                  ->map(function($item) {
+                      // Return as a simple object without accessors
+                      return (object)[
+                          'icd_code' => $item->getAttributes()['icd_code'],
+                          'description' => $item->getAttributes()['description'],
+                          'professional_fee' => (float)($item->getAttributes()['professional_fee'] ?? 0)
+                      ];
+                  });
     }
 
     // Calculate estimated charges for this ICD code
