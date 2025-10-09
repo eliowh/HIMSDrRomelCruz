@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_patients.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{{ asset('css/nursecss/edit_patient_modal.css') }}">
-<link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
-<link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
-<link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/edit_patient_modal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
@@ -91,9 +91,7 @@
 
     <div class="details-column">
         <div class="nurse-card details-card" id="detailsCard">
-            <div class="patients-header">
-                <h3>Patient Details</h3>
-            </div>
+            
 
             <div class="details-empty" id="detailsEmpty">Select a patient to view details.</div>
 
