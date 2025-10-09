@@ -20,20 +20,23 @@
         @include('labtech.labtech_sidebar')
 
         <main class="main-content">
-            <h2>Lab Orders</h2>
+            <div class="page-header">
+                <h2><i class="fas fa-flask"></i> Lab Orders</h2>
+                <div class="page-subtitle">Manage laboratory test orders and results</div>
+            </div>
             <!-- Filter Tabs -->
             <div class="filter-tabs">
                 <button class="tab-btn {{ $status === 'pending' ? 'active' : '' }}" data-status="pending">
-                    Pending <span class="count-badge">{{ $statusCounts['pending'] }}</span>
+                    <i class="fas fa-clock"></i> Pending <span class="count-badge">{{ $statusCounts['pending'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'in_progress' ? 'active' : '' }}" data-status="in_progress">
-                    In Progress <span class="count-badge">{{ $statusCounts['in_progress'] }}</span>
+                    <i class="fas fa-spinner"></i> In Progress <span class="count-badge">{{ $statusCounts['in_progress'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'completed' ? 'active' : '' }}" data-status="completed">
-                    Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
+                    <i class="fas fa-check-circle"></i> Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'cancelled' ? 'active' : '' }}" data-status="cancelled">
-                    Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
+                    <i class="fas fa-times-circle"></i> Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
                 </button>
             </div>
 
@@ -166,6 +169,9 @@
 
     <!-- Complete Order Modal -->
     @include('labtech.modals.complete_order_modal')
+
+    <!-- Template Selection & Generation Modal -->
+    @include('labtech.modals.template_select_modal')
 
     <!-- PDF Viewer Modal -->
     @include('labtech.modals.pdf_viewer_modal')
@@ -328,6 +334,8 @@
 
         function showCompleteModal(orderId) {
             currentOrderId = orderId;
+            // Expose globally for template modal button
+            window.__activeLabOrderId = orderId;
             document.getElementById('completeModal').classList.add('show');
         }
 

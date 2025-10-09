@@ -222,6 +222,9 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Allow nurses to view lab result PDFs
     Route::get('/nurse/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('nurse.lab.viewPdf');
+    
+    // Medicine request history for nurses
+    Route::get('/nurse/medicine-request-history', [PharmacyController::class, 'nurseRequestHistory'])->name('nurse.medicine.request.history');
 });
 
 /*
@@ -252,6 +255,9 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::get('/labtech/patients/{patient}/test-history', [LabOrderController::class, 'getPatientTestHistory'])->name('labtech.patient.testHistory');
     Route::get('/labtech/orders/{orderId}/check-pdf', [LabOrderController::class, 'checkPdf'])->name('labtech.order.checkPdf');
     Route::get('/labtech/orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('labtech.order.viewPdf');
+    // Dynamic lab result template endpoints
+    Route::get('/labtech/lab-templates', [LabOrderController::class, 'listTemplates'])->name('labtech.lab.templates');
+    Route::post('/labtech/orders/{orderId}/generate-template', [LabOrderController::class, 'generateResultPdf'])->name('labtech.orders.generateTemplate');
 });
 
 /*
