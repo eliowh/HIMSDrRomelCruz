@@ -45,15 +45,15 @@
                                         </tr>
                                         <tr>
                                             <td><strong>Patient:</strong></td>
-                                            <td>{{ $billing->patient->firstName }} {{ $billing->patient->lastName }}</td>
+                                            <td>{{ $billing->patient->display_name }}</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Date of Birth:</strong></td>
-                                            <td>{{ $billing->patient->dateOfBirth }}</td>
+                                            <td>{{ $billing->patient->date_of_birth ? $billing->patient->date_of_birth->format('M d, Y') : 'N/A' }}</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Billing Date:</strong></td>
-                                            <td>{{ $billing->billing_date->format('M d, Y g:i A') }}</td>
+                                            <td>{{ $billing->billing_date ? $billing->billing_date->format('M d, Y g:i A') : 'N/A' }}</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Created By:</strong></td>
@@ -128,13 +128,13 @@
                                 <table class="table table-hover table-striped">
                                     <thead class="table-success">
                                         <tr>
-                                            <th class="text-white">Type</th>
-                                            <th class="text-white">Description</th>
-                                            <th class="text-white">ICD-10</th>
-                                            <th class="text-white">Qty</th>
-                                            <th class="text-white">Unit Price</th>
-                                            <th class="text-white">Total</th>
-                                            <th class="text-white">Date Charged</th>
+                                            <th class="text-black">Type</th>
+                                            <th class="text-black">Description</th>
+                                            <th class="text-black">ICD-10</th>
+                                            <th class="text-black">Qty</th>
+                                            <th class="text-black">Unit Price</th>
+                                            <th class="text-black">Total</th>
+                                            <th class="text-black">Date Charged</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -166,9 +166,9 @@
                                                 @endif
                                             </td>
                                             <td>{{ $item->quantity }}</td>
-                                            <td>₱{{ number_format($item->unit_price, 2) }}</td>
-                                            <td><strong>₱{{ number_format($item->total_price, 2) }}</strong></td>
-                                            <td>{{ $item->service_date ? $item->service_date->format('M d, Y') : 'N/A' }}</td>
+                                            <td>₱{{ number_format($item->unit_price ?? 0, 2) }}</td>
+                                            <td><strong>₱{{ number_format($item->total_amount ?? 0, 2) }}</strong></td>
+                                            <td>{{ $item->date_charged ? $item->date_charged->format('M d, Y') : 'N/A' }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -190,7 +190,7 @@
                                 <h6 class="text-muted mb-3">Charges Breakdown</h6>
                                 <div class="row mb-2">
                                     <div class="col">Room Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->room_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->room_charges ?? 0, 2) }}</div>
                                 </div>
                                 @php
                                     $caseRateTotal = $billing->billingItems->where('item_type', 'professional')->sum('case_rate');
@@ -210,19 +210,19 @@
                                 @endif
                                 <div class="row mb-2">
                                     <div class="col">Professional Fees Total:</div>
-                                    <div class="col-auto fw-bold">₱{{ number_format($billing->professional_fees, 2) }}</div>
+                                    <div class="col-auto fw-bold">₱{{ number_format($billing->professional_fees ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Medicine Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->medicine_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->medicine_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Laboratory Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->lab_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->lab_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Other Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->other_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->other_charges ?? 0, 2) }}</div>
                                 </div>
                                 <hr>
                             </div>
@@ -231,13 +231,13 @@
                             <div class="mb-3">
                                 <div class="row mb-2">
                                     <div class="col"><strong>Subtotal:</strong></div>
-                                    <div class="col-auto"><strong>₱{{ number_format($billing->total_amount, 2) }}</strong></div>
+                                    <div class="col-auto"><strong>₱{{ number_format($billing->total_amount ?? 0, 2) }}</strong></div>
                                 </div>
                                 
                                 @if($billing->is_philhealth_member)
                                     <div class="row mb-2 text-success">
                                         <div class="col">PhilHealth Deduction:</div>
-                                        <div class="col-auto">-₱{{ number_format($billing->philhealth_deduction, 2) }}</div>
+                                        <div class="col-auto">-₱{{ number_format($billing->philhealth_deduction ?? 0, 2) }}</div>
                                     </div>
                                 @endif
 
@@ -252,7 +252,7 @@
                                                 PWD Discount:
                                             @endif
                                         </div>
-                                        <div class="col-auto">-₱{{ number_format($billing->senior_pwd_discount, 2) }}</div>
+                                        <div class="col-auto">-₱{{ number_format($billing->senior_pwd_discount ?? 0, 2) }}</div>
                                     </div>
                                 @endif
                                 
@@ -260,7 +260,7 @@
                                 
                                 <div class="row">
                                     <div class="col"><h5><strong>Net Amount:</strong></h5></div>
-                                    <div class="col-auto"><h5 class="text-primary"><strong>₱{{ number_format($billing->net_amount, 2) }}</strong></h5></div>
+                                    <div class="col-auto"><h5 class="text-primary"><strong>₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong></h5></div>
                                 </div>
                             </div>
 
@@ -321,6 +321,66 @@
 
 @section('styles')
 <style>
+/* Billing Card & Table Enhancements */
+.table-primary > th {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.table-success > th {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+}
+
+.table-info > th {
+    background-color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
+}
+
+.table-warning > th {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.table-dark > th {
+    background-color: #212529 !important;
+    border-color: #212529 !important;
+}
+
+/* Ensure tbody text is ALWAYS dark on light backgrounds */
+.table tbody td {
+    color: #212529 !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    color: #212529 !important;
+}
+
+/* Card shadow enhancement */
+.card.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Updated card header gradients */
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+
+.card-header.bg-warning {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+
 @media print {
     .btn, .card-header, .alert, .navbar, .sidebar {
         display: none !important;

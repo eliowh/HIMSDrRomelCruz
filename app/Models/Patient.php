@@ -220,11 +220,15 @@ class Patient extends Model
     }
 
     /**
-     * Get display name for billing
+     * Get display name for billing with proper formatting
      */
     public function getDisplayNameAttribute()
     {
-        return trim($this->first_name . ' ' . ($this->middle_name ? $this->middle_name . ' ' : '') . $this->last_name);
+        $firstName = ucwords(strtolower(trim($this->first_name ?? '')));
+        $middleName = $this->middle_name ? ucwords(strtolower(trim($this->middle_name))) : '';
+        $lastName = ucwords(strtolower(trim($this->last_name ?? '')));
+        
+        return trim($firstName . ' ' . ($middleName ? $middleName . ' ' : '') . $lastName);
     }
 }
 

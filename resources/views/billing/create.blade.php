@@ -722,18 +722,18 @@ function showBillingNotification(type, title, message) {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Card header color consistency */
+/* Card header color consistency with green gradient */
 .card-header.bg-primary {
-    background-color: #0d6efd !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-success {
-    background-color: #198754 !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-info {
-    background-color: #0dcaf0 !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-secondary {
-    background-color: #6c757d !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 </style>
 @endsection

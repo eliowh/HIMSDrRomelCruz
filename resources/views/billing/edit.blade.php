@@ -45,13 +45,13 @@
                             <div class="card-body bg-light">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <p><strong>Name:</strong> {{ $billing->patient->firstName }} {{ $billing->patient->lastName }}</p>
-                                        <p><strong>Date of Birth:</strong> {{ $billing->patient->dateOfBirth }}</p>
+                                        <p><strong>Name:</strong> {{ $billing->patient->display_name ?? 'N/A' }}</p>
+                                        <p><strong>Date of Birth:</strong> {{ $billing->patient->date_of_birth ? $billing->patient->date_of_birth->format('M d, Y') : 'N/A' }}</p>
                                         <p><strong>Billing Number:</strong> {{ $billing->billing_number }}</p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p><strong>Billing Date:</strong> {{ $billing->billing_date->format('M d, Y g:i A') }}</p>
-                                        <p><strong>Created By:</strong> {{ $billing->createdBy->name }}</p>
+                                        <p><strong>Billing Date:</strong> {{ $billing->billing_date ? $billing->billing_date->format('M d, Y g:i A') : 'N/A' }}</p>
+                                        <p><strong>Created By:</strong> {{ $billing->createdBy ? $billing->createdBy->name : 'N/A' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -211,49 +211,49 @@
                                 <h6 class="text-muted mb-3">Current Charges</h6>
                                 <div class="row mb-2">
                                     <div class="col">Room Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->room_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->room_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Professional Fees:</div>
-                                    <div class="col-auto text-warning" id="currentProfessionalFees">₱{{ number_format($billing->professional_fees, 2) }}</div>
+                                    <div class="col-auto text-warning" id="currentProfessionalFees">₱{{ number_format($billing->professional_fees ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Medicine Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->medicine_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->medicine_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Laboratory Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->lab_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->lab_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Other Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->other_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->other_charges ?? 0, 2) }}</div>
                                 </div>
                                 <hr>
 
                                 <!-- Updated Totals -->
                                 <div class="row mb-2">
                                     <div class="col"><strong>New Subtotal:</strong></div>
-                                    <div class="col-auto"><strong id="newSubtotal">₱{{ number_format($billing->total_amount, 2) }}</strong></div>
+                                    <div class="col-auto"><strong id="newSubtotal">₱{{ number_format($billing->total_amount ?? 0, 2) }}</strong></div>
                                 </div>
                                 
                                 @if($billing->is_philhealth_member)
                                     <div class="row mb-2 text-success">
                                         <div class="col">PhilHealth Deduction:</div>
-                                        <div class="col-auto" id="newPhilhealthDeduction">-₱{{ number_format($billing->philhealth_deduction, 2) }}</div>
+                                        <div class="col-auto" id="newPhilhealthDeduction">-₱{{ number_format($billing->philhealth_deduction ?? 0, 2) }}</div>
                                     </div>
                                 @endif
 
                                 <div class="row mb-2 text-success">
                                     <div class="col">Senior/PWD Discount:</div>
-                                    <div class="col-auto" id="newSeniorPwdDiscount">-₱{{ number_format($billing->senior_pwd_discount, 2) }}</div>
+                                    <div class="col-auto" id="newSeniorPwdDiscount">-₱{{ number_format($billing->senior_pwd_discount ?? 0, 2) }}</div>
                                 </div>
                                 
                                 <hr class="my-3">
                                 
                                 <div class="row">
                                     <div class="col"><h5><strong>New Net Amount:</strong></h5></div>
-                                    <div class="col-auto"><h5 class="text-primary"><strong id="newNetAmount">₱{{ number_format($billing->net_amount, 2) }}</strong></h5></div>
+                                    <div class="col-auto"><h5 class="text-primary"><strong id="newNetAmount">₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong></h5></div>
                                 </div>
 
                                 <!-- Comparison -->
@@ -326,14 +326,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const pwdCheckbox = document.getElementById('is_pwd');
     
     const originalValues = {
-        roomCharges: {{ $billing->room_charges }},
-        professionalFees: {{ $billing->professional_fees }},
-        medicineCharges: {{ $billing->medicine_charges }},
-        labCharges: {{ $billing->lab_charges }},
-        otherCharges: {{ $billing->other_charges }},
-        philhealthDeduction: {{ $billing->philhealth_deduction }},
+        roomCharges: {{ $billing->room_charges ?? 0 }},
+        professionalFees: {{ $billing->professional_fees ?? 0 }},
+        medicineCharges: {{ $billing->medicine_charges ?? 0 }},
+        labCharges: {{ $billing->lab_charges ?? 0 }},
+        otherCharges: {{ $billing->other_charges ?? 0 }},
+        philhealthDeduction: {{ $billing->philhealth_deduction ?? 0 }},
         isPhilhealthMember: {{ $billing->is_philhealth_member ? 'true' : 'false' }},
-        originalNetAmount: {{ $billing->net_amount }}
+        originalNetAmount: {{ $billing->net_amount ?? 0 }}
     };
     
     function calculateUpdatedTotals() {
@@ -442,25 +442,25 @@ document.querySelector('form').addEventListener('submit', function(e) {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Card header color consistency */
+/* Card header color consistency with green gradient */
 .card-header.bg-info {
-    background-color: #0dcaf0 !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-warning {
-    background-color: #ffc107 !important;
-    color: #000 !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+    color: #fff !important;
 }
 .card-header.bg-primary {
-    background-color: #0d6efd !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-success {
-    background-color: #198754 !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-secondary {
-    background-color: #6c757d !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 .card-header.bg-dark {
-    background-color: #212529 !important;
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 
 /* Input styling enhancements */

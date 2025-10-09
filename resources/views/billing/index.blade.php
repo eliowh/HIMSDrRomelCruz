@@ -36,15 +36,15 @@
                         <table class="table table-hover table-striped">
                             <thead class="table-primary">
                                 <tr>
-                                    <th class="text-white">Billing #</th>
-                                    <th class="text-white">Patient</th>
-                                    <th class="text-white">Total Amount</th>
-                                    <th class="text-white">PhilHealth</th>
-                                    <th class="text-white">Discount</th>
-                                    <th class="text-white">Net Amount</th>
-                                    <th class="text-white">Status</th>
-                                    <th class="text-white">Date</th>
-                                    <th class="text-white">Actions</th>
+                                    <th class="text-black">Billing #</th>
+                                    <th class="text-black">Patient</th>
+                                    <th class="text-black">Total Amount</th>
+                                    <th class="text-black">PhilHealth</th>
+                                    <th class="text-black">Discount</th>
+                                    <th class="text-black">Net Amount</th>
+                                    <th class="text-black">Status</th>
+                                    <th class="text-black">Date</th>
+                                    <th class="text-black">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,7 +55,7 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <strong>{{ $billing->patient->firstName }} {{ $billing->patient->lastName }}</strong>
+                                            <strong>{{ $billing->patient->display_name }}</strong>
                                             @if($billing->is_philhealth_member)
                                                 <span class="badge bg-info ms-1">PhilHealth</span>
                                             @endif
@@ -68,24 +68,24 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <strong>₱{{ number_format($billing->total_amount, 2) }}</strong>
+                                        <strong>₱{{ number_format($billing->total_amount ?? 0, 2) }}</strong>
                                     </td>
                                     <td>
                                         @if($billing->is_philhealth_member)
-                                            <span class="text-success">-₱{{ number_format($billing->philhealth_deduction, 2) }}</span>
+                                            <span class="text-success">-₱{{ number_format($billing->philhealth_deduction ?? 0, 2) }}</span>
                                         @else
                                             <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($billing->senior_pwd_discount > 0)
-                                            <span class="text-success">-₱{{ number_format($billing->senior_pwd_discount, 2) }}</span>
+                                            <span class="text-success">-₱{{ number_format($billing->senior_pwd_discount ?? 0, 2) }}</span>
                                         @else
                                             <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
                                     <td>
-                                        <strong class="text-dark">₱{{ number_format($billing->net_amount, 2) }}</strong>
+                                        <strong class="text-dark">₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong>
                                     </td>
                                     <td>
                                         @if($billing->status === 'pending')
@@ -257,19 +257,25 @@ document.addEventListener('DOMContentLoaded', function() {
     border-color: #0d6efd !important;
 }
 
-/* Ensure tbody text is dark on light backgrounds */
+/* Ensure tbody text is ALWAYS dark on light backgrounds */
 .table tbody td {
     color: #212529 !important;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .table-striped > tbody > tr:nth-of-type(odd) > td {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    color: #212529 !important;
 }
 
 /* Card shadow enhancement */
 .card.shadow {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Updated card header gradients */
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 </style>
 @endsection

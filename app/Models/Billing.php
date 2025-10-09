@@ -100,4 +100,23 @@ class Billing extends Model
         
         return $grossAmount - $philhealthDeduction - $seniorPwdDiscount;
     }
+
+    // Recalculate and sync all totals from billing items
+    public function recalculateFromItems()
+    {
+        $this->room_charges = $this->billingItems()->where('item_type', 'room')->sum('total_amount');
+        $this->professional_fees = $this->billingItems()->where('item_type', 'professional')->sum('total_amount');
+        $this->medicine_charges = $this->billingItems()->where('item_type', 'medicine')->sum('total_amount');
+        $this->lab_charges = $this->billingItems()->where('item_type', 'laboratory')->sum('total_amount');
+        $this->other_charges = $this->billingItems()->where('item_type', 'other')->sum('total_amount');
+        
+        $this->total_amount = $this->room_charges + $this->professional_fees + 
+                             $this->medicine_charges + $this->lab_charges + $this->other_charges;
+        
+        $this->philhealth_deduction = $this->calculatePhilhealthDeduction();
+        $this->senior_pwd_discount = $this->calculateSeniorPwdDiscount();
+        $this->net_amount = $this->calculateNetAmount();
+        
+        return $this;
+    }
 }

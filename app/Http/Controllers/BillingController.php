@@ -170,12 +170,21 @@ class BillingController extends Controller
     {
         $billing->load(['patient', 'billingItems', 'createdBy']);
         
+        // Recalculate totals to ensure accuracy
+        $billing->recalculateFromItems();
+        $billing->save();
+        
         return view('billing.show', compact('billing'));
     }
 
     public function edit(Billing $billing)
     {
-        $billing->load(['billingItems']);
+        $billing->load(['billingItems', 'patient', 'createdBy']);
+        
+        // Recalculate totals to ensure accuracy before editing
+        $billing->recalculateFromItems();
+        $billing->save();
+        
         $patients = Patient::orderBy('first_name')->get();
         $icdRates = Icd10NamePriceRate::getAllCodes();
         
@@ -185,7 +194,7 @@ class BillingController extends Controller
     public function update(Request $request, Billing $billing)
     {
         $request->validate([
-            'professional_fees' => 'required|numeric|min:0',
+            'professional_fees' => 'nullable|numeric|min:0',
             'is_senior_citizen' => 'boolean',
             'is_pwd' => 'boolean',
             'status' => 'required|in:pending,paid,cancelled',
@@ -195,41 +204,60 @@ class BillingController extends Controller
         DB::beginTransaction();
         
         try {
-            // Update professional fees in billing items
-            $billing->billingItems()
-                   ->where('item_type', 'professional')
-                   ->update(['unit_price' => $request->professional_fees]);
+            // Only update professional fees if provided and different
+            if ($request->filled('professional_fees') && $request->professional_fees != $billing->professional_fees) {
+                // Get current professional items to preserve case rate structure
+                $professionalItems = $billing->billingItems()->where('item_type', 'professional')->get();
+                
+                if ($professionalItems->count() > 0) {
+                    foreach ($professionalItems as $item) {
+                        // The case rate should remain the same, only professional fee portion changes
+                        $caseRate = $item->case_rate ?? 0;
+                        $newProfessionalFee = $request->professional_fees;
+                        $newTotalAmount = $caseRate + $newProfessionalFee;
+                        
+                        $item->update([
+                            'unit_price' => $newProfessionalFee,
+                            'total_amount' => $newTotalAmount
+                        ]);
+                    }
+                }
+            }
             
-            // Recalculate totals
-            $professionalTotal = $billing->billingItems()
-                                       ->where('item_type', 'professional')
-                                       ->sum(DB::raw('quantity * unit_price'));
+            // Recalculate totals from actual billing items
+            $roomCharges = $billing->billingItems()->where('item_type', 'room')->sum('total_amount');
+            $professionalTotal = $billing->billingItems()->where('item_type', 'professional')->sum('total_amount');
+            $medicineCharges = $billing->billingItems()->where('item_type', 'medicine')->sum('total_amount');
+            $labCharges = $billing->billingItems()->where('item_type', 'laboratory')->sum('total_amount');
+            $otherCharges = $billing->billingItems()->where('item_type', 'other')->sum('total_amount');
             
-            $otherTotal = $billing->billingItems()
-                                ->where('item_type', '!=', 'professional')
-                                ->sum(DB::raw('quantity * unit_price'));
+            $totalAmount = $roomCharges + $professionalTotal + $medicineCharges + $labCharges + $otherCharges;
             
-            $totalAmount = $professionalTotal + $otherTotal;
+            // Calculate deductions before updating
+            $tempBilling = clone $billing;
+            $tempBilling->total_amount = $totalAmount;
+            $tempBilling->is_senior_citizen = $request->boolean('is_senior_citizen');
+            $tempBilling->is_pwd = $request->boolean('is_pwd');
             
-            // Update billing record
+            $philhealthDeduction = $tempBilling->calculatePhilhealthDeduction();
+            $seniorPwdDiscount = $tempBilling->calculateSeniorPwdDiscount();
+            $netAmount = $totalAmount - $philhealthDeduction - $seniorPwdDiscount;
+            
+            // Update billing record with all calculated values
             $billing->update([
+                'room_charges' => $roomCharges,
                 'professional_fees' => $professionalTotal,
+                'medicine_charges' => $medicineCharges,
+                'lab_charges' => $labCharges,
+                'other_charges' => $otherCharges,
                 'total_amount' => $totalAmount,
+                'philhealth_deduction' => $philhealthDeduction,
+                'senior_pwd_discount' => $seniorPwdDiscount,
+                'net_amount' => $netAmount,
                 'is_senior_citizen' => $request->boolean('is_senior_citizen'),
                 'is_pwd' => $request->boolean('is_pwd'),
                 'status' => $request->status,
                 'notes' => $request->notes
-            ]);
-            
-            // Recalculate deductions
-            $philhealthDeduction = $billing->calculatePhilhealthDeduction();
-            $seniorPwdDiscount = $billing->calculateSeniorPwdDiscount();
-            $netAmount = $billing->calculateNetAmount();
-            
-            $billing->update([
-                'philhealth_deduction' => $philhealthDeduction,
-                'senior_pwd_discount' => $seniorPwdDiscount,
-                'net_amount' => $netAmount
             ]);
             
             DB::commit();

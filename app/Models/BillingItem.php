@@ -61,4 +61,20 @@ class BillingItem extends Model
     {
         return self::ITEM_TYPES[$this->item_type] ?? $this->item_type;
     }
+
+    // Model events to auto-calculate total_amount
+    protected static function booted()
+    {
+        static::creating(function ($item) {
+            if (!$item->total_amount) {
+                $item->total_amount = $item->calculateTotalAmount();
+            }
+        });
+
+        static::updating(function ($item) {
+            if ($item->isDirty(['quantity', 'unit_price']) && !$item->isDirty('total_amount')) {
+                $item->total_amount = $item->calculateTotalAmount();
+            }
+        });
+    }
 }
