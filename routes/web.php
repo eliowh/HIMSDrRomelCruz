@@ -225,6 +225,7 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Medicine request history for nurses
     Route::get('/nurse/medicine-request-history', [PharmacyController::class, 'nurseRequestHistory'])->name('nurse.medicine.request.history');
+    Route::get('/nurse/pharmacy-requests/{id}', [PharmacyController::class, 'showRequest'])->name('nurse.pharmacy.requests.show');
 });
 
 /*

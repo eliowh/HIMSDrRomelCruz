@@ -173,6 +173,16 @@
 let itemIndex = 0;
 let philhealthMember = null;
 
+// Helper function to parse price values that may contain commas
+function parsePrice(value) {
+    if (typeof value === 'number') return value;
+    if (typeof value !== 'string') return 0;
+    // Remove commas, currency symbols, and extra spaces, then parse as float
+    const cleaned = value.replace(/[,₱$\s]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
     
@@ -248,8 +258,8 @@ function displayPatientServices(services) {
                 <input type="hidden" name="billing_items[${index}][description]" value="${service.description}">
                 <input type="hidden" name="billing_items[${index}][icd_code]" value="${service.icd_code || ''}">
                 <input type="hidden" name="billing_items[${index}][quantity]" value="${parseFloat(service.quantity) || 1}">
-                <input type="hidden" name="billing_items[${index}][unit_price]" class="service-unit-price" value="${parseFloat(service.unit_price) || 0}">
-                <input type="hidden" name="billing_items[${index}][case_rate]" value="${parseFloat(service.case_rate) || 0}">
+                <input type="hidden" name="billing_items[${index}][unit_price]" class="service-unit-price" value="${parsePrice(service.unit_price)}">
+                <input type="hidden" name="billing_items[${index}][case_rate]" value="${parsePrice(service.case_rate)}">
                 
                 <div class="row">
                     <div class="col-md-4">
@@ -277,14 +287,14 @@ function displayPatientServices(services) {
                         <label class="form-label">Case Rate</label>
                         <input type="number" step="0.01" min="0" 
                                class="form-control case-rate-input" 
-                               value="${service.case_rate || 0}"
+                               value="${parsePrice(service.case_rate)}"
                                readonly>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Professional Fee</label>
                         <input type="number" step="0.01" min="0" 
                                class="form-control unit-price-input" 
-                               value="${service.unit_price || 0}"
+                               value="${parsePrice(service.unit_price)}"
                                onchange="updateServicePrice(this, ${index})">
                     </div>
                     ` : `
@@ -292,7 +302,7 @@ function displayPatientServices(services) {
                         <label class="form-label">${service.type === 'room' ? 'Room Price' : service.type === 'laboratory' ? 'Lab Fee' : service.type === 'medicine' ? 'Medicine Price' : 'Unit Price'}</label>
                         <input type="number" step="0.01" min="0" 
                                class="form-control unit-price-input" 
-                               value="${service.unit_price || 0}"
+                               value="${parsePrice(service.unit_price)}"
                                onchange="updateServicePrice(this, ${index})">
                     </div>
                     `}
@@ -304,8 +314,8 @@ function displayPatientServices(services) {
                         <label class="form-label">Total</label>
                         <div class="form-control-plaintext fw-bold" id="service-total-${index}">
                             ${service.type === 'professional' ? 
-                                '₱' + ((parseFloat(service.case_rate || 0) + parseFloat(service.unit_price || 0)) * parseFloat(service.quantity || 1)).toFixed(2) :
-                                '₱' + (parseFloat(service.unit_price || 0) * parseFloat(service.quantity || 1)).toFixed(2)
+                                '₱' + ((parsePrice(service.case_rate) + parsePrice(service.unit_price)) * parseFloat(service.quantity || 1)).toFixed(2) :
+                                '₱' + (parsePrice(service.unit_price) * parseFloat(service.quantity || 1)).toFixed(2)
                             }
                         </div>
                     </div>
@@ -319,7 +329,7 @@ function displayPatientServices(services) {
 }
 
 function updateServicePrice(input, index) {
-    const newPrice = parseFloat(input.value) || 0;
+    const newPrice = parsePrice(input.value);
     const service = input.closest('.patient-service');
     const quantity = parseFloat(service.querySelector('.quantity-input').value) || 1;
     
@@ -329,7 +339,7 @@ function updateServicePrice(input, index) {
     
     if (caseRateInput) {
         // Professional service: add case rate + professional fee
-        const caseRate = parseFloat(caseRateInput.value) || 0;
+        const caseRate = parsePrice(caseRateInput.value);
         const totalPrice = caseRate + newPrice;
         total = totalPrice * quantity;
     } else {
@@ -507,13 +517,13 @@ function calculateTotals() {
             
             if (caseRateInput && professionalFeeInput) {
                 // Professional service: add case rate + professional fee
-                const caseRate = parseFloat(caseRateInput.value) || 0;
-                const professionalFee = parseFloat(professionalFeeInput.value) || 0;
+                const caseRate = parsePrice(caseRateInput.value);
+                const professionalFee = parsePrice(professionalFeeInput.value);
                 const totalPrice = caseRate + professionalFee;
                 serviceTotal = quantity * totalPrice;
             } else {
                 // Other services: just use unit price
-                const unitPrice = professionalFeeInput ? parseFloat(professionalFeeInput.value) || 0 : 0;
+                const unitPrice = professionalFeeInput ? parsePrice(professionalFeeInput.value) : 0;
                 serviceTotal = quantity * unitPrice;
             }
             

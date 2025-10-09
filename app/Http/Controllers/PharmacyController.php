@@ -17,6 +17,25 @@ use App\Models\PatientMedicine;
 
 class PharmacyController extends Controller
 {
+    /**
+     * Parse price values that may contain commas, currency symbols
+     */
+    private function parsePrice($value)
+    {
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+        
+        if (is_string($value)) {
+            // Remove commas, currency symbols, and spaces, then parse
+            $cleaned = preg_replace('/[,₱$\s]/', '', $value);
+            $parsed = floatval($cleaned);
+            return $parsed;
+        }
+        
+        return 0;
+    }
+
     public function orders(Request $request)
     {
         $status = $request->get('status', 'all');
@@ -51,7 +70,7 @@ class PharmacyController extends Controller
             'generic_name' => 'nullable|string',
             'brand_name' => 'nullable|string',
             'quantity' => 'required|integer|min:1',
-            'unit_price' => 'required|numeric|min:0',
+            'unit_price' => 'required', // Allow string or numeric to handle comma-separated values
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -59,6 +78,12 @@ class PharmacyController extends Controller
         $validator->after(function ($validator) use ($request) {
             if (empty(trim($request->generic_name)) && empty(trim($request->brand_name))) {
                 $validator->errors()->add('medicine_name', 'Either generic name or brand name must be provided.');
+            }
+
+            // Validate that unit_price can be parsed as a positive number
+            $parsedPrice = $this->parsePrice($request->unit_price);
+            if ($parsedPrice < 0) {
+                $validator->errors()->add('unit_price', 'Unit price must be a positive number.');
             }
         });
 
@@ -71,13 +96,16 @@ class PharmacyController extends Controller
         }
 
         try {
+            // Parse unit price to handle commas and currency symbols
+            $unitPrice = $this->parsePrice($request->unit_price);
+
             $stockOrder = new StockOrder([
                 'user_id' => Auth::id(),
                 'item_code' => $request->item_code,
                 'generic_name' => trim($request->generic_name) ?: null,
                 'brand_name' => trim($request->brand_name) ?: null,
                 'quantity' => $request->quantity,
-                'unit_price' => $request->unit_price,
+                'unit_price' => $unitPrice,
                 'notes' => $request->notes,
                 'requested_at' => now(),
             ]);
@@ -602,9 +630,19 @@ class PharmacyController extends Controller
             'generic_name' => 'nullable|string',
             'brand_name' => 'nullable|string',
             'quantity' => 'required|integer|min:1',
-            'unit_price' => 'nullable|numeric|min:0',
+            'unit_price' => 'nullable', // Allow string or numeric to handle comma-separated values
             'notes' => 'nullable|string|max:1000',
         ]);
+
+        // Custom validation for unit_price
+        $validator->after(function ($validator) use ($request) {
+            if ($request->filled('unit_price')) {
+                $parsedPrice = $this->parsePrice($request->unit_price);
+                if ($parsedPrice < 0) {
+                    $validator->errors()->add('unit_price', 'Unit price must be a positive number.');
+                }
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
@@ -613,6 +651,9 @@ class PharmacyController extends Controller
         try {
             // Get patient information
             $patient = Patient::findOrFail($request->patient_id);
+
+            // Parse unit price to handle commas and currency symbols
+            $unitPrice = $this->parsePrice($request->unit_price);
 
             $pharmacyRequest = new PharmacyRequest([
                 'patient_id' => $request->patient_id,
@@ -623,7 +664,7 @@ class PharmacyController extends Controller
                 'generic_name' => $request->generic_name ?: null,
                 'brand_name' => $request->brand_name ?: null,
                 'quantity' => $request->quantity,
-                'unit_price' => $request->unit_price ?: 0,
+                'unit_price' => $unitPrice,
                 'notes' => $request->notes ?: null,
                 'requested_at' => now(),
                 'status' => PharmacyRequest::STATUS_PENDING,

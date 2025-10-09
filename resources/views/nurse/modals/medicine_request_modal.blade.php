@@ -64,6 +64,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let timer = null;
     let itemsCache = [];
 
+    // Helper function to parse price values that may contain commas
+    function parsePrice(value) {
+        if (typeof value === 'number') return value;
+        if (typeof value !== 'string') return 0;
+        // Remove commas, currency symbols, and extra spaces, then parse as float
+        const cleaned = value.replace(/[,₱$\s]/g, '');
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
     function clearSuggestions() { suggestions.innerHTML=''; suggestions.style.display='none'; }
 
     function renderSuggestions(items){
@@ -73,11 +83,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const div = document.createElement('div');
             div.className = 'pharmacy-suggestion-item';
             div.style.padding='8px'; div.style.borderBottom='1px solid #eee'; div.style.cursor='pointer';
-            div.textContent = `${it.generic_name || ''} ${it.brand_name ? '— '+it.brand_name : ''} (₱${parseFloat(it.price).toFixed(2)})`;
+            div.textContent = `${it.generic_name || ''} ${it.brand_name ? '— '+it.brand_name : ''} (₱${parsePrice(it.price).toFixed(2)})`;
             div.addEventListener('click', ()=>{
                 medSearch.value = (it.generic_name || it.brand_name || it.item_code);
                 itemCode.value = it.item_code || '';
-                unitPrice.value = (typeof it.price !== 'undefined' && it.price !== null) ? parseFloat(it.price).toFixed(2) : '';
+                unitPrice.value = (typeof it.price !== 'undefined' && it.price !== null) ? parsePrice(it.price).toFixed(2) : '';
                 // Update total price based on current quantity
                 updateTotalPrice();
                 suggestions.innerHTML=''; suggestions.style.display='none';
@@ -89,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateTotalPrice(){
-        const up = parseFloat(unitPrice.value) || 0;
+        const up = parsePrice(unitPrice.value);
         const q = parseInt(quantity.value) || 0;
         const total = up * q;
         // Show formatted currency with two decimals
