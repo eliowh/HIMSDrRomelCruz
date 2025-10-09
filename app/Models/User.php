@@ -103,4 +103,20 @@ class User extends Authenticatable
     {
         return $this->role === 'billing';
     }
+
+    /**
+     * Check if user is lab technician role.
+     */
+    public function isLabTechnician(): bool
+    {
+        return $this->role === 'lab_technician';
+    }
+
+    /**
+     * Check if user has a specific role.
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
 }

@@ -177,22 +177,106 @@ body {
     font-size: 1.5rem;
 }
 
+/* Page Header Styles */
+.page-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.page-header h2 {
+    color: #1a4931;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header h2 i {
+    color: #367F2B;
+    font-size: 1.8rem;
+}
+
+.page-subtitle {
+    color: #64748b;
+    font-size: 1rem;
+    font-weight: 400;
+    margin: 0;
+}
+
 /* Lab Orders Styles */
 .filter-tabs {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .tab-btn {
-    padding: 10px 20px;
-    border: 2px solid #367F2B;
+    padding: 12px 24px;
+    border: 2px solid transparent;
     background: white;
-    color: #367F2B;
-    border-radius: 6px;
+    color: #555;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Status-specific tab colors */
+.tab-btn[data-status="pending"] {
+    border-color: #f57c00;
+    color: #f57c00;
+}
+.tab-btn[data-status="pending"].active, 
+.tab-btn[data-status="pending"]:hover {
+    background: #f57c00;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(245, 124, 0, 0.3);
+}
+
+.tab-btn[data-status="in_progress"] {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+.tab-btn[data-status="in_progress"].active, 
+.tab-btn[data-status="in_progress"]:hover {
+    background: #1976d2;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.tab-btn[data-status="completed"] {
+    border-color: #388e3c;
+    color: #388e3c;
+}
+.tab-btn[data-status="completed"].active, 
+.tab-btn[data-status="completed"]:hover {
+    background: #388e3c;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(56, 142, 60, 0.3);
+}
+
+.tab-btn[data-status="cancelled"] {
+    border-color: #d32f2f;
+    color: #d32f2f;
+}
+.tab-btn[data-status="cancelled"].active, 
+.tab-btn[data-status="cancelled"]:hover {
+    background: #d32f2f;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3);
 }
 
 .tab-btn.active, .tab-btn:hover {
@@ -200,8 +284,19 @@ body {
     color: white;
 }
 
+.labtech-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 25px;
+    margin-bottom: 25px;
+    border: 1px solid #e2e8f0;
+}
+
 .orders-table-container {
     overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 }
 
 .orders-table {
@@ -225,24 +320,113 @@ body {
 
 .order-row:hover {
     background: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+/* Status-specific row styling */
+.order-row[data-status="pending"] {
+    border-left: 4px solid #f57c00;
+    background: rgba(255, 243, 224, 0.3);
+}
+
+.order-row[data-status="in_progress"] {
+    border-left: 4px solid #1976d2;
+    background: rgba(227, 242, 253, 0.3);
+}
+
+.order-row[data-status="completed"] {
+    border-left: 4px solid #388e3c;
+    background: rgba(232, 245, 232, 0.3);
+}
+
+.order-row[data-status="cancelled"] {
+    border-left: 4px solid #d32f2f;
+    background: rgba(255, 235, 238, 0.3);
 }
 
 .priority-badge, .status-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
     font-size: 0.85em;
     font-weight: 600;
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.priority-normal { background: #e3f2fd; color: #1976d2; }
-.priority-urgent { background: #fff3e0; color: #f57c00; }
-.priority-stat { background: #ffebee; color: #d32f2f; }
+.status-pending { 
+    background: #fff3e0; 
+    color: #f57c00; 
+    border: 1px solid #ffcc02;
+}
+.status-pending::before { 
+    content: "⏳"; 
+    font-size: 0.9em; 
+}
 
-.status-pending { background: #fff3e0; color: #f57c00; }
-.status-in_progress { background: #e3f2fd; color: #1976d2; }
-.status-completed { background: #e8f5e8; color: #388e3c; }
-.status-cancelled { background: #ffebee; color: #d32f2f; }
+.status-in_progress { 
+    background: #e3f2fd; 
+    color: #1976d2; 
+    border: 1px solid #90caf9;
+}
+.status-in_progress::before { 
+    content: "🔄"; 
+    font-size: 0.9em; 
+}
+
+.status-completed { 
+    background: #e8f5e8; 
+    color: #388e3c; 
+    border: 1px solid #a5d6a7;
+}
+.status-completed::before { 
+    content: "✅"; 
+    font-size: 0.9em; 
+}
+
+.status-cancelled { 
+    background: #ffebee; 
+    color: #d32f2f; 
+    border: 1px solid #ef9a9a;
+}
+.status-cancelled::before { 
+    content: "❌"; 
+    font-size: 0.9em; 
+}
+
+.priority-normal { 
+    background: #e3f2fd; 
+    color: #1976d2; 
+    border: 1px solid #90caf9;
+}
+.priority-normal::before { 
+    content: "📋"; 
+    font-size: 0.9em; 
+}
+
+.priority-urgent { 
+    background: #fff3e0; 
+    color: #f57c00; 
+    border: 1px solid #ffcc02;
+}
+.priority-urgent::before { 
+    content: "⚡"; 
+    font-size: 0.9em; 
+}
+
+.priority-stat { 
+    background: #ffebee; 
+    color: #d32f2f; 
+    border: 1px solid #ef9a9a;
+}
+.priority-stat::before { 
+    content: "🚨"; 
+    font-size: 0.9em; 
+}
 
 .btn {
     padding: 6px 12px;
@@ -1200,14 +1384,21 @@ th.sortable:hover {
 }
 
 .count-badge {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255,255,255,0.9);
     color: inherit;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    min-width: 16px;
-    text-align: center;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 700;
+    margin-left: 8px;
+    border: 1px solid currentColor;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active .count-badge {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-color: rgba(255,255,255,0.5);
 }
 
 .tab-btn.active .count-badge,
