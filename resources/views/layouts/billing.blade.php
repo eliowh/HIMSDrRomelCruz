@@ -41,7 +41,7 @@
         }
         
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #367F2B, #2d6624);
             color: white;
             border-radius: 10px 10px 0 0 !important;
         }

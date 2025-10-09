@@ -222,6 +222,9 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Allow nurses to view lab result PDFs
     Route::get('/nurse/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('nurse.lab.viewPdf');
+    
+    // Medicine request history for nurses
+    Route::get('/nurse/medicine-request-history', [PharmacyController::class, 'nurseRequestHistory'])->name('nurse.medicine.request.history');
 });
 
 /*
@@ -252,6 +255,9 @@ Route::middleware(['auth', 'role:lab_technician'])->group(function () {
     Route::get('/labtech/patients/{patient}/test-history', [LabOrderController::class, 'getPatientTestHistory'])->name('labtech.patient.testHistory');
     Route::get('/labtech/orders/{orderId}/check-pdf', [LabOrderController::class, 'checkPdf'])->name('labtech.order.checkPdf');
     Route::get('/labtech/orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('labtech.order.viewPdf');
+    // Dynamic lab result template endpoints
+    Route::get('/labtech/lab-templates', [LabOrderController::class, 'listTemplates'])->name('labtech.lab.templates');
+    Route::post('/labtech/orders/{orderId}/generate-template', [LabOrderController::class, 'generateResultPdf'])->name('labtech.orders.generateTemplate');
 });
 
 /*
@@ -458,37 +464,25 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
 */
 
 Route::middleware(['auth', 'role:billing'])->group(function () {
-    // Dashboard
-    Route::get('/billing/home', function () {
-        return view('billing.billing_dashboard');
-    })->name('billing.dashboard');
+    // Dashboard - Patient Billing List
+    Route::get('/billing/home', [App\Http\Controllers\BillingController::class, 'index'])->name('billing.dashboard');
     
-    // Comprehensive Billing Management
-    Route::resource('billing/billings', App\Http\Controllers\BillingController::class)->names([
-        'index' => 'billing.index',
-        'create' => 'billing.create', 
-        'store' => 'billing.store',
-        'show' => 'billing.show',
-        'edit' => 'billing.edit',
-        'update' => 'billing.update',
-        'destroy' => 'billing.destroy'
-    ]);
+    // New Billing Creation
+    Route::get('/billing/billing-create', [App\Http\Controllers\BillingController::class, 'create'])->name('billing.create');
+    Route::post('/billing/billing-create', [App\Http\Controllers\BillingController::class, 'store'])->name('billing.store');
     
-    // AJAX endpoints for billing
+    // AJAX endpoints for billing (MUST come before wildcard routes)
+    Route::get('/billing/search-patients', [App\Http\Controllers\BillingController::class, 'searchPatients'])->name('billing.search.patients');
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
     Route::get('/billing/icd-rates', [App\Http\Controllers\BillingController::class, 'getIcdRates'])->name('billing.icd.rates');
     Route::get('/billing/patient-services/{patient_id}', [App\Http\Controllers\BillingController::class, 'getPatientServices'])->name('billing.patient.services');
-    Route::get('/billing/search-patients', [App\Http\Controllers\BillingController::class, 'searchPatients'])->name('billing.search.patients');
+    
+    // Individual Billing Management (wildcard routes come LAST)
+    Route::get('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
+    Route::get('/billing/{billing}/edit', [App\Http\Controllers\BillingController::class, 'edit'])->name('billing.edit');
+    Route::put('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'update'])->name('billing.update');
+    Route::delete('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'destroy'])->name('billing.destroy');
     Route::get('/billing/{billing}/receipt', [App\Http\Controllers\BillingController::class, 'exportReceipt'])->name('billing.export.receipt');
-    
-    // Legacy routes (keep for backward compatibility)
-    Route::get('/billing/invoices', function () {
-        return view('billing.billing_invoices');
-    })->name('billing.invoices');
-    
-    Route::get('/billing/payments', function () {
-        return view('billing.billing_payments');
-    })->name('billing.payments');
 });
 
 /*

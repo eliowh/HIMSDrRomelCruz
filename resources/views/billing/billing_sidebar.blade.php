@@ -15,14 +15,8 @@
     <nav>
         <ul>
             <li>
-                <a href="/billing/home"
-                   class="sidebar-btn{{ request()->is('billing/home') ? ' active' : '' }}">
-                    <span class="icon">🏠</span> <span class="text">Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('billing.index') }}"
-                   class="sidebar-btn{{ request()->routeIs('billing.index', 'billing.show', 'billing.edit') ? ' active' : '' }}">
+                <a href="{{ route('billing.dashboard') }}"
+                   class="sidebar-btn{{ request()->routeIs('billing.dashboard', 'billing.show', 'billing.edit') ? ' active' : '' }}">
                     <span class="icon">📋</span> <span class="text">Patient Billing</span>
                 </a>
             </li>
@@ -30,18 +24,6 @@
                 <a href="{{ route('billing.create') }}"
                    class="sidebar-btn{{ request()->routeIs('billing.create') ? ' active' : '' }}">
                     <span class="icon">➕</span> <span class="text">New Billing</span>
-                </a>
-            </li>
-            <li>
-                <a href="/billing/invoices"
-                   class="sidebar-btn{{ request()->is('billing/invoices') ? ' active' : '' }}">
-                    <span class="icon">💳</span> <span class="text">Legacy Invoices</span>
-                </a>
-            </li>
-            <li>
-                <a href="/billing/payments"
-                   class="sidebar-btn{{ request()->is('billing/payments') ? ' active' : '' }}">
-                    <span class="icon">💰</span> <span class="text">Legacy Payments</span>
                 </a>
             </li>
         </ul>

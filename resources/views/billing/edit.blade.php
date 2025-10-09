@@ -12,7 +12,7 @@
                     <a href="{{ route('billing.show', $billing) }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Details
                     </a>
-                    <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('billing.dashboard') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-list"></i> All Billings
                     </a>
                 </div>
@@ -45,13 +45,13 @@
                             <div class="card-body bg-light">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <p><strong>Name:</strong> {{ $billing->patient->firstName }} {{ $billing->patient->lastName }}</p>
-                                        <p><strong>Date of Birth:</strong> {{ $billing->patient->dateOfBirth }}</p>
+                                        <p><strong>Name:</strong> {{ $billing->patient->display_name ?? 'N/A' }}</p>
+                                        <p><strong>Date of Birth:</strong> {{ $billing->patient->date_of_birth ? $billing->patient->date_of_birth->format('M d, Y') : 'N/A' }}</p>
                                         <p><strong>Billing Number:</strong> {{ $billing->billing_number }}</p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p><strong>Billing Date:</strong> {{ $billing->billing_date->format('M d, Y g:i A') }}</p>
-                                        <p><strong>Created By:</strong> {{ $billing->createdBy->name }}</p>
+                                        <p><strong>Billing Date:</strong> {{ $billing->billing_date ? $billing->billing_date->format('M d, Y g:i A') : 'N/A' }}</p>
+                                        <p><strong>Created By:</strong> {{ $billing->createdBy ? $billing->createdBy->name : 'N/A' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -68,6 +68,9 @@
                                     <strong>Note:</strong> You can only edit the professional fees. Other charges are fixed based on the original billing items.
                                 </div>
                                 
+                                @php
+                                    $professionalFeeOnly = $billing->billingItems->where('item_type', 'professional')->sum('unit_price');
+                                @endphp
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label for="professional_fees" class="form-label">
@@ -79,20 +82,33 @@
                                                    name="professional_fees" 
                                                    id="professional_fees" 
                                                    class="form-control" 
-                                                   value="{{ old('professional_fees', $billing->professional_fees) }}" 
+                                                   value="{{ old('professional_fees', $professionalFeeOnly) }}" 
                                                    min="0" 
                                                    step="0.01" 
                                                    required>
                                         </div>
-                                        <small class="text-muted">Current professional fee total</small>
+                                        <small class="text-muted">Editable professional fee portion only</small>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Professional Fee Items</label>
+                                        <label class="form-label">Professional Fee Breakdown</label>
                                         <div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
                                             @forelse($billing->billingItems->where('item_type', 'professional') as $item)
-                                                <div class="d-flex justify-content-between py-1">
-                                                    <span>{{ $item->description }}</span>
-                                                    <span class="text-muted">₱{{ number_format($item->total_amount, 2) }}</span>
+                                                <div class="mb-2">
+                                                    <div class="fw-bold">{{ $item->description }}</div>
+                                                    @if($item->case_rate > 0)
+                                                        <div class="d-flex justify-content-between">
+                                                            <small class="text-muted">Case Rate:</small>
+                                                            <small class="text-success">₱{{ number_format($item->case_rate, 2) }}</small>
+                                                        </div>
+                                                    @endif
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">Professional Fee:</small>
+                                                        <small class="text-primary">₱{{ number_format($item->unit_price, 2) }}</small>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between border-top pt-1">
+                                                        <small class="fw-bold">Total:</small>
+                                                        <small class="fw-bold">₱{{ number_format($item->total_amount, 2) }}</small>
+                                                    </div>
                                                 </div>
                                             @empty
                                                 <span class="text-muted">No professional fee items</span>
@@ -172,7 +188,7 @@
 
                         <!-- Notes -->
                         <div class="card shadow mb-4">
-                            <div class="card-header">
+                            <div class="card-header bg-secondary text-white">
                                 <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Notes</h6>
                             </div>
                             <div class="card-body">
@@ -186,7 +202,7 @@
 
                     <!-- Right Column - Current Billing Summary -->
                     <div class="col-md-4">
-                        <div class="card shadow mb-4 position-sticky" style="top: 20px;">
+                        <div class="card shadow mb-4">
                             <div class="card-header bg-success text-white">
                                 <h5 class="mb-0"><i class="fas fa-calculator"></i> Updated Summary</h5>
                             </div>
@@ -195,49 +211,49 @@
                                 <h6 class="text-muted mb-3">Current Charges</h6>
                                 <div class="row mb-2">
                                     <div class="col">Room Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->room_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->room_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Professional Fees:</div>
-                                    <div class="col-auto text-warning" id="currentProfessionalFees">₱{{ number_format($billing->professional_fees, 2) }}</div>
+                                    <div class="col-auto text-warning" id="currentProfessionalFees">₱{{ number_format($billing->professional_fees ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Medicine Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->medicine_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->medicine_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Laboratory Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->lab_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->lab_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col">Other Charges:</div>
-                                    <div class="col-auto">₱{{ number_format($billing->other_charges, 2) }}</div>
+                                    <div class="col-auto">₱{{ number_format($billing->other_charges ?? 0, 2) }}</div>
                                 </div>
                                 <hr>
 
                                 <!-- Updated Totals -->
                                 <div class="row mb-2">
                                     <div class="col"><strong>New Subtotal:</strong></div>
-                                    <div class="col-auto"><strong id="newSubtotal">₱{{ number_format($billing->total_amount, 2) }}</strong></div>
+                                    <div class="col-auto"><strong id="newSubtotal">₱{{ number_format($billing->total_amount ?? 0, 2) }}</strong></div>
                                 </div>
                                 
                                 @if($billing->is_philhealth_member)
                                     <div class="row mb-2 text-success">
                                         <div class="col">PhilHealth Deduction:</div>
-                                        <div class="col-auto" id="newPhilhealthDeduction">-₱{{ number_format($billing->philhealth_deduction, 2) }}</div>
+                                        <div class="col-auto" id="newPhilhealthDeduction">-₱{{ number_format($billing->philhealth_deduction ?? 0, 2) }}</div>
                                     </div>
                                 @endif
 
                                 <div class="row mb-2 text-success">
                                     <div class="col">Senior/PWD Discount:</div>
-                                    <div class="col-auto" id="newSeniorPwdDiscount">-₱{{ number_format($billing->senior_pwd_discount, 2) }}</div>
+                                    <div class="col-auto" id="newSeniorPwdDiscount">-₱{{ number_format($billing->senior_pwd_discount ?? 0, 2) }}</div>
                                 </div>
                                 
                                 <hr class="my-3">
                                 
                                 <div class="row">
                                     <div class="col"><h5><strong>New Net Amount:</strong></h5></div>
-                                    <div class="col-auto"><h5 class="text-primary"><strong id="newNetAmount">₱{{ number_format($billing->net_amount, 2) }}</strong></h5></div>
+                                    <div class="col-auto"><h5 class="text-primary"><strong id="newNetAmount">₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong></h5></div>
                                 </div>
 
                                 <!-- Comparison -->
@@ -252,7 +268,7 @@
 
                         <!-- All Billing Items (Read-only) -->
                         <div class="card shadow">
-                            <div class="card-header">
+                            <div class="card-header bg-dark text-white">
                                 <h6 class="mb-0"><i class="fas fa-list"></i> All Billing Items</h6>
                             </div>
                             <div class="card-body">
@@ -310,14 +326,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const pwdCheckbox = document.getElementById('is_pwd');
     
     const originalValues = {
-        roomCharges: {{ $billing->room_charges }},
-        professionalFees: {{ $billing->professional_fees }},
-        medicineCharges: {{ $billing->medicine_charges }},
-        labCharges: {{ $billing->lab_charges }},
-        otherCharges: {{ $billing->other_charges }},
-        philhealthDeduction: {{ $billing->philhealth_deduction }},
+        roomCharges: {{ $billing->room_charges ?? 0 }},
+        professionalFees: {{ $billing->professional_fees ?? 0 }},
+        medicineCharges: {{ $billing->medicine_charges ?? 0 }},
+        labCharges: {{ $billing->lab_charges ?? 0 }},
+        otherCharges: {{ $billing->other_charges ?? 0 }},
+        philhealthDeduction: {{ $billing->philhealth_deduction ?? 0 }},
         isPhilhealthMember: {{ $billing->is_philhealth_member ? 'true' : 'false' }},
-        originalNetAmount: {{ $billing->net_amount }}
+        originalNetAmount: {{ $billing->net_amount ?? 0 }}
     };
     
     function calculateUpdatedTotals() {
@@ -417,4 +433,40 @@ document.querySelector('form').addEventListener('submit', function(e) {
 });
 </script>
 
+@endsection
+
+@section('styles')
+<style>
+/* Billing Card & Table Enhancements */
+.card.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Card header color consistency with green gradient */
+.card-header.bg-info {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+.card-header.bg-warning {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+    color: #fff !important;
+}
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+.card-header.bg-success {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+.card-header.bg-secondary {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+.card-header.bg-dark {
+    background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+}
+
+/* Input styling enhancements */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
 @endsection

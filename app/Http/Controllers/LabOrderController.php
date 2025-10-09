@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LabOrderController extends Controller
 {
@@ -317,6 +318,146 @@ class LabOrderController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error viewing PDF for order ' . $orderId . ': ' . $e->getMessage());
             abort(500, 'Error loading PDF results');
+        }
+    }
+
+    /**
+     * Return available lab result templates (for dynamic form selection)
+     */
+    public function listTemplates()
+    {
+        $templates = config('lab_templates');
+        $public = collect($templates)->map(function($tpl, $key){
+            return [
+                'key' => $key,
+                'title' => $tpl['title'],
+                'code' => $tpl['code'] ?? strtoupper($key),
+                'type' => isset($tpl['sections']) ? 'sectioned' : 'flat',
+                'field_count' => isset($tpl['fields']) ? count($tpl['fields']) : collect($tpl['sections'] ?? [])->flatten(1)->count(),
+            ];
+        })->values();
+
+        // Return full template structures if explicitly requested (for dynamic field rendering)
+        if (request()->boolean('details')) {
+            return response()->json([
+                'success' => true,
+                'templates' => $public,
+                'templates_full' => $templates,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'templates' => $public]);
+    }
+
+    /**
+     * Generate and attach a lab result PDF from a chosen template & submitted values
+     */
+    public function generateResultPdf(Request $request, $orderId)
+    {
+        try {
+            // Debug check - let's see what's going on
+            \Log::info('PDF generation started', [
+                'order_id' => $orderId,
+                'user_id' => auth()->id(),
+                'user_role' => auth()->user()->role ?? 'no-role',
+                'request_data' => $request->all()
+            ]);
+
+            // Validate user has lab_technician role
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated.'
+                ], 401);
+            }
+
+            if (!auth()->user()->hasRole('lab_technician')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Lab technician access required. Your role: ' . (auth()->user()->role ?? 'none')
+                ], 403);
+            }
+
+            $request->validate([
+                'template_key' => 'required|string',
+                'values' => 'array',
+            ]);
+
+            $order = LabOrder::with('patient')->findOrFail($orderId);
+
+            if (!in_array($order->status, ['in_progress','pending'])) {
+                return response()->json(['success'=>false,'message'=>'Order already completed or cancelled.'], 400);
+            }
+
+            $templates = config('lab_templates');
+            $key = $request->input('template_key');
+            if (!isset($templates[$key])) {
+                return response()->json(['success'=>false,'message'=>'Unknown template key.'], 422);
+            }
+            $template = $templates[$key];
+            $values = $request->input('values', []);
+
+            // Build PDF view data
+            $patient = $order->patient; // for blade
+
+            if (!$patient) {
+                return response()->json(['success'=>false,'message'=>'Patient not found for this order.'], 404);
+            }
+
+            // Prefer dedicated design-specific blade if exists (resources/views/labtech/templates/pdf/{key}.blade.php)
+            $viewName = 'labtech.templates.lab_result_generic';
+            if (view()->exists('labtech.templates.pdf.'.$key)) {
+                $viewName = 'labtech.templates.pdf.'.$key;
+            }
+            
+            \Log::info('Generating PDF with view: ' . $viewName, [
+                'template_key' => $key,
+                'order_id' => $orderId,
+                'patient_id' => $patient->id ?? 'null'
+            ]);
+
+            $pdf = Pdf::loadView($viewName, compact('template','values','patient'));
+            $pdf->setPaper('letter','portrait');
+
+            $filename = 'lab-result-'.$order->id.'-'.$key.'-'.time().'.pdf';
+            $path = 'lab-results/'.$filename;
+            Storage::put($path, $pdf->output());
+
+            $order->results_pdf_path = $path;
+            $order->results = ($template['title'] ?? 'Lab Result').' generated';
+            $order->status = 'completed';
+            $order->completed_at = now();
+            $order->lab_tech_id = auth()->id();
+            $order->save();
+
+            return response()->json([
+                'success'=>true,
+                'message'=>'Lab result PDF generated and attached.',
+                'pdf_path'=>$path,
+                'view_url'=> route('labtech.order.viewPdf', $order->id),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed in PDF generation', [
+                'order_id' => $orderId,
+                'errors' => $e->validator->errors()->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Lab PDF generation failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'PDF generation failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

@@ -105,6 +105,64 @@
                     <x-custom-pagination :paginator="$requests" />
                 </div>
             @endif
+
+            @if(isset($completedRequests) && $completedRequests->count())
+            <div class="pharmacy-card" style="margin-top:32px;">
+                <h3 style="margin-top:0;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:20px;">Completed / Dispensed (Recent)</span>
+                    <span style="background:#eef5ef;color:#2E7D32;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">{{ $completedRequests->count() }}</span>
+                </h3>
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Req ID</th>
+                            <th>Patient</th>
+                            <th>Medicine</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Processed At</th>
+                            <th>Processed By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($completedRequests as $c)
+                        <tr>
+                            <td>#{{ $c->id }}</td>
+                            <td>{{ $c->patient_name }}</td>
+                            <td>{{ $c->generic_name ?? $c->brand_name ?? '-' }}</td>
+                            <td>{{ $c->quantity }}</td>
+                            <td>₱{{ number_format($c->total_price,2) }}</td>
+                            <td>{{ ucfirst(str_replace('_',' ',$c->status)) }}</td>
+                            <td>
+                                @if($c->dispensed_at)
+                                    {{ $c->dispensed_at->format('M d, Y h:i A') }}
+                                @elseif($c->completed_at)
+                                    {{ $c->completed_at->format('M d, Y h:i A') }}
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td>
+                                @if($c->dispensedBy)
+                                    {{ $c->dispensedBy->name }}
+                                @elseif($c->requestedBy)
+                                    {{ $c->requestedBy->name }}
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td>
+                                <button class="action-btn" onclick="viewRequest({{ $c->id }})" title="View"><i class="fas fa-eye"></i></button>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <p style="margin-top:12px;font-size:12px;color:#666;">Showing latest {{ $completedRequests->count() }} processed requests (dispensed or completed). Use filters above for full history.</p>
+            </div>
+            @endif
         </main>
     </div>
 
