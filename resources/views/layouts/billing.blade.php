@@ -23,7 +23,6 @@
             flex: 1;
             padding: 20px;
             background: #f8f9fa;
-            margin-left: 250px;
             transition: margin-left 0.3s ease;
         }
         
@@ -47,13 +46,50 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+            background: linear-gradient(135deg, #367F2B, #2d6624) !important;
+            border: none !important;
+            color: white !important;
+            font-weight: 500 !important;
+            padding: 8px 16px !important;
+            border-radius: 6px !important;
+            transition: all 0.3s ease !important;
+            text-decoration: none !important;
+            display: inline-block !important;
+            box-shadow: 0 2px 4px rgba(54, 127, 43, 0.2) !important;
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            transform: translateY(-1px);
+            background: linear-gradient(135deg, #2d6624, #367F2B) !important;
+            color: white !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 8px rgba(54, 127, 43, 0.3) !important;
+        }
+        
+        .btn-primary:focus, .btn-primary:active {
+            background: linear-gradient(135deg, #2d6624, #367F2B) !important;
+            color: white !important;
+            box-shadow: 0 0 0 0.2rem rgba(54, 127, 43, 0.25) !important;
+        }
+        
+        /* Additional button size variations */
+        .btn-primary.btn-sm {
+            padding: 6px 12px !important;
+            font-size: 0.875rem !important;
+        }
+        
+        .btn-primary.btn-lg {
+            padding: 12px 24px !important;
+            font-size: 1.125rem !important;
+        }
+        
+        /* Ensure icons in buttons are properly spaced */
+        .btn-primary i {
+            margin-right: 6px;
+        }
+        
+        .btn-primary i:last-child {
+            margin-right: 0;
+            margin-left: 6px;
         }
         
         .table thead th {

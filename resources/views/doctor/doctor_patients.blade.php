@@ -773,21 +773,30 @@ document.getElementById('labRequestForm').addEventListener('submit', function(e)
     
     const formData = new FormData(this);
     
-    // Combine test category and specific test into a single test_requested field
+    // Properly separate test request and additional notes
     const category = formData.get('test_category');
     const specificTest = formData.get('specific_test');
     const additionalTests = formData.get('additional_tests');
     
+    // Main test request (keep clean for pricing lookup)
     let testRequested = '';
     if (category && specificTest) {
         testRequested = `${category.toUpperCase()}: ${specificTest}`;
-        if (additionalTests) {
-            testRequested += `\n\nAdditional: ${additionalTests}`;
+    }
+    
+    // Put additional tests in notes field, not test_requested
+    let notes = formData.get('notes') || '';
+    if (additionalTests) {
+        if (notes) {
+            notes += `\n\nAdditional Tests: ${additionalTests}`;
+        } else {
+            notes = `Additional Tests: ${additionalTests}`;
         }
     }
     
-    // Update the FormData with combined test_requested
+    // Update FormData with proper separation
     formData.set('test_requested', testRequested);
+    formData.set('notes', notes);
     
     const submitBtn = this.querySelector('.submit-btn');
     const originalText = submitBtn.textContent;

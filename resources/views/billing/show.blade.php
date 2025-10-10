@@ -291,20 +291,7 @@
                                 <a href="{{ route('billing.export.receipt', $billing) }}" class="btn btn-success" target="_blank">
                                     <i class="fas fa-file-pdf"></i> Download Receipt
                                 </a>
-                                @if($billing->status === 'pending')
-                                    <form action="{{ route('billing.update', $billing) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('PUT')
-                                        <input type="hidden" name="status" value="paid">
-                                        <input type="hidden" name="professional_fees" value="{{ $billing->professional_fees }}">
-                                        <input type="hidden" name="is_senior_citizen" value="{{ $billing->is_senior_citizen }}">
-                                        <input type="hidden" name="is_pwd" value="{{ $billing->is_pwd }}">
-                                        <input type="hidden" name="notes" value="{{ $billing->notes }}">
-                                        <button type="button" class="btn btn-primary w-100" onclick="handlePaymentConfirmation(this)">
-                                            <i class="fas fa-check"></i> Mark as Paid
-                                        </button>
-                                    </form>
-                                @endif
+
                                 <button class="btn btn-info" onclick="window.print()">
                                     <i class="fas fa-print"></i> Print
                                 </button>
@@ -397,22 +384,7 @@
 }
 </style>
 
-@include('billing.modals.notification_system')
-
 <script>
-// Handle payment confirmation with notification system
-async function handlePaymentConfirmation(button) {
-    const confirmed = await confirmBillingAction(
-        'Mark this billing as paid? This will update the payment status and cannot be undone.',
-        'Confirm Payment'
-    );
-    
-    if (confirmed) {
-        showBillingLoading('Processing payment...');
-        button.closest('form').submit();
-    }
-}
-
 // Show notifications for session messages
 document.addEventListener('DOMContentLoaded', function() {
     @if(session('success'))

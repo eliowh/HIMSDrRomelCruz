@@ -235,9 +235,11 @@ async function loadPatientServices() {
             document.getElementById('noServicesAlert').style.display = 'none';
         } else {
             console.log('No services found for patient');
+            // Patient is selected but has no services - show appropriate message
+            document.getElementById('patientServicesContainer').innerHTML = '';
             document.getElementById('selectPatientAlert').style.display = 'none';
             document.getElementById('noServicesAlert').style.display = 'block';
-            clearPatientServices();
+            calculateTotals();
         }
         
     } catch (error) {
@@ -469,6 +471,9 @@ function updatePhilhealthStatus() {
         // Hide PhilHealth status if no patient is selected
         statusDiv.style.display = 'none';
     }
+    
+    // Recalculate totals when PhilHealth status changes
+    calculateTotals();
 }
 
 function getServiceIcon(type) {
@@ -485,12 +490,18 @@ function getServiceIcon(type) {
 function clearPatientServices() {
     console.log('Clearing patient services');
     document.getElementById('patientServicesContainer').innerHTML = '';
+    
     // Only show select patient alert if no patient is actually selected
     const patientId = document.getElementById('patient_id').value;
     if (!patientId) {
         document.getElementById('selectPatientAlert').style.display = 'block';
+        document.getElementById('noServicesAlert').style.display = 'none';
+    } else {
+        // If patient is selected but no services, keep the selectPatientAlert hidden
+        // and let the loadPatientServices function handle showing noServicesAlert
+        document.getElementById('selectPatientAlert').style.display = 'none';
     }
-    document.getElementById('noServicesAlert').style.display = 'none';
+    
     calculateTotals();
 }
 
@@ -534,7 +545,7 @@ function calculateTotals() {
     // PhilHealth deduction
     let philhealthDeduction = 0;
     if (document.getElementById('is_philhealth_member').checked) {
-        philhealthDeduction = parseFloat(subtotal) * 0.30; // Assume 30% coverage
+        philhealthDeduction = parseFloat(subtotal) * 0.15; // Assume 15% coverage
     }
     
     // Senior/PWD discount
@@ -706,21 +717,8 @@ document.querySelector('form').addEventListener('submit', function(e) {
     showBillingLoading('Creating billing record...');
 });
 
-// Define missing notification functions
-function showBillingLoading(message) {
-    console.log('Loading:', message);
-    // You can add a loading spinner here if needed
-}
-
-function closeBillingNotification() {
-    console.log('Closing notification');
-    // Close any loading spinners here
-}
-
-function showBillingNotification(type, title, message) {
-    console.log(`${type.toUpperCase()}: ${title} - ${message}`);
-    alert(`${title}: ${message}`);
-}
+// Notification functions are provided by the notification_system modal include
+// No need to define fallback functions here as the modal provides the real implementation
 </script>
 
 @endpush

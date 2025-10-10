@@ -111,6 +111,9 @@
                                                title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            
+
+                                            
                                             <a href="{{ route('billing.export.receipt', $billing) }}" 
                                                class="btn btn-sm btn-outline-success" 
                                                title="Export Receipt" 
@@ -222,8 +225,8 @@
 async function handleBillingDelete(event, form) {
     event.preventDefault();
     
-    const confirmed = await confirmBillingAction(
-        'Are you sure you want to delete this billing record? This action cannot be undone.',
+    const confirmed = await confirmDeleteAction(
+        'This billing record will be permanently deleted along with:\n• All billing items and charges\n• Payment history\n• Associated reports\n\nThis action cannot be undone!', 
         'Delete Billing Record'
     );
     
@@ -234,6 +237,8 @@ async function handleBillingDelete(event, form) {
     
     return false;
 }
+
+
 
 // Show notifications for session messages
 document.addEventListener('DOMContentLoaded', function() {

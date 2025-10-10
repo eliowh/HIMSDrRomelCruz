@@ -714,6 +714,7 @@ class AdminController extends Controller
                 'first_name' => 'required|string|max:255',
                 'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'required|string|max:255',
+                'date_of_birth' => 'nullable|date|before:today',
                 'nationality' => 'nullable|string|max:255',
                 'province' => 'nullable|string|max:255',
                 'city' => 'nullable|string|max:255',
@@ -885,7 +886,7 @@ class AdminController extends Controller
                     
                     <div class="form-field">
                         <label>Date of Birth</label>
-                        <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '" readonly>
+                        <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '">
                     </div>
                     
                     <div class="form-field">
@@ -1007,6 +1008,33 @@ class AdminController extends Controller
             background-color: #5a6268;
         }
         </style>
+
+        <script>
+        // Auto-calculate age when date of birth changes
+        document.addEventListener("DOMContentLoaded", function() {
+            const dobInput = document.querySelector("input[name=\"date_of_birth\"]");
+            const ageDisplay = dobInput?.closest(".form-grid")?.querySelector("input[readonly]");
+            
+            if (dobInput && ageDisplay) {
+                dobInput.addEventListener("change", function() {
+                    if (this.value) {
+                        const birthDate = new Date(this.value);
+                        const today = new Date();
+                        let age = today.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = today.getMonth() - birthDate.getMonth();
+                        
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                            age--;
+                        }
+                        
+                        ageDisplay.value = age >= 0 ? age + " years" : "N/A";
+                    } else {
+                        ageDisplay.value = "N/A";
+                    }
+                });
+            }
+        });
+        </script>
 
 ';
         

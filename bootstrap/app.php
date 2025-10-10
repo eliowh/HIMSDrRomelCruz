@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'admin.security' => \App\Http\Middleware\AdminSecurityMiddleware::class,
             'cors' => \App\Http\Middleware\CorsMiddleware::class,
+            'favicon' => \App\Http\Middleware\FaviconMiddleware::class,
         ]);
         
         // Trust Railway proxies for HTTPS detection
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add CORS middleware globally
         $middleware->web(prepend: [
             \App\Http\Middleware\CorsMiddleware::class,
+            \App\Http\Middleware\FaviconMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -169,18 +169,26 @@
                                     </div>
                                 </div>
 
-                                <!-- PhilHealth Status (Read-only) -->
+                                <!-- PhilHealth Status (Editable) -->
                                 <div class="row mt-3">
                                     <div class="col-12">
-                                        <div class="alert {{ $billing->is_philhealth_member ? 'alert-info' : 'alert-secondary' }}">
+                                        <label class="form-label">
                                             <i class="fas fa-shield-alt"></i>
-                                            <strong>PhilHealth Status:</strong> 
-                                            @if($billing->is_philhealth_member)
-                                                Active Member - Coverage Applied
-                                            @else
-                                                Not a PhilHealth Member
-                                            @endif
+                                            PhilHealth Coverage
+                                        </label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   name="is_philhealth_member" 
+                                                   id="is_philhealth_member_edit"
+                                                   value="1"
+                                                   {{ old('is_philhealth_member', $billing->is_philhealth_member) ? 'checked' : '' }}
+                                                   onchange="recalculateEditTotals()">
+                                            <label class="form-check-label" for="is_philhealth_member_edit">
+                                                PhilHealth Member (Coverage Applied)
+                                            </label>
                                         </div>
+                                        <small class="text-muted">Check this to apply PhilHealth coverage and deductions</small>
                                     </div>
                                 </div>
                             </div>
@@ -346,11 +354,19 @@ document.addEventListener('DOMContentLoaded', function() {
                            originalValues.medicineCharges + originalValues.labCharges + 
                            originalValues.otherCharges;
         
-        // Calculate PhilHealth deduction (simplified - same percentage as original)
+        // Calculate PhilHealth deduction based on current checkbox status
         let newPhilhealthDeduction = 0;
-        if (originalValues.isPhilhealthMember && originalValues.philhealthDeduction > 0) {
-            const originalPhilhealthPercentage = originalValues.philhealthDeduction / (originalValues.roomCharges + originalValues.professionalFees + originalValues.medicineCharges + originalValues.labCharges + originalValues.otherCharges);
-            newPhilhealthDeduction = newSubtotal * originalPhilhealthPercentage;
+        const isPhilhealthMemberChecked = document.getElementById('is_philhealth_member_edit').checked;
+        
+        if (isPhilhealthMemberChecked) {
+            // If PhilHealth was originally applied, use the same percentage
+            if (originalValues.isPhilhealthMember && originalValues.philhealthDeduction > 0) {
+                const originalPhilhealthPercentage = originalValues.philhealthDeduction / (originalValues.roomCharges + originalValues.professionalFees + originalValues.medicineCharges + originalValues.labCharges + originalValues.otherCharges);
+                newPhilhealthDeduction = newSubtotal * originalPhilhealthPercentage;
+            } else {
+                // Apply standard PhilHealth deduction (typically 10-15% for most cases)
+                newPhilhealthDeduction = newSubtotal * 0.10; // 10% standard deduction
+            }
         }
         
         // Calculate senior/PWD discount
