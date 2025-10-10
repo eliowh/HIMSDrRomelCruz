@@ -264,9 +264,10 @@ body {
 
 /* buttons */
 .btn { display:inline-block; padding:10px 16px; border-radius:8px; text-decoration:none; font-weight:700; background:#2563eb; color:#fff; font-size:1.05rem; }
-.btn.secondary { background:#f3f4f6; color:#111827; }
+.btn.secondary { background:#6b7280; color:#fff; }
+.btn.secondary:hover { background:#4b5563; }
 
-/* Ensure action buttons (View / Request) are inline and don't wrap */
+/* Ensure action buttons (View / Request / Message) are inline and don't wrap */
 .col-actions { display:flex; gap:8px; align-items:center; justify-content:flex-start; width:auto; min-width:120px; }
 .col-actions .btn { padding:8px 12px; font-size:1rem; }
 
