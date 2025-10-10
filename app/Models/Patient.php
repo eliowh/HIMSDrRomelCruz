@@ -195,20 +195,57 @@ class Patient extends Model
             ]);
         }
         
-        // Add dispensed medicines with their pharmacy prices
+        // Add medicines - prioritize PatientMedicine records over PharmacyRequest records to avoid duplicates
+        $addedMedicines = [];
+        
+        // First, add patient medicines (final dispensed medicines with accurate pricing)
+        foreach ($this->medicines as $medicine) {
+            // Determine medicine name (prefer brand name, fall back to generic name)
+            $medicineName = $medicine->brand_name ?: $medicine->generic_name;
+            
+            // Use the medicine's total_price if available, otherwise calculate from unit_price
+            $rawPrice = $medicine->total_price ?? ($medicine->unit_price ?? 0);
+            $cleanPrice = is_string($rawPrice) ? str_replace(',', '', $rawPrice) : $rawPrice;
+            $medicinePrice = is_numeric($cleanPrice) ? (float)$cleanPrice : 0.00;
+            
+            // Track this medicine to avoid duplicates
+            $medicineKey = strtolower($medicineName);
+            $addedMedicines[$medicineKey] = true;
+            
+            $services->push([
+                'type' => 'medicine',
+                'description' => 'Medicine: ' . ($medicineName ?? 'Medicine'),
+                'icd_code' => null,
+                'unit_price' => $medicinePrice,
+                'quantity' => $medicine->quantity ?? 1,
+                'source' => 'patient_medicine'
+            ]);
+        }
+        
+        // Then, add pharmacy requests that haven't been added as patient medicines
         foreach ($this->pharmacyRequests()->where('status', 'dispensed')->get() as $pharmacy) {
+            // Determine medicine name (prefer brand name, fall back to generic name)
+            $medicineName = $pharmacy->brand_name ?: $pharmacy->generic_name;
+            $medicineKey = strtolower($medicineName);
+            
+            // Skip if this medicine was already added from PatientMedicine
+            if (isset($addedMedicines[$medicineKey])) {
+                continue;
+            }
+            
             // Get medicine price from pharmacy stocks
-            $stock = \App\Models\PharmacyStock::where('generic_name', $pharmacy->medicine_name)
-                                            ->orWhere('brand_name', $pharmacy->medicine_name)
+            $stock = \App\Models\PharmacyStock::where('generic_name', $medicineName)
+                                            ->orWhere('brand_name', $medicineName)
                                             ->first();
             
-            $rawPrice = $stock ? $stock->price : ($pharmacy->price ?? 0);
+            // Use the pharmacy request's total_price if available, otherwise calculate from unit_price
+            $rawPrice = $pharmacy->total_price ?? ($pharmacy->unit_price ?? ($stock ? $stock->price : 0));
             $cleanPrice = is_string($rawPrice) ? str_replace(',', '', $rawPrice) : $rawPrice;
             $medicinePrice = is_numeric($cleanPrice) ? (float)$cleanPrice : 0.00;
             
             $services->push([
                 'type' => 'medicine',
-                'description' => 'Medicine: ' . ($pharmacy->medicine_name ?? 'Medicine'),
+                'description' => 'Medicine: ' . ($medicineName ?? 'Medicine'),
                 'icd_code' => null,
                 'unit_price' => $medicinePrice,
                 'quantity' => $pharmacy->quantity ?? 1,

@@ -379,6 +379,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Calculate age from date of birth
+    function calculateAge(dateOfBirth) {
+        if (!dateOfBirth) return '';
+        
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        return age >= 0 ? age + ' years' : '';
+    }
+    
+    // Update age when date of birth changes
+    function updateAgeField() {
+        const dobInput = document.getElementById('date_of_birth');
+        const ageInput = document.getElementById('age_display');
+        
+        if (dobInput && ageInput) {
+            dobInput.addEventListener('change', function() {
+                const age = calculateAge(this.value);
+                ageInput.value = age || 'N/A';
+            });
+        }
+    }
+    
     // Toggle edit mode
     function toggleEditMode(editMode) {
         const inputs = form.querySelectorAll('input:not([name="patient_id"]):not(#patient_no):not(#age_display), select, textarea');
@@ -402,6 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
         editBtn.style.display = editMode ? 'none' : 'flex';
         saveBtn.style.display = editMode ? 'flex' : 'none';
         cancelBtn.style.display = editMode ? 'flex' : 'none';
+        
+        // Initialize age calculation when entering edit mode
+        if (editMode) {
+            updateAgeField();
+        }
     }
     
     // Edit button click
@@ -415,6 +449,9 @@ document.addEventListener('DOMContentLoaded', function() {
         restoreOriginalValues();
         toggleEditMode(false);
     });
+    
+    // Initialize age calculation on page load
+    updateAgeField();
     
     // Save button click
     saveBtn.addEventListener('click', async function() {

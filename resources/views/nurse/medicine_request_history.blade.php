@@ -314,7 +314,7 @@
 <script>
 // View request details
 function viewRequestDetails(requestId) {
-    fetch(`/pharmacy/requests/${requestId}`)
+    fetch(`/nurse/pharmacy-requests/${requestId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {

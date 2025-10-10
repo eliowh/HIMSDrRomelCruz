@@ -110,6 +110,16 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
 
+    // Chat/Messaging Routes
+    Route::get('/doctor/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::get('/doctor/chat/{id}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+    Route::post('/doctor/chat/create-for-patient', [App\Http\Controllers\ChatController::class, 'createOrGetForPatient'])->name('chat.createForPatient');
+    Route::post('/doctor/chat/{id}/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.sendMessage');
+    Route::post('/doctor/chat/{id}/add-participant', [App\Http\Controllers\ChatController::class, 'addParticipant'])->name('chat.addParticipant');
+    Route::delete('/doctor/chat/{id}/remove-participant', [App\Http\Controllers\ChatController::class, 'removeParticipant'])->name('chat.removeParticipant');
+    Route::get('/doctor/chat/{id}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.getMessages');
+    Route::patch('/doctor/chat/{id}/archive', [App\Http\Controllers\ChatController::class, 'archive'])->name('chat.archive');
+
     // Schedule
     Route::get('/doctor/schedule', function () {
         return view('doctor.doctor_schedule');
@@ -225,6 +235,7 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Medicine request history for nurses
     Route::get('/nurse/medicine-request-history', [PharmacyController::class, 'nurseRequestHistory'])->name('nurse.medicine.request.history');
+    Route::get('/nurse/pharmacy-requests/{id}', [PharmacyController::class, 'showRequest'])->name('nurse.pharmacy.requests.show');
 });
 
 /*
@@ -285,19 +296,21 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
 
 Route::middleware(['auth', 'role:cashier'])->group(function () {
     // Dashboard
-    Route::get('/cashier/home', function () {
-        return view('cashier.cashier_home');
-    });
+    Route::get('/cashier/home', [App\Http\Controllers\CashierController::class, 'home']);
     
     // Billing Management
-    Route::get('/cashier/billing', function () {
-        return view('cashier.cashier_billing');
-    });
+    Route::get('/cashier/billing', [App\Http\Controllers\CashierController::class, 'billing']);
     
-    // Transaction Management
-    Route::get('/cashier/transactions', function () {
-        return view('cashier.cashier_transactions');
-    });
+    // Billing View
+    Route::get('/cashier/billing/{id}/view', [App\Http\Controllers\CashierController::class, 'viewBilling']);
+    
+    // Payment Processing
+    Route::post('/cashier/billing/{id}/mark-as-paid', [App\Http\Controllers\CashierController::class, 'markAsPaid']);
+    Route::post('/cashier/billing/{id}/mark-as-unpaid', [App\Http\Controllers\CashierController::class, 'markAsUnpaid']);
+    
+    // Receipt Management
+    Route::get('/cashier/billing/{id}/receipt', [App\Http\Controllers\CashierController::class, 'viewReceipt'])->name('cashier.billing.receipt');
+    Route::get('/cashier/billing/{id}/receipt/download', [App\Http\Controllers\CashierController::class, 'downloadReceipt'])->name('cashier.billing.receipt.download');
 });
 
 /*
@@ -476,6 +489,10 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
     Route::get('/billing/icd-rates', [App\Http\Controllers\BillingController::class, 'getIcdRates'])->name('billing.icd.rates');
     Route::get('/billing/patient-services/{patient_id}', [App\Http\Controllers\BillingController::class, 'getPatientServices'])->name('billing.patient.services');
+    
+    // Billing Status Management
+    Route::post('/billing/{billing}/mark-as-paid', [App\Http\Controllers\BillingController::class, 'markAsPaid'])->name('billing.mark.paid');
+    Route::post('/billing/{billing}/mark-as-unpaid', [App\Http\Controllers\BillingController::class, 'markAsUnpaid'])->name('billing.mark.unpaid');
     
     // Individual Billing Management (wildcard routes come LAST)
     Route::get('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');

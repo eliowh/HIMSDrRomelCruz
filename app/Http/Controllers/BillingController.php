@@ -50,9 +50,14 @@ class BillingController extends Controller
         try {
             $patient = Patient::findOrFail($request->patient_id);
             
-            // Check PhilHealth membership
-            $philhealthMember = PhilhealthMember::findByPatient($patient);
-            $isPhilhealthMember = $philhealthMember && $philhealthMember->isEligibleForCoverage();
+            // Check PhilHealth membership - prioritize user input over automatic lookup
+            $isPhilhealthMember = $request->boolean('is_philhealth_member');
+            
+            // If checkbox is not checked, fall back to automatic lookup
+            if (!$isPhilhealthMember) {
+                $philhealthMember = PhilhealthMember::findByPatient($patient);
+                $isPhilhealthMember = $philhealthMember && $philhealthMember->isEligibleForCoverage();
+            }
             
             // Generate billing number
             $billingNumber = 'BILL-' . date('Y') . '-' . str_pad(Billing::whereYear('created_at', date('Y'))->count() + 1, 6, '0', STR_PAD_LEFT);
@@ -195,6 +200,7 @@ class BillingController extends Controller
     {
         $request->validate([
             'professional_fees' => 'nullable|numeric|min:0',
+            'is_philhealth_member' => 'boolean',
             'is_senior_citizen' => 'boolean',
             'is_pwd' => 'boolean',
             'status' => 'required|in:pending,paid,cancelled',
@@ -236,6 +242,7 @@ class BillingController extends Controller
             // Calculate deductions before updating
             $tempBilling = clone $billing;
             $tempBilling->total_amount = $totalAmount;
+            $tempBilling->is_philhealth_member = $request->boolean('is_philhealth_member');
             $tempBilling->is_senior_citizen = $request->boolean('is_senior_citizen');
             $tempBilling->is_pwd = $request->boolean('is_pwd');
             
@@ -254,6 +261,7 @@ class BillingController extends Controller
                 'philhealth_deduction' => $philhealthDeduction,
                 'senior_pwd_discount' => $seniorPwdDiscount,
                 'net_amount' => $netAmount,
+                'is_philhealth_member' => $request->boolean('is_philhealth_member'),
                 'is_senior_citizen' => $request->boolean('is_senior_citizen'),
                 'is_pwd' => $request->boolean('is_pwd'),
                 'status' => $request->status,
@@ -353,23 +361,66 @@ class BillingController extends Controller
             return response()->json(['patients' => []]);
         }
 
-        $patients = Patient::where('first_name', 'like', "%{$query}%")
-                          ->orWhere('last_name', 'like', "%{$query}%")
-                          ->orWhere('patient_no', 'like', "%{$query}%")
-                          ->orderBy('first_name')
-                          ->limit(20)
-                          ->get()
-                          ->map(function ($patient) {
-                              return [
-                                  'id' => $patient->id,
-                                  'text' => $patient->display_name . ' - P' . $patient->patient_no . 
-                                           ($patient->date_of_birth ? ' (' . $patient->date_of_birth->format('M d, Y') . ')' : ' (N/A)'),
-                                  'display_name' => $patient->display_name,
-                                  'patient_no' => $patient->patient_no,
-                                  'date_of_birth' => $patient->date_of_birth ? $patient->date_of_birth->format('M d, Y') : 'N/A'
-                              ];
-                          });
+        $patients = Patient::where(function($q) use ($query) {
+                          $q->where('first_name', 'LIKE', "%{$query}%")
+                            ->orWhere('last_name', 'LIKE', "%{$query}%")
+                            ->orWhere('patient_no', 'LIKE', "%{$query}%");
+                      })
+                      ->limit(10)
+                      ->get()
+                      ->map(function ($patient) {
+                          return [
+                              'id' => $patient->id,
+                              'text' => $patient->display_name . ' (Patient #: ' . $patient->patient_no . ')'
+                          ];
+                      });
 
         return response()->json(['patients' => $patients]);
+    }
+
+    /**
+     * Mark billing as paid
+     */
+    public function markAsPaid(Billing $billing)
+    {
+        try {
+            $billing->update([
+                'status' => 'paid',
+                'payment_date' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Billing marked as paid successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark billing as paid: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mark billing as unpaid (revert to pending)
+     */
+    public function markAsUnpaid(Billing $billing)
+    {
+        try {
+            $billing->update([
+                'status' => 'pending',
+                'payment_date' => null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Billing marked as unpaid successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark billing as unpaid: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

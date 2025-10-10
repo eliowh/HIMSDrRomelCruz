@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_patients.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{{ asset('css/nursecss/edit_patient_modal.css') }}">
-<link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
-<link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
-<link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/edit_patient_modal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
@@ -91,9 +91,7 @@
 
     <div class="details-column">
         <div class="nurse-card details-card" id="detailsCard">
-            <div class="patients-header">
-                <h3>Patient Details</h3>
-            </div>
+            
 
             <div class="details-empty" id="detailsEmpty">Select a patient to view details.</div>
 
@@ -813,21 +811,30 @@ document.getElementById('labRequestForm').addEventListener('submit', function(e)
     
     const formData = new FormData(this);
     
-    // Combine test category and specific test into a single test_requested field
+    // Properly separate test request and additional notes
     const category = formData.get('test_category');
     const specificTest = formData.get('specific_test');
     const additionalTests = formData.get('additional_tests');
     
+    // Main test request (keep clean for pricing lookup)
     let testRequested = '';
     if (category && specificTest) {
         testRequested = `${category.toUpperCase()}: ${specificTest}`;
-        if (additionalTests) {
-            testRequested += `\n\nAdditional: ${additionalTests}`;
+    }
+    
+    // Put additional tests in notes field, not test_requested
+    let notes = formData.get('notes') || '';
+    if (additionalTests) {
+        if (notes) {
+            notes += `\n\nAdditional Tests: ${additionalTests}`;
+        } else {
+            notes = `Additional Tests: ${additionalTests}`;
         }
     }
     
-    // Update the FormData with combined test_requested
+    // Update FormData with proper separation
     formData.set('test_requested', testRequested);
+    formData.set('notes', notes);
     
     const submitBtn = this.querySelector('.submit-btn');
     const originalText = submitBtn.textContent;

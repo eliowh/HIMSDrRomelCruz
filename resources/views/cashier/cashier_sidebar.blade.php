@@ -26,12 +26,6 @@
                     <span class="icon">💰</span> <span class="text">Billing</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ asset('/cashier/transactions') }}"
-                   class="sidebar-btn{{ request()->is('cashier/transactions') ? ' active' : '' }}">
-                    <span class="icon">📋</span> <span class="text">Transactions</span>
-                </a>
-            </li>
         </ul>
         <form action="/logout" method="POST" id="cashier-logout-form" class="logout-form">
             @csrf

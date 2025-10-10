@@ -478,11 +478,21 @@
             });
         }
 
+        // Helper function to parse price values that may contain commas
+        function parsePrice(value) {
+            if (typeof value === 'number') return value;
+            if (typeof value !== 'string') return 0;
+            // Remove commas, currency symbols, and extra spaces, then parse as float
+            const cleaned = value.replace(/[,₱$\s]/g, '');
+            const parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
         function populateFieldsFromStock(stock) {
             document.getElementById('item_code_input').value = stock.item_code || '';
             document.getElementById('generic_name_input').value = stock.generic_name || '';
             document.getElementById('brand_name_input').value = stock.brand_name || '';
-            document.getElementById('unit_price').value = stock.price || '0';
+            document.getElementById('unit_price').value = parsePrice(stock.price).toFixed(2) || '0';
             
             hideAllSuggestions();
             
@@ -492,7 +502,7 @@
 
         function calculateTotalPrice() {
             const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-            const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+            const unitPrice = parsePrice(document.getElementById('unit_price').value);
             const totalPrice = quantity * unitPrice;
             document.getElementById('total_price').value = totalPrice.toFixed(2);
         }

@@ -18,6 +18,7 @@ class Billing extends Model
         'net_amount',
         'status',
         'billing_date',
+        'payment_date',
         'room_charges',
         'professional_fees',
         'medicine_charges',
@@ -32,6 +33,7 @@ class Billing extends Model
 
     protected $casts = [
         'billing_date' => 'datetime',
+        'payment_date' => 'datetime',
         'is_philhealth_member' => 'boolean',
         'is_senior_citizen' => 'boolean',
         'is_pwd' => 'boolean',
