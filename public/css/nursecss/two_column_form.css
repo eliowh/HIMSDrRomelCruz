@@ -24,7 +24,7 @@
     display: block;
     margin-bottom: 6px;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     color: #0b1220;
 }
 
@@ -35,10 +35,10 @@
 .form-group textarea {
     width: 100%;
     box-sizing: border-box;
-    padding: 10px 12px;
+    padding: 14px 16px;
     border-radius: 8px;
     border: 1px solid #dde2e8;
-    font-size: 0.95rem;
+    font-size: 1.15rem;
     transition: all 0.2s ease;
 }
 
@@ -115,10 +115,11 @@ button[type="submit"],
     background: linear-gradient(to right, #3b82f6, #2563eb);
     color: #fff;
     border: none;
-    padding: 10px 20px;
+    padding: 14px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
+    font-size: 1.15rem;
     transition: all 0.2s ease;
 }
 
@@ -133,10 +134,11 @@ button[type="submit"]:hover,
     background: #f3f4f6;
     color: #4b5563;
     border: 1px solid #e5e7eb;
-    padding: 10px 20px;
+    padding: 14px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
+    font-size: 1.15rem;
     transition: all 0.2s ease;
 }
 

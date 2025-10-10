@@ -25,7 +25,7 @@
                     <input id="med_item_code" name="item_code" type="text" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="med_unit_price">Unit Price (₱)</label>
+                    <label for="med_unit_price">Unit Price</label>
                     <input id="med_unit_price" name="unit_price" type="number" step="0.01" readonly>
                 </div>
                 <div class="form-group">
@@ -33,7 +33,7 @@
                     <input id="med_quantity" name="quantity" type="number" min="1" value="1" required>
                 </div>
                 <div class="form-group">
-                    <label for="med_total_price">Total Price (₱)</label>
+                    <label for="med_total_price">Total Price</label>
                     <input id="med_total_price" name="total_price" type="text" readonly>
                 </div>
             </div>

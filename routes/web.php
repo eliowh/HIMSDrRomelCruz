@@ -110,6 +110,16 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
 
+    // Chat/Messaging Routes
+    Route::get('/doctor/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::get('/doctor/chat/{id}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
+    Route::post('/doctor/chat/create-for-patient', [App\Http\Controllers\ChatController::class, 'createOrGetForPatient'])->name('chat.createForPatient');
+    Route::post('/doctor/chat/{id}/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.sendMessage');
+    Route::post('/doctor/chat/{id}/add-participant', [App\Http\Controllers\ChatController::class, 'addParticipant'])->name('chat.addParticipant');
+    Route::delete('/doctor/chat/{id}/remove-participant', [App\Http\Controllers\ChatController::class, 'removeParticipant'])->name('chat.removeParticipant');
+    Route::get('/doctor/chat/{id}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.getMessages');
+    Route::patch('/doctor/chat/{id}/archive', [App\Http\Controllers\ChatController::class, 'archive'])->name('chat.archive');
+
     // Schedule
     Route::get('/doctor/schedule', function () {
         return view('doctor.doctor_schedule');

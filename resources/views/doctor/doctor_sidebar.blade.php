@@ -20,6 +20,12 @@
                     <span class="icon">👥</span> <span class="text">Patients</span>
                 </a>
             </li>
+            <li>
+                <a href="/doctor/chat"
+                   class="sidebar-btn{{ request()->is('doctor/chat*') ? ' active' : '' }}">
+                    <span class="icon">💬</span> <span class="text">Messages</span>
+                </a>
+            </li>
          
             <li>
                 <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">

@@ -845,6 +845,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
         // doctorMap and legacy select removed; autosuggest will populate doctor_name and doctor_type via remote search
+
+    // Auto-capitalize text inputs
+    function initializeAutoCapitalization() {
+        // Select all text input fields that should be auto-capitalized
+        const fieldsToCapitalize = [
+            'first_name',
+            'last_name', 
+            'middle_name',
+            'province',
+            'city',
+            'barangay',
+            'nationality',
+            'doctor_name'
+        ];
+
+        fieldsToCapitalize.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                // Add event listener for input events
+                field.addEventListener('input', function(e) {
+                    const cursorPosition = e.target.selectionStart;
+                    const originalValue = e.target.value;
+                    
+                    // Capitalize first letter of each word
+                    const capitalizedValue = originalValue.replace(/\b\w/g, function(char) {
+                        return char.toUpperCase();
+                    });
+                    
+                    // Only update if the value changed to avoid cursor jumping
+                    if (originalValue !== capitalizedValue) {
+                        e.target.value = capitalizedValue;
+                        
+                        // Restore cursor position
+                        const newCursorPosition = cursorPosition + (capitalizedValue.length - originalValue.length);
+                        e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+                    }
+                });
+
+                // Also handle paste events
+                field.addEventListener('paste', function(e) {
+                    setTimeout(() => {
+                        const originalValue = e.target.value;
+                        const capitalizedValue = originalValue.replace(/\b\w/g, function(char) {
+                            return char.toUpperCase();
+                        });
+                        e.target.value = capitalizedValue;
+                    }, 10);
+                });
+            }
+        });
+    }
+
+    // Initialize auto-capitalization after DOM is loaded
+    initializeAutoCapitalization();
 });
 </script>
 <style>
