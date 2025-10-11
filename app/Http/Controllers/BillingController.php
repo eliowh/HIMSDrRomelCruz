@@ -184,6 +184,12 @@ class BillingController extends Controller
 
     public function edit(Billing $billing)
     {
+        // Prevent editing paid billings for security
+        if ($billing->status === 'paid') {
+            return redirect()->route('billing.show', $billing)
+                           ->with('error', 'Paid billings cannot be edited. Contact administration if changes are needed.');
+        }
+        
         $billing->load(['billingItems', 'patient', 'createdBy']);
         
         // Recalculate totals to ensure accuracy before editing
@@ -198,14 +204,25 @@ class BillingController extends Controller
 
     public function update(Request $request, Billing $billing)
     {
-        $request->validate([
-            'professional_fees' => 'nullable|numeric|min:0',
-            'is_philhealth_member' => 'boolean',
-            'is_senior_citizen' => 'boolean',
-            'is_pwd' => 'boolean',
-            'status' => 'required|in:pending,paid,cancelled',
-            'notes' => 'nullable|string'
-        ]);
+        // Prevent updating paid billings for security
+        if ($billing->status === 'paid') {
+            return redirect()->route('billing.show', $billing)
+                           ->with('error', 'Paid billings cannot be modified. Contact administration if changes are needed.');
+        }
+        
+        try {
+            $request->validate([
+                'professional_fees' => 'nullable|numeric|min:0|max:999999.99',
+                'is_philhealth_member' => 'boolean',
+                'is_senior_citizen' => 'boolean',
+                'is_pwd' => 'boolean',
+                'status' => 'required|in:pending,paid,cancelled',
+                'notes' => 'nullable|string|max:1000'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors(['error' => 'Professional fee adjustment failed: ' . implode(' ', $e->validator->errors()->all())])
+                        ->withInput();
+        }
 
         DB::beginTransaction();
         
@@ -279,19 +296,7 @@ class BillingController extends Controller
         }
     }
 
-    public function destroy(Billing $billing)
-    {
-        try {
-            $billing->billingItems()->delete();
-            $billing->delete();
-            
-            return redirect()->route('billing.index')
-                           ->with('success', 'Billing deleted successfully.');
-                           
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to delete billing: ' . $e->getMessage()]);
-        }
-    }
+    // Delete functionality removed for security - preventing billing theft and data loss
 
     public function checkPhilhealth(Request $request)
     {

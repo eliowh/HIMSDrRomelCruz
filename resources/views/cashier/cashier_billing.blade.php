@@ -164,20 +164,19 @@
                                                             <div class="btn-group-vertical gap-1">
                                                                 @if($billing->status === 'pending')
                                                                     <button type="button" 
-                                                                            class="btn btn-success btn-sm mark-as-paid-btn" 
-                                                                            title="Mark as Paid"
+                                                                            class="btn btn-success btn-sm process-payment-btn" 
+                                                                            title="Process Payment"
                                                                             data-billing-id="{{ $billing->id }}"
-                                                                            data-billing-number="{{ $billing->billing_number }}">
-                                                                        <i class="fas fa-check-circle"></i> Mark as Paid
+                                                                            data-billing-number="{{ $billing->billing_number }}"
+                                                                            data-net-amount="{{ $billing->net_amount }}"
+                                                                            data-bs-toggle="modal"
+                                                                            data-bs-target="#paymentModal">
+                                                                        <i class="fas fa-cash-register"></i> Process Payment
                                                                     </button>
                                                                 @elseif($billing->status === 'paid')
-                                                                    <button type="button" 
-                                                                            class="btn btn-outline-secondary btn-sm mark-as-unpaid-btn" 
-                                                                            title="Revert to Unpaid"
-                                                                            data-billing-id="{{ $billing->id }}"
-                                                                            data-billing-number="{{ $billing->billing_number }}">
-                                                                        <i class="fas fa-undo"></i> Revert Payment
-                                                                    </button>
+                                                                    <span class="btn btn-outline-success btn-sm disabled">
+                                                                        <i class="fas fa-check-circle"></i> Payment Complete
+                                                                    </span>
                                                                 @endif
                                                                 <a href="/cashier/billing/{{ $billing->id }}/view" 
                                                                    class="btn btn-outline-info btn-sm" 
@@ -221,10 +220,13 @@
                                                         </td>
                                                         <td>
                                                             <button type="button" 
-                                                                    class="btn btn-success btn-sm mark-as-paid-btn" 
+                                                                    class="btn btn-success btn-sm process-payment-btn" 
                                                                     data-billing-id="{{ $billing->id }}"
-                                                                    data-billing-number="{{ $billing->billing_number }}">
-                                                                <i class="fas fa-check-circle"></i> Mark as Paid
+                                                                    data-billing-number="{{ $billing->billing_number }}"
+                                                                    data-net-amount="{{ $billing->net_amount }}"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#paymentModal">
+                                                                <i class="fas fa-cash-register"></i> Process Payment
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -278,12 +280,9 @@
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            <button type="button" 
-                                                                    class="btn btn-outline-secondary btn-sm mark-as-unpaid-btn" 
-                                                                    data-billing-id="{{ $billing->id }}"
-                                                                    data-billing-number="{{ $billing->billing_number }}">
-                                                                <i class="fas fa-undo"></i> Revert
-                                                            </button>
+                                                            <span class="btn btn-outline-success btn-sm disabled">
+                                                                <i class="fas fa-check-circle"></i> Payment Complete
+                                                            </span>
                                                         </td>
                                                     </tr>
                                                     @empty
@@ -309,134 +308,216 @@
 
     @include('cashier.modals.notification_system')
 
+    <!-- Payment Processing Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="paymentModalLabel">
+                        <i class="fas fa-cash-register"></i> Process Payment
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Billing #:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="modal-billing-number"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Amount Due:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="modal-net-amount" class="text-primary fw-bold fs-5"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="paymentAmount" class="form-label">
+                                <i class="fas fa-money-bill-wave"></i> Payment Amount Received <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="paymentAmount" 
+                                       name="payment_amount" 
+                                       step="0.01" 
+                                       min="0"
+                                       max="999999.99"
+                                       placeholder="0.00" 
+                                       required>
+                            </div>
+                            <div class="form-text">Enter the exact amount received from the customer</div>
+                        </div>
+                        <div class="mb-3" id="changeDisplay" style="display: none;">
+                            <div class="alert alert-info">
+                                <strong><i class="fas fa-exchange-alt"></i> Change to Return:</strong>
+                                <span id="changeAmount" class="fw-bold fs-5"></span>
+                            </div>
+                        </div>
+                        <div id="paymentError" class="alert alert-danger d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmPaymentBtn">
+                        <i class="fas fa-check-circle"></i> Confirm Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
     // Payment Processing Functions
     document.addEventListener('DOMContentLoaded', function() {
-        // Mark as Paid buttons
-        document.querySelectorAll('.mark-as-paid-btn').forEach(button => {
+        let currentBillingId = null;
+        let currentNetAmount = 0;
+        
+        // Process Payment buttons
+        document.querySelectorAll('.process-payment-btn').forEach(button => {
             button.addEventListener('click', function() {
-                const billingId = this.dataset.billingId;
-                markBillingAsPaid(billingId, this);
+                currentBillingId = this.dataset.billingId;
+                currentNetAmount = parseFloat(this.dataset.netAmount);
+                
+                document.getElementById('modal-billing-number').textContent = this.dataset.billingNumber;
+                document.getElementById('modal-net-amount').textContent = '₱' + currentNetAmount.toFixed(2);
+                
+                // Reset form
+                document.getElementById('paymentAmount').value = '';
+                document.getElementById('changeDisplay').style.display = 'none';
+                document.getElementById('paymentError').classList.add('d-none');
             });
         });
         
-        // Mark as Unpaid buttons
-        document.querySelectorAll('.mark-as-unpaid-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const billingId = this.dataset.billingId;
-                markBillingAsUnpaid(billingId, this);
-            });
+        // Payment amount input change handler
+        document.getElementById('paymentAmount').addEventListener('input', function() {
+            const paymentInput = this.value;
+            const paymentAmount = parseFloat(paymentInput) || 0;
+            
+            // Clear previous errors
+            document.getElementById('paymentError').classList.add('d-none');
+            document.getElementById('changeDisplay').style.display = 'none';
+            
+            if (paymentInput && paymentInput.trim() !== '') {
+                if (isNaN(paymentAmount)) {
+                    document.getElementById('paymentError').textContent = 'Please enter a valid number.';
+                    document.getElementById('paymentError').classList.remove('d-none');
+                    return;
+                }
+                
+                if (paymentAmount > 999999.99) {
+                    document.getElementById('paymentError').textContent = 'Amount too large. Maximum: ₱999,999.99';
+                    document.getElementById('paymentError').classList.remove('d-none');
+                    return;
+                }
+                
+                if (paymentAmount > 0) {
+                    const changeAmount = paymentAmount - currentNetAmount;
+                    
+                    if (changeAmount >= 0) {
+                        document.getElementById('changeAmount').textContent = '₱' + changeAmount.toFixed(2);
+                        document.getElementById('changeDisplay').style.display = 'block';
+                    } else {
+                        const shortfall = Math.abs(changeAmount);
+                        document.getElementById('paymentError').textContent = 'Insufficient payment. Short by ₱' + shortfall.toFixed(2);
+                        document.getElementById('paymentError').classList.remove('d-none');
+                    }
+                }
+            }
+        });
+        
+        // Confirm payment button
+        document.getElementById('confirmPaymentBtn').addEventListener('click', async function() {
+            const paymentInput = document.getElementById('paymentAmount').value;
+            const paymentAmount = parseFloat(paymentInput);
+            
+            // Validate input
+            if (!paymentInput || paymentInput.trim() === '') {
+                document.getElementById('paymentError').textContent = 'Please enter a payment amount.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            if (isNaN(paymentAmount) || paymentAmount <= 0) {
+                document.getElementById('paymentError').textContent = 'Please enter a valid payment amount.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            if (paymentAmount > 999999.99) {
+                document.getElementById('paymentError').textContent = 'Payment amount is too large. Maximum allowed is ₱999,999.99.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            if (paymentAmount < currentNetAmount) {
+                document.getElementById('paymentError').textContent = 'Payment amount is insufficient.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            await processPayment(currentBillingId, paymentAmount);
         });
     });
 
-    async function markBillingAsPaid(billingId, button) {
-        const billingNumber = button.dataset.billingNumber;
-        
-        // Use the specialized payment confirmation dialog
-        const confirmed = await confirmPaymentAction(
-            `Mark billing ${billingNumber} as PAID?\n\nThis will:\n• Record the payment timestamp\n• Update the billing status to PAID\n• Complete the payment process`, 
-            'Confirm Payment Processing'
-        );
-        
-        if (!confirmed) return;
-        
+    async function processPayment(billingId, paymentAmount) {
         try {
             // Show loading state
-            showBillingLoading('Processing payment confirmation...');
-            
-            // Disable button to prevent double clicks
-            button.disabled = true;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            showBillingLoading('Processing payment...');
             
             const response = await fetch(`/cashier/billing/${billingId}/mark-as-paid`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                     'Content-Type': 'application/json',
-                }
+                },
+                body: JSON.stringify({
+                    payment_amount: paymentAmount
+                })
             });
             
             const data = await response.json();
             
             if (data.success) {
-                // Don't close the modal immediately, show success state
-                showBillingNotification('success', 'Payment Processed', 
-                    `Billing ${billingNumber} has been successfully marked as PAID. Click OK to refresh and see the updated status.`);
+                // Close payment modal
+                const paymentModal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                paymentModal.hide();
                 
-                // Wait for user to click OK before refreshing
-                // The notification system will handle this automatically
+                closeBillingNotification();
+                
+                let message = 'Payment processed successfully!';
+                if (data.change > 0) {
+                    message += `\n\nChange to return: ${data.change_formatted}`;
+                }
+                
+                showBillingNotification('success', 'Payment Complete', message);
+                
+                // Auto refresh after 2 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             } else {
                 closeBillingNotification();
                 showBillingNotification('error', 'Payment Error', data.message);
-                // Re-enable button on error
-                button.disabled = false;
-                button.innerHTML = originalText;
             }
         } catch (error) {
             closeBillingNotification();
             showBillingNotification('error', 'Network Error', 'Failed to process payment: ' + error.message);
-            // Re-enable button on error
-            button.disabled = false;
-            button.innerHTML = originalText;
         }
     }
 
-    async function markBillingAsUnpaid(billingId, button) {
-        const billingNumber = button.dataset.billingNumber;
-        
-        // Use the specialized payment confirmation dialog
-        const confirmed = await confirmPaymentAction(
-            `Revert billing ${billingNumber} to UNPAID status?\n\nThis will:\n• Clear the payment timestamp\n• Change status back to PENDING\n• Require payment processing again`, 
-            'Revert Payment Status'
-        );
-        
-        if (!confirmed) return;
-        
-        try {
-            // Show loading state
-            showBillingLoading('Reverting payment status...');
-            
-            // Disable button to prevent double clicks
-            button.disabled = true;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            
-            const response = await fetch(`/cashier/billing/${billingId}/mark-as-unpaid`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Don't close the modal immediately, show success state
-                showBillingNotification('success', 'Payment Status Reverted', 
-                    `Billing ${billingNumber} has been reverted to UNPAID status. Click OK to refresh and see the updated status.`);
-                
-                // Wait for user to click OK before refreshing
-                // The notification system will handle this automatically
-            } else {
-                closeBillingNotification();
-                showBillingNotification('error', 'Revert Error', data.message);
-                // Re-enable button on error
-                button.disabled = false;
-                button.innerHTML = originalText;
-            }
-        } catch (error) {
-            closeBillingNotification();
-            showBillingNotification('error', 'Network Error', 'Failed to revert payment status: ' + error.message);
-            // Re-enable button on error
-            button.disabled = false;
-            button.innerHTML = originalText;
-        }
-    }
+    // Unpaid functionality removed for security - preventing payment theft
     </script>
 
     <style>

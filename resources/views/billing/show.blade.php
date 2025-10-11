@@ -12,9 +12,15 @@
                     <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Billings
                     </a>
+                    @if($billing->status !== 'paid')
                     <a href="{{ route('billing.edit', $billing) }}" class="btn btn-warning">
                         <i class="fas fa-edit"></i> Edit
                     </a>
+                    @else
+                    <span class="btn btn-outline-secondary disabled" title="Cannot edit paid billing">
+                        <i class="fas fa-lock"></i> Billing Finalized
+                    </span>
+                    @endif
                     <a href="{{ route('billing.export.receipt', $billing) }}" class="btn btn-success" target="_blank">
                         <i class="fas fa-file-pdf"></i> Export Receipt
                     </a>
@@ -285,9 +291,15 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
+                                @if($billing->status !== 'paid')
                                 <a href="{{ route('billing.edit', $billing) }}" class="btn btn-warning">
                                     <i class="fas fa-edit"></i> Edit Billing
                                 </a>
+                                @else
+                                <div class="alert alert-info mb-3">
+                                    <i class="fas fa-lock"></i> This billing has been finalized and cannot be edited for security reasons.
+                                </div>
+                                @endif
                                 <a href="{{ route('billing.export.receipt', $billing) }}" class="btn btn-success" target="_blank">
                                     <i class="fas fa-file-pdf"></i> Download Receipt
                                 </a>

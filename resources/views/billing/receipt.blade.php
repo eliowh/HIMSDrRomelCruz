@@ -224,7 +224,7 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <div class="hospital-name">DR. ROMEL CRUZ HOSPITAL</div>
+        <div class="hospital-name">ROMEL CRUZ HOSPITAL</div>
         <div class="hospital-address">
             Hospital Information Management System<br>
             Complete Healthcare Solutions<br>
@@ -393,6 +393,20 @@
                 <td class="label">NET AMOUNT DUE:</td>
                 <td class="amount" style="color: #2c5aa0;">PHP {{ number_format($billing->net_amount, 2) }}</td>
             </tr>
+            
+            @if($billing->status === 'paid' && $billing->payment_amount)
+            <tr style="border-top: 2px solid #2c5aa0;">
+                <td class="label" style="color: #28a745; font-weight: bold;">AMOUNT PAID:</td>
+                <td class="amount" style="color: #28a745; font-weight: bold;">PHP {{ number_format($billing->payment_amount, 2) }}</td>
+            </tr>
+            
+            @if($billing->change_amount > 0)
+            <tr>
+                <td class="label" style="color: #dc3545; font-weight: bold;">CHANGE:</td>
+                <td class="amount" style="color: #dc3545; font-weight: bold;">PHP {{ number_format($billing->change_amount, 2) }}</td>
+            </tr>
+            @endif
+            @endif
         </table>
         
         @if(($billing->philhealth_deduction + $billing->senior_pwd_discount) > 0)
@@ -401,6 +415,21 @@
             <div style="font-size: 11px;">
                 Total Savings: <strong>PHP {{ number_format($billing->philhealth_deduction + $billing->senior_pwd_discount, 2) }}</strong><br>
                 Percentage Saved: <strong>{{ number_format((($billing->philhealth_deduction + $billing->senior_pwd_discount) / $billing->total_amount) * 100, 1) }}%</strong> of total charges
+            </div>
+        </div>
+        @endif
+        
+        @if($billing->status === 'paid' && $billing->payment_date)
+        <div style="margin-top: 15px; padding: 10px; background-color: #e8f5e8; border-radius: 5px; border-left: 4px solid #28a745;">
+            <div style="font-weight: bold; color: #155724; margin-bottom: 5px;">✓ PAYMENT CONFIRMED</div>
+            <div style="font-size: 11px; color: #155724;">
+                <strong>Payment Date:</strong> {{ $billing->payment_date->format('F d, Y \a\t g:i A') }}<br>
+                @if($billing->processed_by)
+                <strong>Processed By:</strong> {{ $billing->processedBy?->name ?? 'System' }}<br>
+                @endif
+                @if($billing->payment_amount && $billing->change_amount)
+                <strong>Transaction Details:</strong> Received PHP {{ number_format($billing->payment_amount, 2) }} | Change PHP {{ number_format($billing->change_amount, 2) }}
+                @endif
             </div>
         </div>
         @endif
@@ -415,7 +444,7 @@
 
     <!-- Footer -->
     <div class="footer">
-        <p><strong>Dr. Romel Cruz Hospital Information Management System</strong></p>
+        <p><strong>Romel Cruz Hospital Information Management System</strong></p>
         <p>This is a computer-generated receipt. For questions or concerns, please contact our billing department.</p>
         <p style="margin-top: 10px;">
             © {{ date('Y') }} Dr. Romel Cruz Hospital. All rights reserved.<br>

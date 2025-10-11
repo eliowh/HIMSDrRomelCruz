@@ -106,11 +106,18 @@
                                                title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            @if($billing->status !== 'paid')
                                             <a href="{{ route('billing.edit', $billing) }}" 
                                                class="btn btn-sm btn-outline-warning" 
                                                title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            @else
+                                            <span class="btn btn-sm btn-outline-secondary disabled" 
+                                                  title="Cannot edit paid billing">
+                                                <i class="fas fa-lock"></i>
+                                            </span>
+                                            @endif
                                             
 
                                             
@@ -120,18 +127,6 @@
                                                target="_blank">
                                                 <i class="fas fa-file-pdf"></i>
                                             </a>
-                                            <form action="{{ route('billing.destroy', $billing) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return handleBillingDelete(event, this)">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" 
-                                                        class="btn btn-sm btn-outline-danger" 
-                                                        title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
                                         </div>
                                     </td>
                                 </tr>

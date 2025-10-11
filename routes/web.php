@@ -304,9 +304,8 @@ Route::middleware(['auth', 'role:cashier'])->group(function () {
     // Billing View
     Route::get('/cashier/billing/{id}/view', [App\Http\Controllers\CashierController::class, 'viewBilling']);
     
-    // Payment Processing
+    // Payment Processing (unpaid functionality removed for security)
     Route::post('/cashier/billing/{id}/mark-as-paid', [App\Http\Controllers\CashierController::class, 'markAsPaid']);
-    Route::post('/cashier/billing/{id}/mark-as-unpaid', [App\Http\Controllers\CashierController::class, 'markAsUnpaid']);
     
     // Receipt Management
     Route::get('/cashier/billing/{id}/receipt', [App\Http\Controllers\CashierController::class, 'viewReceipt'])->name('cashier.billing.receipt');
@@ -498,7 +497,7 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     Route::get('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
     Route::get('/billing/{billing}/edit', [App\Http\Controllers\BillingController::class, 'edit'])->name('billing.edit');
     Route::put('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'update'])->name('billing.update');
-    Route::delete('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'destroy'])->name('billing.destroy');
+    // Delete functionality removed for security - preventing billing theft and data loss
     Route::get('/billing/{billing}/receipt', [App\Http\Controllers\BillingController::class, 'exportReceipt'])->name('billing.export.receipt');
 });
 
