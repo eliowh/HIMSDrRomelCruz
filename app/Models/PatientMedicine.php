@@ -57,6 +57,22 @@ class PatientMedicine extends Model
     }
 
     /**
+     * Get the admission through the pharmacy request
+     */
+    public function admission()
+    {
+        return $this->hasOneThrough(Admission::class, PharmacyRequest::class, 'id', 'id', 'pharmacy_request_id', 'admission_id');
+    }
+
+    /**
+     * Get the admission ID through the pharmacy request
+     */
+    public function getAdmissionIdAttribute()
+    {
+        return $this->pharmacyRequest?->admission_id;
+    }
+
+    /**
      * Calculate the total price based on unit price and quantity
      */
     public function calculateTotalPrice()

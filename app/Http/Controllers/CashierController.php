@@ -28,10 +28,32 @@ class CashierController extends Controller
         return view('cashier.cashier_home', compact('stats'));
     }
 
-    public function billing()
+    public function billing(Request $request)
     {
-        // Get all billings with patient information
-        $billings = Billing::with('patient')->orderBy('created_at', 'desc')->get();
+        $query = Billing::with('patient');
+        
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('billing_number', 'LIKE', "%{$search}%")
+                  ->orWhereHas('patient', function($patientQuery) use ($search) {
+                      $patientQuery->where('first_name', 'LIKE', "%{$search}%")
+                                  ->orWhere('last_name', 'LIKE', "%{$search}%")
+                                  ->orWhere('patient_no', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Status filter
+        if ($request->filled('status') && $request->get('status') !== 'all') {
+            $query->where('status', $request->get('status'));
+        }
+        
+        $billings = $query->orderBy('created_at', 'desc')->paginate(20);
+        
+        // Append search parameters to pagination links
+        $billings->appends($request->only(['search', 'status']));
         
         return view('cashier.cashier_billing', compact('billings'));
     }

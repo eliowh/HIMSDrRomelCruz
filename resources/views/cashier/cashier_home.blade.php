@@ -37,11 +37,17 @@
                 <!-- Filter Controls -->
                 <div class="filter-controls">
                     <label>Payment Statistics Period:</label>
-                    <select id="statisticsFilter" onchange="filterStatistics(this.value)">
-                        <option value="week" {{ ($stats['filter'] ?? 'week') === 'week' ? 'selected' : '' }}>Past Week</option>
-                        <option value="month" {{ ($stats['filter'] ?? 'week') === 'month' ? 'selected' : '' }}>Past Month</option>
-                        <option value="year" {{ ($stats['filter'] ?? 'week') === 'year' ? 'selected' : '' }}>Past Year</option>
-                    </select>
+                    <div class="filter-buttons">
+                        <button type="button" class="filter-btn {{ ($stats['filter'] ?? 'week') === 'week' ? 'active' : '' }}" onclick="filterStatistics('week')">
+                            <i class="fas fa-calendar-week"></i> Past Week
+                        </button>
+                        <button type="button" class="filter-btn {{ ($stats['filter'] ?? 'week') === 'month' ? 'active' : '' }}" onclick="filterStatistics('month')">
+                            <i class="fas fa-calendar-alt"></i> Past Month
+                        </button>
+                        <button type="button" class="filter-btn {{ ($stats['filter'] ?? 'week') === 'year' ? 'active' : '' }}" onclick="filterStatistics('year')">
+                            <i class="fas fa-calendar"></i> Past Year
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -168,18 +174,37 @@
                 margin-right: 10px;
                 color: #495057;
             }
-            .filter-controls select {
-                padding: 8px 12px;
-                border: 1px solid #ced4da;
-                border-radius: 4px;
-                background: white;
-                font-size: 14px;
-                min-width: 150px;
+            .filter-buttons {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
             }
-            .filter-controls select:focus {
-                border-color: #80bdff;
-                box-shadow: 0 0 0 2px rgba(0,123,255,.25);
-                outline: none;
+            .filter-btn {
+                padding: 8px 16px;
+                border: 2px solid #e9ecef;
+                border-radius: 6px;
+                background: white;
+                color: #6c757d;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .filter-btn:hover {
+                border-color: #28a745;
+                color: #28a745;
+                background: #f8fff9;
+            }
+            .filter-btn.active {
+                background: #28a745;
+                color: white;
+                border-color: #28a745;
+            }
+            .filter-btn i {
+                font-size: 12px;
             }
         `;
         document.head.appendChild(style);

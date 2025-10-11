@@ -85,6 +85,9 @@ class PharmacyController extends Controller
             if ($parsedPrice < 0) {
                 $validator->errors()->add('unit_price', 'Unit price must be a positive number.');
             }
+
+            // Validate against stocks reference masterlist
+            $this->validateStockReference($validator, $request);
         });
 
         if ($validator->fails()) {
@@ -626,6 +629,7 @@ class PharmacyController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'patient_id' => 'required|exists:patients,id',
+            'admission_id' => 'required|exists:admissions,id',
             'item_code' => 'nullable|string',
             'generic_name' => 'nullable|string',
             'brand_name' => 'nullable|string',
@@ -634,7 +638,7 @@ class PharmacyController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Custom validation for unit_price
+        // Custom validation for unit_price and stocks reference
         $validator->after(function ($validator) use ($request) {
             if ($request->filled('unit_price')) {
                 $parsedPrice = $this->parsePrice($request->unit_price);
@@ -642,6 +646,9 @@ class PharmacyController extends Controller
                     $validator->errors()->add('unit_price', 'Unit price must be a positive number.');
                 }
             }
+            
+            // Validate that the requested item exists in stocks reference masterlist
+            $this->validateStockReference($validator, $request);
         });
 
         if ($validator->fails()) {
@@ -657,6 +664,7 @@ class PharmacyController extends Controller
 
             $pharmacyRequest = new PharmacyRequest([
                 'patient_id' => $request->patient_id,
+                'admission_id' => $request->admission_id,
                 'requested_by' => auth()->id(),
                 'patient_name' => $patient->first_name . ' ' . $patient->last_name,
                 'patient_no' => $patient->patient_no,
@@ -730,6 +738,15 @@ class PharmacyController extends Controller
                 ], 400);
             }
 
+            // Get current active admission
+            $currentAdmission = $patient->currentAdmission;
+            if (!$currentAdmission) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Patient has no active admission. Medicine can only be dispensed to patients with active admissions.'
+                ], 400);
+            }
+
             // Update pharmacy stock
             $pharmacyStock->quantity -= $request->quantity;
             $pharmacyStock->save();
@@ -753,11 +770,12 @@ class PharmacyController extends Controller
             
             $patientMedicine = PatientMedicine::create($patientMedicineData);
 
-            // Update request status
+            // Update request status and link to admission
             $updateData = [
                 'status' => PharmacyRequest::STATUS_DISPENSED,
                 'dispensed_at' => now()->format('Y-m-d H:i:s'),
                 'dispensed_by' => auth()->id(),
+                'admission_id' => $currentAdmission->id,
                 'updated_at' => now()->format('Y-m-d H:i:s')
             ];
             
@@ -923,13 +941,25 @@ class PharmacyController extends Controller
     /**
      * API endpoint to get patient medicines for AJAX calls
      */
-    public function getPatientMedicinesApi($patientId)
+    public function getPatientMedicinesApi(Request $request, $patientId)
     {
         try {
-            $medicines = PatientMedicine::with(['dispensedBy'])
-                ->where('patient_id', $patientId)
-                ->orderBy('dispensed_at', 'desc')
-                ->get();
+            // Get patient info
+            $patient = Patient::findOrFail($patientId);
+            
+            $query = PatientMedicine::with(['dispensedBy'])
+                ->where('patient_id', $patientId);
+            
+            // Filter by admission if admission_id is provided - STRICT filtering  
+            $admissionId = $request->query('admission_id');
+            if ($admissionId) {
+                // Only show medicines that are explicitly linked to this admission
+                $query->whereHas('pharmacyRequest', function($subQ) use ($admissionId) {
+                    $subQ->where('admission_id', '=', $admissionId);
+                });
+            }
+            
+            $medicines = $query->orderBy('dispensed_at', 'desc')->get();
 
             $formattedMedicines = $medicines->map(function($medicine) {
                 return [
@@ -949,13 +979,80 @@ class PharmacyController extends Controller
 
             return response()->json([
                 'success' => true,
-                'medicines' => $formattedMedicines
+                'medicines' => $formattedMedicines,
+                'patient' => [
+                    'id' => $patient->id,
+                    'patient_no' => $patient->patient_no,
+                    'first_name' => $patient->first_name,
+                    'last_name' => $patient->last_name
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to load patient medicines: ' . $e->getMessage()
             ], 500);
+        }
+    }
+    
+    /**
+     * Validate that the requested medicine item exists in stocks reference masterlist
+     */
+    private function validateStockReference($validator, $request)
+    {
+        $itemCode = $request->item_code;
+        $genericName = $request->generic_name;
+        $brandName = $request->brand_name;
+        
+        // If no item information is provided, skip validation
+        if (empty($itemCode) && empty($genericName) && empty($brandName)) {
+            $validator->errors()->add('medicine', 'Please provide at least one of: Item Code, Generic Name, or Brand Name.');
+            return;
+        }
+        
+        // Search for the item in stocks reference
+        $stockItem = \App\Models\StocksReference::excludeHeader()
+            ->where(function ($query) use ($itemCode, $genericName, $brandName) {
+                if (!empty($itemCode)) {
+                    $query->orWhere('COL 1', $itemCode);
+                }
+                if (!empty($genericName)) {
+                    $query->orWhere('COL 2', 'LIKE', '%' . $genericName . '%');
+                }
+                if (!empty($brandName)) {
+                    $query->orWhere('COL 3', 'LIKE', '%' . $brandName . '%');
+                }
+            })
+            ->first();
+            
+        if (!$stockItem) {
+            $searchTerm = '';
+            if (!empty($itemCode)) $searchTerm .= "Item Code: $itemCode ";
+            if (!empty($genericName)) $searchTerm .= "Generic Name: $genericName ";
+            if (!empty($brandName)) $searchTerm .= "Brand Name: $brandName ";
+            
+            $validator->errors()->add('medicine', 'The requested medicine (' . trim($searchTerm) . ') was not found in the pharmacy masterlist. Please verify the item details and try again.');
+        }
+        
+        // If item exists, validate that the provided details match
+        if ($stockItem) {
+            $errors = [];
+            
+            if (!empty($itemCode) && $stockItem->{'COL 1'} !== $itemCode) {
+                $errors[] = "Item Code '$itemCode' does not match masterlist (Expected: {$stockItem->{'COL 1'}})";
+            }
+            
+            if (!empty($genericName) && stripos($stockItem->{'COL 2'}, $genericName) === false) {
+                $errors[] = "Generic Name '$genericName' does not match masterlist (Expected: {$stockItem->{'COL 2'}})";
+            }
+            
+            if (!empty($brandName) && stripos($stockItem->{'COL 3'}, $brandName) === false) {
+                $errors[] = "Brand Name '$brandName' does not match masterlist (Expected: {$stockItem->{'COL 3'}})";
+            }
+            
+            if (!empty($errors)) {
+                $validator->errors()->add('medicine', 'Medicine details mismatch: ' . implode(', ', $errors));
+            }
         }
     }
 }

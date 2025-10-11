@@ -15,18 +15,13 @@ class Patient extends Model
         'first_name',
         'middle_name',
         'last_name',
+        'sex',
+        'contact_number',
         'date_of_birth',
         'province',
         'city',
         'barangay',
         'nationality',
-        // admission fields
-        'room_no',
-        'admission_type',
-        'service',
-        'doctor_name',
-        'doctor_type',
-        'admission_diagnosis',
     ];
 
     protected $appends = [
@@ -101,6 +96,22 @@ class Patient extends Model
         if (!$this->date_of_birth) return null;
         $diff = $this->date_of_birth->diff(now());
         return $diff->d;
+    }
+
+    /**
+     * Get the admissions for this patient
+     */
+    public function admissions()
+    {
+        return $this->hasMany(Admission::class);
+    }
+
+    /**
+     * Get the current active admission
+     */
+    public function currentAdmission()
+    {
+        return $this->hasOne(Admission::class)->where('status', 'active')->latest();
     }
 
     /**
@@ -266,6 +277,42 @@ class Patient extends Model
         $lastName = ucwords(strtolower(trim($this->last_name ?? '')));
         
         return trim($firstName . ' ' . ($middleName ? $middleName . ' ' : '') . $lastName);
+    }
+
+    // Backward compatibility accessors for admission fields
+    public function getRoomNoAttribute()
+    {
+        return $this->currentAdmission?->room_no;
+    }
+
+    public function getAdmissionTypeAttribute()
+    {
+        return $this->currentAdmission?->admission_type;
+    }
+
+    public function getServiceAttribute()
+    {
+        return $this->currentAdmission?->service;
+    }
+
+    public function getDoctorNameAttribute()
+    {
+        return $this->currentAdmission?->doctor_name;
+    }
+
+    public function getDoctorTypeAttribute()
+    {
+        return $this->currentAdmission?->doctor_type;
+    }
+
+    public function getAdmissionDiagnosisAttribute()
+    {
+        return $this->currentAdmission?->admission_diagnosis;
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->currentAdmission?->status ?? 'discharged';
     }
 }
 

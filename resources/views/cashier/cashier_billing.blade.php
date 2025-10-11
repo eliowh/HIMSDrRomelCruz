@@ -7,6 +7,7 @@
     <title>Payment Management - Cashier</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="{{ asset('css/cashiercss/cashier.css') }}">
 </head>
 <body>
@@ -27,6 +28,41 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Search and Filter Form -->
+                        <form method="GET" action="{{ url('/cashier/billing') }}" class="mb-4">
+                            <div class="card shadow-sm">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text" name="search" class="form-control" placeholder="Search by billing number, patient name, or patient number..." value="{{ request('search') }}">
+                                                <button class="btn btn-outline-success" type="submit">
+                                                    <i class="fas fa-search"></i> Search
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select name="status" class="form-select">
+                                                <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
+                                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending Payment</option>
+                                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-success">
+                                                    <i class="fas fa-filter"></i> Filter
+                                                </button>
+                                                <a href="{{ url('/cashier/billing') }}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-times"></i> Clear
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
 
                         <!-- Statistics Cards -->
                         <div class="row mb-4">
@@ -90,11 +126,25 @@
                                 <h5 class="mb-0"><i class="fas fa-list"></i> Patient Billings - Payment Processing</h5>
                             </div>
                             <div class="card-body">
+                                <!-- Search Results Summary -->
+                                @if(request('search') || (request('status') && request('status') !== 'all'))
+                                    <div class="alert alert-info mb-3">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>Search Results:</strong> Found {{ $billings->total() }} billing record(s)
+                                        @if(request('search'))
+                                            matching "{{ request('search') }}"
+                                        @endif
+                                        @if(request('status') && request('status') !== 'all')
+                                            with status "{{ ucfirst(request('status')) }}"
+                                        @endif
+                                    </div>
+                                @endif
+
                                 <!-- Filter Tabs -->
                                 <ul class="nav nav-tabs mb-3" id="billingTabs">
                                     <li class="nav-item">
                                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all-billings">
-                                            <i class="fas fa-list-alt"></i> All Billings ({{ $billings->count() }})
+                                            <i class="fas fa-list-alt"></i> All Billings ({{ $billings->total() }})
                                         </button>
                                     </li>
                                     <li class="nav-item">
@@ -215,7 +265,7 @@
                                                         <td>{{ $billing->created_at->format('M d, Y h:i A') }}</td>
                                                         <td>
                                                             <span class="badge bg-warning text-dark">
-                                                                {{ $billing->created_at->diffInDays(now()) }} days
+                                                                {{ intval($billing->created_at->diffInDays(now())) }} days
                                                             </span>
                                                         </td>
                                                         <td>
@@ -300,6 +350,13 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Pagination -->
+                        @if($billings->hasPages())
+                            <div class="pagination-wrapper mt-4">
+                                @include('components.custom-pagination', ['paginator' => $billings])
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -586,5 +643,66 @@
         transform: translateY(-2px);
     }
     </style>
+
+    <!-- Enhanced Search JavaScript -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit form when status filter changes
+        const statusSelect = document.querySelector('select[name="status"]');
+        if (statusSelect) {
+            statusSelect.addEventListener('change', function() {
+                this.closest('form').submit();
+            });
+        }
+
+        // Add Enter key submit for search input
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    this.closest('form').submit();
+                }
+            });
+
+            // Add search icon animation
+            searchInput.addEventListener('focus', function() {
+                const searchBtn = this.parentElement.querySelector('button');
+                if (searchBtn) {
+                    searchBtn.classList.add('btn-success');
+                    searchBtn.classList.remove('btn-outline-success');
+                }
+            });
+
+            searchInput.addEventListener('blur', function() {
+                const searchBtn = this.parentElement.querySelector('button');
+                if (searchBtn && !this.value) {
+                    searchBtn.classList.remove('btn-success');
+                    searchBtn.classList.add('btn-outline-success');
+                }
+            });
+        }
+
+        // Highlight search terms in results
+        const searchTerm = '{{ request("search") }}';
+        if (searchTerm) {
+            highlightSearchTerm(searchTerm);
+        }
+    });
+
+    function highlightSearchTerm(term) {
+        if (!term) return;
+        
+        const tables = document.querySelectorAll('table tbody');
+        tables.forEach(table => {
+            const cells = table.querySelectorAll('td');
+            cells.forEach(cell => {
+                if (cell.innerHTML && typeof cell.innerHTML === 'string') {
+                    const regex = new RegExp(`(${term})`, 'gi');
+                    cell.innerHTML = cell.innerHTML.replace(regex, '<mark class="bg-warning">$1</mark>');
+                }
+            });
+        });
+    }
+    </script>
 </body>
 </html>

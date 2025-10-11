@@ -255,6 +255,8 @@
     background: #c82333;
 }
 
+
+
 .lab-results-error,
 .lab-results-empty {
     text-align: center;
@@ -342,33 +344,42 @@
 
 <script>
 let currentLabResultsPatientId = null;
+let currentLabResultsAdmissionId = null;
 
-function openLabResultsModal(patientId) {
+function openLabResultsModal(patientId, admissionId = null) {
     currentLabResultsPatientId = patientId;
+    currentLabResultsAdmissionId = admissionId;
     
     // Show modal with proper class
     const modal = document.getElementById('labResultsModal');
     modal.classList.add('show');
     
-    // Load lab results
-    loadLabResultsHistory(patientId);
+    // Load lab results with admission filter
+    loadLabResultsHistory(patientId, admissionId);
 }
 
 function closeLabResultsModal() {
     const modal = document.getElementById('labResultsModal');
     modal.classList.remove('show');
     currentLabResultsPatientId = null;
+    currentLabResultsAdmissionId = null;
 }
 
-function loadLabResultsHistory(patientId) {
+function loadLabResultsHistory(patientId, admissionId = null) {
     // Show loading state
     document.getElementById('labResultsLoading').style.display = 'block';
     document.getElementById('labResultsError').style.display = 'none';
     document.getElementById('labResultsEmpty').style.display = 'none';
     document.getElementById('labResultsList').style.display = 'none';
     
+    // Build API URL with optional admission filter
+    let apiUrl = `/doctor/api/patients/${patientId}/lab-results`;
+    if (admissionId) {
+        apiUrl += `?admission_id=${admissionId}`;
+    }
+    
     // Fetch lab results from API
-    fetch(`/doctor/api/patients/${patientId}/lab-results`)
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -505,7 +516,7 @@ function updateLabResultsStats(total, completed, totalPrice) {
 
 function retryLoadLabResults() {
     if (currentLabResultsPatientId) {
-        loadLabResultsHistory(currentLabResultsPatientId);
+        loadLabResultsHistory(currentLabResultsPatientId, currentLabResultsAdmissionId);
     }
 }
 

@@ -48,6 +48,8 @@
                                     'first_name' => $p->first_name,
                                     'middle_name' => $p->middle_name,
                                     'last_name' => $p->last_name,
+                                    'sex' => $p->sex,
+                                    'contact_number' => $p->contact_number,
                                     'date_of_birth' => $p->date_of_birth ? $p->date_of_birth->format('Y-m-d') : null,
                                     'province' => $p->province,
                                     'city' => $p->city,
@@ -102,24 +104,21 @@
                     <dl class="patient-details">
                         <dt>Patient No</dt><dd id="md-patient_no">-</dd>
                         <dt>Full Name</dt><dd id="md-name">-</dd>
+                        <dt>Sex</dt><dd id="md-sex">-</dd>
                         <dt>Date of Birth</dt><dd id="md-dob">-</dd>
                         <dt>Age</dt><dd id="md-age">-</dd>
+                        <dt>Contact Number</dt><dd id="md-contact_number">-</dd>
                         <dt>Location</dt><dd id="md-location">-</dd>
                         <dt>Nationality</dt><dd id="md-nationality">-</dd>
                     </dl>
                 </div>
                 
-                <!-- Admission Details Section -->
+                <!-- Admission Summary Section -->
                 <div class="details-section">
-                    <h4 class="section-header">Admission Details</h4>
-                    <dl class="patient-details">
-                        <dt>Room No.</dt><dd id="md-room_no">-</dd>
-                        <dt>Admission Type</dt><dd id="md-admission_type">-</dd>
-                        <dt>Doctor</dt><dd id="md-doctor_name">-</dd>
-                        <dt>Doctor Type</dt><dd id="md-doctor_type">-</dd>
-                        <dt>Diagnosis</dt><dd id="md-admission_diagnosis">-</dd>
-                        <dt>Admitted</dt><dd id="md-created_at">-</dd>
-                    </dl>
+                    <h4 class="section-header">Admission Summary</h4>
+                    <div id="admission-summary-content">
+                        <div class="loading-admissions">Loading admissions...</div>
+                    </div>
                 </div>
                 
                 <!-- Medicine Details Section -->
@@ -156,8 +155,109 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 @push('scripts')
+<style>
+/* Admission Summary Styles */
+.admissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.admission-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 16px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.admission-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.admission-card.selected-admission {
+    border-color: #007bff;
+    background: #f8f9ff;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.2);
+}
+
+.admission-card.active-admission {
+    border-color: #28a745;
+}
+
+.admission-card.active-admission.selected-admission {
+    border-color: #28a745;
+    background: #f8fff9;
+}
+
+.admission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.admission-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.active-badge {
+    background: #28a745;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.admission-date {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.admission-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.detail-item i {
+    color: #007bff;
+    width: 16px;
+}
+
+.loading-admissions, .no-admissions, .error-admissions {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.error-admissions {
+    color: #dc3545;
+}
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Global variable to track current selected admission (accessible globally)
+    window.currentSelectedAdmissionId = null;
+    
     // helper to read CSRF token from meta tag or hidden input
     const _csrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
         || document.querySelector('input[name="_token"]')?.value || '';
@@ -223,6 +323,9 @@ document.addEventListener('DOMContentLoaded', function () {
         ].filter(Boolean);
         document.getElementById('md-name').textContent = nameParts.length ? nameParts.join(', ') : '-';
         
+        // Format sex
+        document.getElementById('md-sex').textContent = patient.sex ? formatName(patient.sex) : '-';
+        
         // Format date without timezone
         document.getElementById('md-dob').textContent = formatDate(patient.date_of_birth);
         
@@ -239,6 +342,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         document.getElementById('md-age').textContent = ageText;
         
+        // Format contact number
+        document.getElementById('md-contact_number').textContent = patient.contact_number || '-';
+        
         // Format location
         const locationParts = [
             formatName(patient.barangay),
@@ -249,23 +355,12 @@ document.addEventListener('DOMContentLoaded', function () {
         
         document.getElementById('md-nationality').textContent = formatName(patient.nationality);
         
-        // Admission Details Section
-        document.getElementById('md-room_no').textContent = or(patient.room_no);
-        document.getElementById('md-admission_type').textContent = formatName(patient.admission_type);
-        document.getElementById('md-doctor_name').textContent = formatName(patient.doctor_name);
-        document.getElementById('md-doctor_type').textContent = formatName(patient.doctor_type);
-        document.getElementById('md-admission_diagnosis').textContent = or(patient.admission_diagnosis);
-        document.getElementById('md-created_at').textContent = formatDateTime(patient.created_at);
-        
-        // Load patient medicines
-        loadPatientMedicines(patient.id, patient);
-        
-        // Load patient lab results
-        loadPatientLabResults(patient.id);
+        // Load admission summary and admission-specific data
+        loadAdmissionSummary(patient.id);
     }
     
     // Function to load and display patient medicines
-    function loadPatientMedicines(patientId, patient) {
+    function loadPatientMedicines(patientId, patient = null, admissionId = null) {
         const medicineSection = document.getElementById('medicine-section');
         const medicinesDiv = document.getElementById('md-medicines');
         
@@ -274,14 +369,18 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         
-        console.log('Loading medicines for patient ID:', patientId);
+        console.log('Loading medicines for patient ID:', patientId, 'admission ID:', admissionId);
         
         // Show loading state
         medicinesDiv.innerHTML = '<div class="loading-medicines">Loading medicines...</div>';
         medicineSection.style.display = 'block';
         
-        // Fetch patient medicines via API
-        fetch(`/doctor/api/patients/${patientId}/medicines`)
+        // Fetch patient medicines via API with admission filter
+        const apiUrl = admissionId 
+            ? `/doctor/api/patients/${patientId}/medicines?admission_id=${admissionId}`
+            : `/doctor/api/patients/${patientId}/medicines`;
+        
+        fetch(apiUrl)
             .then(response => {
                 console.log('API Response status:', response.status);
                 console.log('API Response headers:', response.headers);
@@ -299,8 +398,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 if (data.success && data.medicines && data.medicines.length > 0) {
                     // Only show "View Medicine Summary" button, no individual medicine display
-                    const patientName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
-                    const patientNo = patient.patient_no || '';
+                    // Get patient info from the patient parameter or from the API response
+                    let patientName = 'Unknown Patient';
+                    let patientNo = 'N/A';
+                    
+                    if (patient) {
+                        patientName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
+                        patientNo = patient.patient_no || '';
+                    } else if (data.patient) {
+                        patientName = `${data.patient.first_name || ''} ${data.patient.last_name || ''}`.trim();
+                        patientNo = data.patient.patient_no || '';
+                    }
+                    
                     medicinesDiv.innerHTML = `
                         <div class="view-more-medicines">
                             <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openMedicineHistoryModal(${patientId}, '${patientName}', '${patientNo}')">
@@ -327,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     // Function to load and display patient lab results
-    function loadPatientLabResults(patientId) {
+    function loadPatientLabResults(patientId, admissionId = null) {
         const labResultsSection = document.getElementById('lab-results-section');
         const labResultsDiv = document.getElementById('md-lab-results');
         
@@ -336,14 +445,18 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         
-        console.log('Loading lab results for patient ID:', patientId);
+        console.log('Loading lab results for patient ID:', patientId, 'admission ID:', admissionId);
         
         // Show loading state
         labResultsDiv.innerHTML = '<div class="loading-lab-results">Loading lab results...</div>';
         labResultsSection.style.display = 'block';
         
-        // Fetch patient lab results via API
-        fetch(`/doctor/api/patients/${patientId}/lab-results`)
+        // Fetch patient lab results via API with admission filter
+        const apiUrl = admissionId 
+            ? `/doctor/api/patients/${patientId}/lab-results?admission_id=${admissionId}`
+            : `/doctor/api/patients/${patientId}/lab-results`;
+        
+        fetch(apiUrl)
             .then(response => {
                 console.log('Lab Results API Response status:', response.status);
                 if (!response.ok) {
@@ -361,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Only show "View Lab Results Summary" button, no individual lab result display
                     labResultsDiv.innerHTML = `
                         <div class="view-more-medicines">
-                            <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openLabResultsModal(${patientId})">
+                            <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openLabResultsModal(${patientId}, window.currentSelectedAdmissionId)">
                                 <i class="fas fa-flask"></i> 
                                 View Lab Results Summary (${data.tests.length} total)
                             </button>
@@ -390,6 +503,121 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Make viewLabResultPdf available globally
     window.viewLabResultPdf = viewLabResultPdf;
+
+    // Function to load admission summary
+    function loadAdmissionSummary(patientId) {
+        const summaryContent = document.getElementById('admission-summary-content');
+        
+        if (!patientId) {
+            summaryContent.innerHTML = '<div class="no-admissions">No patient selected</div>';
+            return;
+        }
+        
+        console.log('Loading admission summary for patient ID:', patientId);
+        
+        // Show loading state
+        summaryContent.innerHTML = '<div class="loading-admissions">Loading admissions...</div>';
+        
+        // Fetch patient admissions
+        fetch(`/doctor/api/patients/${patientId}/admissions`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch admissions');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Admissions data:', data);
+                
+                if (data.success && data.admissions && data.admissions.length > 0) {
+                    renderAdmissionSummary(data.admissions, patientId);
+                } else {
+                    summaryContent.innerHTML = '<div class="no-admissions">No admissions found for this patient</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading admissions:', error);
+                summaryContent.innerHTML = `<div class="error-admissions">Failed to load admissions: ${error.message}</div>`;
+            });
+    }
+
+    // Function to render admission summary
+    function renderAdmissionSummary(admissions, patientId) {
+        const summaryContent = document.getElementById('admission-summary-content');
+        
+        let html = '<div class="admissions-list">';
+        
+        admissions.forEach((admission, index) => {
+            const isActive = admission.status === 'active';
+            const isSelected = index === 0; // Select first (most recent) admission by default
+            
+            html += `
+                <div class="admission-card ${isActive ? 'active-admission' : ''} ${isSelected ? 'selected-admission' : ''}" 
+                     data-admission-id="${admission.id}" 
+                     onclick="selectAdmission(${admission.id}, ${patientId}, this)">
+                    <div class="admission-header">
+                        <div class="admission-info">
+                            <strong>${admission.admission_type || 'N/A'} - Room ${admission.room_no || 'N/A'}</strong>
+                            ${isActive ? '<span class="active-badge">Active</span>' : ''}
+                        </div>
+                        <div class="admission-date">${formatDate(admission.admission_date)}</div>
+                    </div>
+                    <div class="admission-details">
+                        <div class="detail-item">
+                            <i class="fas fa-user-md"></i>
+                            <span>${admission.doctor_name || 'N/A'} (${admission.doctor_type || 'N/A'})</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-notes-medical"></i>
+                            <span>${admission.admission_diagnosis || 'No diagnosis'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        summaryContent.innerHTML = html;
+        
+        // Auto-select first admission and load its data
+        if (admissions.length > 0) {
+            selectAdmission(admissions[0].id, patientId, null, true);
+        }
+    }
+
+    // Function to select an admission and load its data
+    function selectAdmission(admissionId, patientId, element, isAutoSelect = false) {
+        console.log('Selecting admission:', admissionId, 'for patient:', patientId);
+        
+        // Update current selected admission (global variable)
+        window.currentSelectedAdmissionId = admissionId;
+        
+        // Update UI selection
+        if (!isAutoSelect && element) {
+            document.querySelectorAll('.admission-card').forEach(card => {
+                card.classList.remove('selected-admission');
+            });
+            element.classList.add('selected-admission');
+        }
+        
+        // Load admission-specific data
+        loadAdmissionSpecificData(patientId, admissionId);
+    }
+
+    // Function to load admission-specific medicine and lab data
+    function loadAdmissionSpecificData(patientId, admissionId) {
+        console.log('Loading data for patient:', patientId, 'admission:', admissionId);
+        
+        // Load admission-specific medicines
+        loadPatientMedicines(patientId, null, admissionId);
+        
+        // Load admission-specific lab results
+        loadPatientLabResults(patientId, admissionId);
+    }
+
+    // Make functions globally accessible
+    window.loadAdmissionSummary = loadAdmissionSummary;
+    window.selectAdmission = selectAdmission;
 
     function clearActive(){
         rows.forEach(r => r.classList.remove('active'));
@@ -504,6 +732,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             safeSetValue('edit_date_of_birth', dobValue);
+            
+            // Set sex field (dropdown)
+            safeSetValue('edit_sex', patient.sex);
+            
+            // Set contact number
+            safeSetValue('edit_contact_number', patient.contact_number);
             
             safeSetValue('edit_province', patient.province);
             safeSetValue('edit_city', patient.city);

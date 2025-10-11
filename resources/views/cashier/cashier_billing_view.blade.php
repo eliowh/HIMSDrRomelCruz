@@ -149,6 +149,32 @@
                                                     <small>{{ $billing->payment_date->diffForHumans() }}</small>
                                                 </p>
                                             @endif
+                                            
+                                            @if($billing->payment_amount && $billing->change_amount !== null)
+                                            <div class="mt-3 p-3 bg-light rounded">
+                                                <div class="row text-start">
+                                                    <div class="col-sm-6">
+                                                        <strong class="text-info">
+                                                            <i class="fas fa-money-bill-wave"></i> Amount Received:
+                                                        </strong><br>
+                                                        <span class="fs-5 text-success">₱{{ number_format($billing->payment_amount, 2) }}</span>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <strong class="text-warning">
+                                                            <i class="fas fa-exchange-alt"></i> Change Given:
+                                                        </strong><br>
+                                                        <span class="fs-5 text-danger">₱{{ number_format($billing->change_amount, 2) }}</span>
+                                                    </div>
+                                                </div>
+                                                @if($billing->processedBy)
+                                                <div class="mt-2 text-start">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user"></i> Processed by: <strong>{{ $billing->processedBy->name }}</strong>
+                                                    </small>
+                                                </div>
+                                                @endif
+                                            </div>
+                                            @endif
                                         @else
                                             <h3 class="text-warning"><i class="fas fa-clock"></i> PENDING</h3>
                                             <p class="text-muted">Awaiting payment processing</p>
@@ -196,6 +222,21 @@
                                                 <div class="col"><h5><strong>Net Amount:</strong></h5></div>
                                                 <div class="col-auto"><h5 class="text-primary"><strong>₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong></h5></div>
                                             </div>
+                                            
+                                            @if($billing->status === 'paid' && $billing->payment_amount)
+                                            <hr class="my-3">
+                                            <h6 class="text-success mb-2"><i class="fas fa-money-check-alt"></i> Payment Transaction</h6>
+                                            <div class="row mb-1">
+                                                <div class="col text-success"><strong>Amount Paid:</strong></div>
+                                                <div class="col-auto text-success"><strong>₱{{ number_format($billing->payment_amount, 2) }}</strong></div>
+                                            </div>
+                                            @if($billing->change_amount > 0)
+                                            <div class="row">
+                                                <div class="col text-warning"><strong>Change Returned:</strong></div>
+                                                <div class="col-auto text-warning"><strong>₱{{ number_format($billing->change_amount, 2) }}</strong></div>
+                                            </div>
+                                            @endif
+                                            @endif
                                         </div>
 
                                         <!-- Savings Summary -->

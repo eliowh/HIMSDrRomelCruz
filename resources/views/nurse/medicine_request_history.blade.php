@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
 
-<div class="patients-grid">
+<div class="patients-grid" style="display: flex">
     <div class="list-column" style="width: 100%;">
         <div class="inventory-card">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">

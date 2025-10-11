@@ -11,6 +11,7 @@ class Billing extends Model
 
     protected $fillable = [
         'patient_id',
+        'admission_id',
         'billing_number',
         'total_amount',
         'philhealth_deduction',
@@ -56,6 +57,11 @@ class Billing extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    public function admission()
+    {
+        return $this->belongsTo(Admission::class);
     }
 
     public function billingItems()

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Patient;
+use App\Models\Admission;
 use Illuminate\Http\Request;
 
 class PatientController extends Controller
@@ -72,6 +73,8 @@ class PatientController extends Controller
             'first_name' => 'required|string|max:191',
             'middle_name' => 'nullable|string|max:191',
             'last_name' => 'required|string|max:191',
+            'sex' => 'nullable|in:male,female,other',
+            'contact_number' => 'nullable|string|max:20',
             'date_of_birth' => 'required|date',
             'province' => 'required|string|max:191',
             'city' => 'required|string|max:191',
@@ -85,12 +88,31 @@ class PatientController extends Controller
             'admission_diagnosis' => 'nullable|string|max:2000',
         ]);
 
-        // If the form uses admission_type to represent service, map it to service column for backward compatibility
-        if (!empty($data['admission_type']) && empty($data['service'])) {
-            $data['service'] = $data['admission_type'];
-        }
+        // Separate patient data from admission data
+        $patientData = collect($data)->only([
+            'first_name', 'middle_name', 'last_name', 'sex', 'contact_number',
+            'date_of_birth', 'province', 'city', 'barangay', 'nationality'
+        ])->filter()->toArray();
 
-        $patient = Patient::create($data);
+        $admissionData = collect($data)->only([
+            'room_no', 'admission_type', 'doctor_name', 'doctor_type', 'admission_diagnosis'
+        ])->filter()->toArray();
+
+        // Create patient
+        $patient = Patient::create($patientData);
+
+        // Create admission if admission data provided
+        if (!empty($admissionData)) {
+            // Add service field for backward compatibility
+            if (!empty($admissionData['admission_type'])) {
+                $admissionData['service'] = $admissionData['admission_type'];
+            }
+
+            $admissionData['patient_id'] = $patient->id;
+            $admissionData['admission_date'] = now();
+            $admissionData['status'] = 'active';
+            Admission::create($admissionData);
+        }
 
         \Log::info('Patient created', ['id' => $patient->id, 'patient_no' => $patient->patient_no]);
 
@@ -108,6 +130,8 @@ class PatientController extends Controller
             'first_name' => 'required|string|max:191',
             'middle_name' => 'nullable|string|max:191',
             'last_name' => 'required|string|max:191',
+            'sex' => 'nullable|in:male,female,other',
+            'contact_number' => 'nullable|string|max:20',
             'date_of_birth' => 'nullable|date',
             'province' => 'nullable|string|max:191',
             'city' => 'nullable|string|max:191',
@@ -120,12 +144,42 @@ class PatientController extends Controller
             'admission_diagnosis' => 'nullable|string|max:2000',
         ]);
 
-        // Maintain backward compatibility: if service is not provided, copy admission_type into service
-        if (!empty($data['admission_type']) && empty($data['service'])) {
-            $data['service'] = $data['admission_type'];
+        // Separate patient data from admission data
+        $patientData = collect($data)->only([
+            'first_name', 'middle_name', 'last_name', 'sex', 'contact_number',
+            'date_of_birth', 'province', 'city', 'barangay', 'nationality'
+        ])->filter()->toArray();
+
+        $admissionData = collect($data)->only([
+            'room_no', 'admission_type', 'doctor_name', 'doctor_type', 'admission_diagnosis'
+        ])->filter()->toArray();
+
+        // Update patient data
+        if (!empty($patientData)) {
+            $patient->update($patientData);
         }
 
-        $patient->update($data);
+        // Update or create admission data if provided
+        if (!empty($admissionData)) {
+            // Add service field for backward compatibility
+            if (!empty($admissionData['admission_type'])) {
+                $admissionData['service'] = $admissionData['admission_type'];
+            }
+
+            // Get current admission or create new one
+            $currentAdmission = $patient->currentAdmission;
+            
+            if ($currentAdmission) {
+                // Update existing admission
+                $currentAdmission->update($admissionData);
+            } else {
+                // Create new admission
+                $admissionData['patient_id'] = $patient->id;
+                $admissionData['admission_date'] = now();
+                $admissionData['status'] = 'active';
+                Admission::create($admissionData);
+            }
+        }
 
         return response()->json(['ok' => true, 'message' => 'Patient updated']);
     }
@@ -138,5 +192,204 @@ class PatientController extends Controller
         $patient = Patient::where('patient_no', $patient_no)->firstOrFail();
         $patient->delete();
         return response()->json(['ok' => true, 'message' => 'Patient deleted']);
+    }
+
+    /**
+     * Get patient admissions for API
+     */
+    public function getPatientAdmissionsApi($patientId)
+    {
+        try {
+            $patient = Patient::findOrFail($patientId);
+            
+            $admissions = $patient->admissions()
+                ->orderBy('admission_date', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'admissions' => $admissions
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load patient admissions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Create a new admission for an existing patient
+     */
+    public function createAdmission(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'patient_id' => 'required|exists:patients,id',
+                'room_no' => 'required|string|max:20',
+                'admission_type' => 'required|in:Emergency,Outpatient,Inpatient',
+                'doctor_name' => 'required|string|max:100',
+                'doctor_type' => 'nullable|string|max:50',
+                'admission_diagnosis' => 'nullable|string|max:20',
+                'admission_diagnosis_description' => 'nullable|string|max:500',
+            ]);
+            
+            // Check if patient already has an active admission
+            $activeAdmission = \DB::table('admissions')
+                ->where('patient_id', $validated['patient_id'])
+                ->where('status', 'active')
+                ->first();
+                
+            if ($activeAdmission) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Patient already has an active admission. Please discharge the current admission first.'
+                ], 422);
+            }
+            
+            // Create new admission (exclude admission_diagnosis_description as it doesn't exist in DB)
+            $admissionId = \DB::table('admissions')->insertGetId([
+                'patient_id' => $validated['patient_id'],
+                'admission_number' => 'ADM-' . now()->format('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
+                'room_no' => $validated['room_no'],
+                'admission_type' => $validated['admission_type'],
+                'doctor_name' => $validated['doctor_name'],
+                'doctor_type' => $validated['doctor_type'] ?? null,
+                'admission_diagnosis' => $validated['admission_diagnosis'] ?? null,
+                'admission_date' => now(),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
+            // Get the created admission for response
+            $admission = \DB::table('admissions')->where('id', $admissionId)->first();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'New admission created successfully!',
+                'admission' => $admission
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create admission: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get the active admission for a patient
+     */
+    public function getActiveAdmission($patientId)
+    {
+        try {
+            $activeAdmission = \DB::table('admissions')
+                ->where('patient_id', $patientId)
+                ->where('status', 'active')
+                ->first();
+                
+            if ($activeAdmission) {
+                return response()->json([
+                    'success' => true,
+                    'admission' => $activeAdmission
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active admission found for this patient'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get active admission: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Discharge patient admission (only if billing is paid)
+     */
+    public function dischargePatient(Request $request, $admissionId)
+    {
+        try {
+            $admission = Admission::with(['billings', 'patient'])->findOrFail($admissionId);
+            
+            // Check if admission is still active
+            if ($admission->status !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This admission is not active and cannot be discharged.'
+                ]);
+            }
+            
+            // Check if there's a paid billing for this admission
+            $paidBilling = $admission->billings()->where('status', 'paid')->first();
+            if (!$paidBilling) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot discharge patient. Billing must be cleared first.'
+                ]);
+            }
+            
+            // Discharge the admission
+            $admission->discharge();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Patient {$admission->patient->first_name} {$admission->patient->last_name} has been successfully discharged."
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to discharge patient: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get current active admission for a patient
+     */
+    public function getCurrentAdmission($id)
+    {
+        try {
+            $patient = Patient::findOrFail($id);
+            $currentAdmission = $patient->currentAdmission;
+
+            if ($currentAdmission) {
+                return response()->json([
+                    'success' => true,
+                    'admission' => [
+                        'id' => $currentAdmission->id,
+                        'room_no' => $currentAdmission->room_no,
+                        'admission_type' => $currentAdmission->admission_type,
+                        'doctor_name' => $currentAdmission->doctor_name,
+                        'doctor_type' => $currentAdmission->doctor_type,
+                        'admission_diagnosis' => $currentAdmission->admission_diagnosis,
+                        'admission_date' => $currentAdmission->admission_date,
+                        'status' => $currentAdmission->status,
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active admission found for this patient'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch admission data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

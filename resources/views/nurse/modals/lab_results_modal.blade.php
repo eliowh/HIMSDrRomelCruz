@@ -12,39 +12,19 @@
                 <span id="lab-results-patient-no">Patient No</span>
             </div>
             <div class="history-stats">
-                <span class="stat pending-stat">
-                    <i class="fas fa-clock"></i>
-                    <span id="pending-tests">0</span> Pending
+                <span class="stat">
+                    <i class="fas fa-vial"></i>
+                    <span id="total-lab-tests">0</span> Total Tests
                 </span>
-                <span class="stat progress-stat">
-                    <i class="fas fa-spinner"></i>
-                    <span id="progress-tests">0</span> In Progress
-                </span>
-                <span class="stat completed-stat">
+                <span class="stat">
                     <i class="fas fa-check-circle"></i>
                     <span id="completed-tests">0</span> Completed
                 </span>
-                <span class="stat price-stat">
+                <span class="stat">
                     <i class="fas fa-dollar-sign"></i>
-                    ₱<span id="total-price">0.00</span> Total
+                    ₱<span id="total-price">0.00</span> Total Price
                 </span>
             </div>
-        </div>
-
-        <!-- Status Filter Tabs -->
-        <div class="lab-status-filters">
-            <button class="status-filter-btn active" data-status="all">
-                <i class="fas fa-list"></i> All Tests <span class="filter-count" id="all-count">0</span>
-            </button>
-            <button class="status-filter-btn" data-status="pending">
-                <i class="fas fa-clock"></i> Pending <span class="filter-count" id="pending-count">0</span>
-            </button>
-            <button class="status-filter-btn" data-status="in_progress">
-                <i class="fas fa-spinner"></i> In Progress <span class="filter-count" id="progress-count">0</span>
-            </button>
-            <button class="status-filter-btn" data-status="completed">
-                <i class="fas fa-check-circle"></i> Completed <span class="filter-count" id="completed-count">0</span>
-            </button>
         </div>
         
         <div class="lab-results-content">
@@ -127,98 +107,66 @@
     transform: translateY(-2px);
 }
 
-/* Status-specific card styling */
+/* Simplified card styling */
 .lab-result-card[data-status="pending"] {
     border-left-color: #f57c00;
-    background: linear-gradient(135deg, #fff 0%, #fff9f0 100%);
 }
 
 .lab-result-card[data-status="in_progress"] {
     border-left-color: #1976d2;
-    background: linear-gradient(135deg, #fff 0%, #f0f8ff 100%);
 }
 
 .lab-result-card[data-status="completed"] {
     border-left-color: #388e3c;
-    background: linear-gradient(135deg, #fff 0%, #f0fff0 100%);
 }
 
 .lab-result-card[data-status="cancelled"] {
     border-left-color: #d32f2f;
-    background: linear-gradient(135deg, #fff 0%, #fff0f0 100%);
 }
 
-/* Enhanced status badge with animations */
+/* Simple status badge */
 .lab-result-status-badge {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
     text-transform: uppercase;
     white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    animation: statusPulse 2s ease-in-out infinite;
-}
-
-@keyframes statusPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
 }
 
 .lab-result-status-badge.completed {
-    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-    color: #2e7d32;
-    border: 1px solid #a5d6a7;
-}
-.lab-result-status-badge.completed::before {
-    content: "✅";
-    font-size: 10px;
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .lab-result-status-badge.in-progress {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    color: #1565c0;
-    border: 1px solid #90caf9;
-    animation: progressSpin 1.5s linear infinite;
-}
-.lab-result-status-badge.in-progress::before {
-    content: "🔄";
-    font-size: 10px;
-    animation: spin 1s linear infinite;
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
 }
 
 .lab-result-status-badge.pending {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    color: #ef6c00;
-    border: 1px solid #ffcc02;
-}
-.lab-result-status-badge.pending::before {
-    content: "⏳";
-    font-size: 10px;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
 }
 
 .lab-result-status-badge.cancelled {
-    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
-    color: #c62828;
-    border: 1px solid #ef9a9a;
-}
-.lab-result-status-badge.cancelled::before {
-    content: "❌";
-    font-size: 10px;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 .lab-result-status-badge.unknown {
-    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-    color: #616161;
-    border: 1px solid #bdbdbd;
+    background: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
 }
 
-/* Enhanced patient info and stats */
+/* Simple patient info styling */
 .patient-info-summary {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: #f8f9fa;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
@@ -246,120 +194,13 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.stat.pending-stat {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    color: #ef6c00;
-    border: 1px solid #ffb74d;
+/* Simple stat styling */
+.history-stats .stat {
+    color: #666;
+    font-size: 0.9em;
 }
 
-.stat.progress-stat {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    color: #1565c0;
-    border: 1px solid #42a5f5;
-}
-
-.stat.completed-stat {
-    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-    color: #2e7d32;
-    border: 1px solid #66bb6a;
-}
-
-.stat.price-stat {
-    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-    color: #7b1fa2;
-    border: 1px solid #ba68c8;
-}
-
-/* Status Filter Tabs */
-.lab-status-filters {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 12px;
-    border: 1px solid #dee2e6;
-    flex-wrap: wrap;
-}
-
-.status-filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
-    border: 2px solid transparent;
-    background: white;
-    color: #6c757d;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.3s ease;
-    flex: 1;
-    justify-content: center;
-    min-width: 110px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.status-filter-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.status-filter-btn.active {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.status-filter-btn[data-status="all"].active {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    color: white;
-    border-color: #495057;
-}
-
-.status-filter-btn[data-status="pending"] {
-    border-color: #f57c00;
-    color: #f57c00;
-}
-.status-filter-btn[data-status="pending"].active {
-    background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
-    color: white;
-}
-
-.status-filter-btn[data-status="in_progress"] {
-    border-color: #1976d2;
-    color: #1976d2;
-}
-.status-filter-btn[data-status="in_progress"].active {
-    background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
-    color: white;
-}
-
-.status-filter-btn[data-status="completed"] {
-    border-color: #388e3c;
-    color: #388e3c;
-}
-.status-filter-btn[data-status="completed"].active {
-    background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
-    color: white;
-}
-
-.filter-count {
-    background: rgba(255,255,255,0.9);
-    color: inherit;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-left: 4px;
-    border: 1px solid currentColor;
-}
-
-.status-filter-btn.active .filter-count {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border-color: rgba(255,255,255,0.5);
-}
+/* Simplified styling */
 
 .lab-result-header {
     display: flex;
@@ -598,8 +439,35 @@ function loadLabResultsHistory(patientId) {
     document.getElementById('labResultsEmpty').style.display = 'none';
     document.getElementById('labResultsList').style.display = 'none';
     
+    // Get the currently selected admission ID from the main interface
+    let admissionId = null;
+    try {
+        // Look for the selected admission in the patient details area
+        const selectedAdmission = document.querySelector('.admission-item.selected-admission');
+        if (selectedAdmission) {
+            admissionId = selectedAdmission.getAttribute('data-admission-id');
+            console.log('Found selected admission ID:', admissionId);
+        } else {
+            // Fallback: look for the active admission if no specific selection
+            const activeAdmission = document.querySelector('.admission-item.active-admission');
+            if (activeAdmission) {
+                admissionId = activeAdmission.getAttribute('data-admission-id');
+                console.log('Using active admission ID:', admissionId);
+            }
+        }
+    } catch (e) {
+        console.log('Could not determine current admission ID:', e.message);
+    }
+    
+    // Build API URL with admission filter if we have an active admission
+    const apiUrl = admissionId ? 
+        `/api/patients/${patientId}/lab-results?admission_id=${admissionId}` : 
+        `/api/patients/${patientId}/lab-results`;
+    
+    console.log('Loading lab results with URL:', apiUrl, 'Admission ID:', admissionId);
+    
     // Fetch lab results from API
-    fetch(`/api/patients/${patientId}/lab-results`)
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -648,7 +516,7 @@ function displayLabResultsHistory(tests, patient) {
         return sum + price;
     }, 0);
     
-    updateLabResultsStats(totalTests, completedTests, totalPrice, pendingTests, inProgressTests);
+    updateLabResultsStats(totalTests, completedTests, totalPrice);
     
     // Generate HTML for lab results with enhanced status attributes
     const labResultsHtml = tests.map(test => {
@@ -748,21 +616,16 @@ function displayLabResultsHistory(tests, patient) {
     document.getElementById('labResultsList').innerHTML = labResultsHtml;
     document.getElementById('labResultsList').style.display = 'block';
     
-    // Initialize filter functionality after content loads
-    initializeLabResultsFilter();
+    // Lab results loaded successfully
 }
 
-function updateLabResultsStats(total, completed, totalPrice, pending = 0, inProgress = 0) {
-    // Update enhanced stats with proper element checking
+function updateLabResultsStats(total, completed, totalPrice) {
+    // Update simple stats to match doctor's modal
     const totalElement = document.getElementById('total-lab-tests');
-    const pendingElement = document.getElementById('pending-tests');
-    const progressElement = document.getElementById('in-progress-tests');
     const completedElement = document.getElementById('completed-tests');
     const priceElement = document.getElementById('total-price');
     
     if (totalElement) totalElement.textContent = total;
-    if (pendingElement) pendingElement.textContent = pending;
-    if (progressElement) progressElement.textContent = inProgress;
     if (completedElement) completedElement.textContent = completed;
     if (priceElement) priceElement.textContent = totalPrice.toFixed(2);
 }
@@ -791,105 +654,7 @@ function formatDateTime(dateStr) {
     }
 }
 
-// Enhanced filter functionality for lab results
-function initializeLabResultsFilter() {
-    const filterButtons = document.querySelectorAll('.status-filter-btn');
-    const labOrderCards = document.querySelectorAll('.lab-order-card');
-    
-    // Update filter counts
-    updateFilterCounts();
-    
-    // Set up filter button click handlers
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const targetStatus = this.getAttribute('data-status');
-            
-            // Update active state
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Filter cards
-            filterLabResults(targetStatus);
-        });
-    });
-    
-    // Initialize with "all" filter active
-    const allButton = document.querySelector('.status-filter-btn[data-status="all"]');
-    if (allButton) {
-        allButton.classList.add('active');
-    }
-}
-
-function updateFilterCounts() {
-    const labOrderCards = document.querySelectorAll('.lab-order-card');
-    const filterButtons = document.querySelectorAll('.status-filter-btn');
-    
-    const counts = {
-        all: labOrderCards.length,
-        pending: 0,
-        in_progress: 0,
-        completed: 0
-    };
-    
-    labOrderCards.forEach(card => {
-        const status = card.getAttribute('data-status');
-        if (counts.hasOwnProperty(status)) {
-            counts[status]++;
-        }
-    });
-    
-    filterButtons.forEach(button => {
-        const status = button.getAttribute('data-status');
-        const countElement = button.querySelector('.filter-count');
-        if (countElement && counts.hasOwnProperty(status)) {
-            countElement.textContent = counts[status];
-        }
-    });
-}
-
-function filterLabResults(status) {
-    const labOrderCards = document.querySelectorAll('.lab-order-card');
-    
-    labOrderCards.forEach(card => {
-        const cardStatus = card.getAttribute('data-status');
-        
-        if (status === 'all' || cardStatus === status) {
-            card.style.display = 'block';
-            // Add smooth fade in
-            card.style.opacity = '0';
-            card.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => {
-                card.style.opacity = '1';
-            }, 50);
-        } else {
-            card.style.display = 'none';
-        }
-    });
-    
-    // Show "no results" message if needed
-    const visibleCards = Array.from(labOrderCards).filter(card => 
-        card.style.display !== 'none'
-    );
-    
-    let noResultsMsg = document.querySelector('.no-results-message');
-    if (visibleCards.length === 0) {
-        if (!noResultsMsg) {
-            noResultsMsg = document.createElement('div');
-            noResultsMsg.className = 'no-results-message';
-            noResultsMsg.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #6c757d;">
-                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                    <h5>No lab results found</h5>
-                    <p>No lab results match the current filter.</p>
-                </div>
-            `;
-            document.getElementById('labResultsList').appendChild(noResultsMsg);
-        }
-        noResultsMsg.style.display = 'block';
-    } else if (noResultsMsg) {
-        noResultsMsg.style.display = 'none';
-    }
-}
+// Simplified modal functions
 
 // Close modal when clicking outside
 window.addEventListener('click', function(event) {

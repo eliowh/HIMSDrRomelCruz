@@ -107,8 +107,53 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     // Allow doctors to view patient lab results (read-only access)
     Route::get('/doctor/api/patients/{patientId}/lab-results', [LabOrderController::class, 'getPatientTestHistory'])->name('api.patient.lab-results.doctor');
     
+    // Allow doctors to view patient admissions (read-only access)
+    Route::get('/doctor/api/patients/{patientId}/admissions', [PatientController::class, 'getPatientAdmissionsApi'])->name('api.patient.admissions.doctor');
+    
+    // Allow doctors to view active admission (read-only access)
+    Route::get('/doctor/api/patients/{patientId}/active-admission', [PatientController::class, 'getActiveAdmission'])->name('api.patient.active-admission.doctor');
+    
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
+
+    // Doctors autosuggest (used by doctor edit forms)
+    Route::get('/doctors/search', function (\Illuminate\Http\Request $request) {
+        $q = $request->query('q', '');
+        $matches = \DB::table('doctorslist')
+            ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+            ->whereRaw('`COL 1` like ?', ["%{$q}%"])
+            ->orderByRaw('`COL 1`')
+            ->limit(50)
+            ->get();
+        return response()->json($matches);
+    })->name('doctors.search.doctor');
+
+    // Doctors validation endpoint (validates an exact name)
+    Route::post('/doctors/validate', function (\Illuminate\Http\Request $request) {
+        $name = trim((string)$request->input('name', ''));
+        if (!$name) {
+            return response()->json(['valid' => false]);
+        }
+
+        $match = \DB::table('doctorslist')
+            ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+            ->whereRaw('LOWER(`COL 1`) = ?', [strtolower($name)])
+            ->first();
+
+        if (! $match) {
+            $normalized = strtolower(preg_replace('/[^\p{L}\p{N}\s]/u', '', $name));
+            $match = \DB::table('doctorslist')
+                ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+                ->whereRaw('LOWER(REGEXP_REPLACE(`COL 1`, "[^[:alnum:][:space:]]", "")) = ?', [$normalized])
+                ->first();
+        }
+
+        return response()->json([
+            'valid' => (bool)$match,
+            'name' => $match ? $match->name : null,
+            'type' => $match ? $match->type : null
+        ]);
+    })->name('doctors.validate.doctor');
 
     // Chat/Messaging Routes
     Route::get('/doctor/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
@@ -229,6 +274,21 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Allow nurses to view patient lab results
     Route::get('/api/patients/{patientId}/lab-results', [LabOrderController::class, 'getPatientTestHistory'])->name('api.patient.lab-results.nurse');
+    
+    // Allow nurses to view patient admissions
+    Route::get('/api/patients/{patientId}/admissions', [PatientController::class, 'getPatientAdmissionsApi'])->name('api.patient.admissions.nurse');
+    
+    // Allow nurses to get active admission for lab/medicine requests
+    Route::get('/api/patients/{patientId}/active-admission', [PatientController::class, 'getActiveAdmission'])->name('api.patient.active-admission.nurse');
+    
+    // Allow nurses to get current admission data for edit modal
+    Route::get('/patients/{id}/current-admission', [PatientController::class, 'getCurrentAdmission'])->name('api.patient.current-admission.nurse');
+    
+    // Allow nurses to create new admissions
+    Route::post('/nurse/admissions', [PatientController::class, 'createAdmission'])->name('nurse.admissions.create');
+    
+    // Allow nurses to discharge patients
+    Route::post('/nurse/discharge-patient/{admissionId}', [PatientController::class, 'dischargePatient'])->name('nurse.discharge.patient');
     
     // Allow nurses to view lab result PDFs
     Route::get('/nurse/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('nurse.lab.viewPdf');
@@ -488,10 +548,10 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
     Route::get('/billing/icd-rates', [App\Http\Controllers\BillingController::class, 'getIcdRates'])->name('billing.icd.rates');
     Route::get('/billing/patient-services/{patient_id}', [App\Http\Controllers\BillingController::class, 'getPatientServices'])->name('billing.patient.services');
+    Route::get('/billing/patient-admissions/{patient_id}', [App\Http\Controllers\BillingController::class, 'getPatientAdmissions'])->name('billing.patient.admissions');
     
     // Billing Status Management
     Route::post('/billing/{billing}/mark-as-paid', [App\Http\Controllers\BillingController::class, 'markAsPaid'])->name('billing.mark.paid');
-    Route::post('/billing/{billing}/mark-as-unpaid', [App\Http\Controllers\BillingController::class, 'markAsUnpaid'])->name('billing.mark.unpaid');
     
     // Individual Billing Management (wildcard routes come LAST)
     Route::get('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
@@ -528,9 +588,48 @@ Route::get('/procedures/category', [App\Http\Controllers\ProcedureController::cl
 // Room Search API
 Route::get('/rooms/search', [App\Http\Controllers\RoomController::class, 'search'])->name('rooms.search');
 
+// Doctors Search API (public route for both nurses and doctors)
+Route::get('/doctors/search', function (\Illuminate\Http\Request $request) {
+    $q = $request->query('q', '');
+    $matches = \DB::table('doctorslist')
+        ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+        ->whereRaw('`COL 1` like ?', ["%{$q}%"])
+        ->orderByRaw('`COL 1`')
+        ->limit(50)
+        ->get();
+    return response()->json($matches);
+})->name('doctors.search.public');
+
 // Validation APIs
 Route::post('/icd10/validate', [App\Http\Controllers\Icd10Controller::class, 'validate'])->name('icd10.validate');
 Route::post('/rooms/validate', [App\Http\Controllers\RoomController::class, 'validate'])->name('rooms.validate');
+
+// Doctors validation endpoint (public route for both nurses and doctors)
+Route::post('/doctors/validate', function (\Illuminate\Http\Request $request) {
+    $name = trim((string)$request->input('name', ''));
+    if (!$name) {
+        return response()->json(['valid' => false]);
+    }
+
+    $match = \DB::table('doctorslist')
+        ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+        ->whereRaw('LOWER(`COL 1`) = ?', [strtolower($name)])
+        ->first();
+
+    if (! $match) {
+        $normalized = strtolower(preg_replace('/[^\p{L}\p{N}\s]/u', '', $name));
+        $match = \DB::table('doctorslist')
+            ->selectRaw('`COL 1` as `name`, `COL 2` as `type`')
+            ->whereRaw('LOWER(REGEXP_REPLACE(`COL 1`, "[^[:alnum:][:space:]]", "")) = ?', [$normalized])
+            ->first();
+    }
+
+    return response()->json([
+        'valid' => (bool)$match,
+        'name' => $match ? $match->name : null,
+        'type' => $match ? $match->type : null
+    ]);
+})->name('doctors.validate.public');
 
 /*
 |--------------------------------------------------------------------------

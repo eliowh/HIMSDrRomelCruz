@@ -10,6 +10,7 @@ class LabOrder extends Model
 
     protected $fillable = [
         'patient_id',
+        'admission_id',
         'requested_by',
         'lab_tech_id',
         'patient_name',

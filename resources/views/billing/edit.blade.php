@@ -154,18 +154,19 @@
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="status" class="form-label">Billing Status</label>
-                                        <select name="status" id="status" class="form-select" required>
-                                            <option value="pending" {{ old('status', $billing->status) == 'pending' ? 'selected' : '' }}>
-                                                Pending Payment
-                                            </option>
-                                            <option value="paid" {{ old('status', $billing->status) == 'paid' ? 'selected' : '' }}>
-                                                Paid
-                                            </option>
-                                            <option value="cancelled" {{ old('status', $billing->status) == 'cancelled' ? 'selected' : '' }}>
-                                                Cancelled
-                                            </option>
-                                        </select>
+                                        <label class="form-label">Billing Status</label>
+                                        <div class="mt-2">
+                                            @if($billing->status === 'pending')
+                                                <span class="badge bg-warning">Pending Payment</span>
+                                            @elseif($billing->status === 'paid')
+                                                <span class="badge bg-success">Paid</span>
+                                            @elseif($billing->status === 'cancelled')
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ ucfirst($billing->status) }}</span>
+                                            @endif
+                                        </div>
+                                        <small class="text-muted d-block mt-2">Billing status cannot be changed here. Use payment actions in Payment Management.</small>
                                     </div>
                                 </div>
 

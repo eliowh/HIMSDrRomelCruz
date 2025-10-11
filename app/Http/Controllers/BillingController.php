@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Billing;
 use App\Models\BillingItem;
 use App\Models\Patient;
+use App\Models\Admission;
 use App\Models\PhilhealthMember;
 use App\Models\Icd10NamePriceRate;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +16,32 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class BillingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $billings = Billing::with(['patient', 'createdBy'])
-                          ->orderBy('created_at', 'desc')
-                          ->paginate(20);
+        $query = Billing::with(['patient', 'createdBy']);
+        
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('billing_number', 'LIKE', "%{$search}%")
+                  ->orWhereHas('patient', function($patientQuery) use ($search) {
+                      $patientQuery->where('first_name', 'LIKE', "%{$search}%")
+                                  ->orWhere('last_name', 'LIKE', "%{$search}%")
+                                  ->orWhere('patient_no', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Status filter
+        if ($request->filled('status') && $request->get('status') !== 'all') {
+            $query->where('status', $request->get('status'));
+        }
+        
+        $billings = $query->orderBy('created_at', 'desc')->paginate(20);
+        
+        // Append search parameters to pagination links
+        $billings->appends($request->only(['search', 'status']));
         
         return view('billing.index', compact('billings'));
     }
@@ -36,6 +58,7 @@ class BillingController extends Controller
     {
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
+            'admission_id' => 'required|exists:admissions,id',
             'billing_items' => 'required|array|min:1',
             'billing_items.*.item_type' => 'required|in:room,medicine,laboratory,professional,other',
             'billing_items.*.description' => 'required|string',
@@ -44,6 +67,16 @@ class BillingController extends Controller
             'billing_items.*.case_rate' => 'nullable|numeric|min:0',
             'billing_items.*.icd_code' => 'nullable|string'
         ]);
+
+        // Check if a billing already exists for this admission
+        if ($request->admission_id) {
+            $existingBilling = Billing::where('admission_id', $request->admission_id)->first();
+            if ($existingBilling) {
+                return back()->withErrors([
+                    'admission' => 'A billing record already exists for this admission (Billing #' . $existingBilling->billing_number . '). Please edit the existing billing instead of creating a new one.'
+                ])->withInput();
+            }
+        }
 
         DB::beginTransaction();
         
@@ -104,6 +137,7 @@ class BillingController extends Controller
             // Create billing record
             $billing = Billing::create([
                 'patient_id' => $patient->id,
+                'admission_id' => $request->admission_id,
                 'billing_number' => $billingNumber,
                 'total_amount' => $totalAmount,
                 'room_charges' => $roomCharges,
@@ -212,13 +246,25 @@ class BillingController extends Controller
         
         try {
             $request->validate([
+                'admission_id' => 'nullable|exists:admissions,id',
                 'professional_fees' => 'nullable|numeric|min:0|max:999999.99',
                 'is_philhealth_member' => 'boolean',
                 'is_senior_citizen' => 'boolean',
                 'is_pwd' => 'boolean',
-                'status' => 'required|in:pending,paid,cancelled',
                 'notes' => 'nullable|string|max:1000'
             ]);
+
+            // Check if admission_id is being changed and if the new admission already has a billing
+            if ($request->admission_id && $request->admission_id != $billing->admission_id) {
+                $existingBilling = Billing::where('admission_id', $request->admission_id)
+                                         ->where('id', '!=', $billing->id)
+                                         ->first();
+                if ($existingBilling) {
+                    return back()->withErrors([
+                        'admission' => 'The selected admission already has a billing record (Billing #' . $existingBilling->billing_number . '). Cannot reassign billing to this admission.'
+                    ])->withInput();
+                }
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()->withErrors(['error' => 'Professional fee adjustment failed: ' . implode(' ', $e->validator->errors()->all())])
                         ->withInput();
@@ -269,6 +315,7 @@ class BillingController extends Controller
             
             // Update billing record with all calculated values
             $billing->update([
+                'admission_id' => $request->admission_id,
                 'room_charges' => $roomCharges,
                 'professional_fees' => $professionalTotal,
                 'medicine_charges' => $medicineCharges,
@@ -281,7 +328,7 @@ class BillingController extends Controller
                 'is_philhealth_member' => $request->boolean('is_philhealth_member'),
                 'is_senior_citizen' => $request->boolean('is_senior_citizen'),
                 'is_pwd' => $request->boolean('is_pwd'),
-                'status' => $request->status,
+                // status updates are managed via payment flow and not editable here
                 'notes' => $request->notes
             ]);
             
@@ -337,9 +384,145 @@ class BillingController extends Controller
     public function getPatientServices(Request $request)
     {
         try {
-            $patient = Patient::with(['labOrders', 'pharmacyRequests'])->findOrFail($request->patient_id);
+            $patientId = $request->patient_id;
+            $admissionId = $request->query('admission_id');
             
-            $billableServices = $patient->billable_services;
+
+            
+            // Basic error checking first
+            if (!$patientId) {
+                return response()->json(['error' => 'Patient ID is required'], 400);
+            }
+            
+            $patient = Patient::findOrFail($patientId);
+            
+            // Require admission_id for proper isolation
+            if (!$admissionId) {
+                return response()->json(['error' => 'Admission ID is required for service loading'], 400);
+            }
+            
+            // Filter services by admission
+                // Get admission details
+                $admission = \DB::table('admissions')->where('id', $admissionId)->first();
+                
+                if (!$admission) {
+                    return response()->json(['error' => 'Admission not found'], 404);
+                }
+                
+
+                
+                $admissionStart = $admission->admission_date;
+                $admissionEnd = $admission->discharge_date ?? now();
+                
+                // Get room service from admission with dynamic pricing
+                $roomPrice = 2400; // Default price
+                try {
+                    if ($admission->room_no) {
+                        $room = \DB::table('roomlist')->where('COL 1', $admission->room_no)->first();
+                        if ($room && isset($room->{'COL 2'})) {
+                            // Clean room price (remove commas if present)
+                            $cleanPrice = is_string($room->{'COL 2'}) ? str_replace(',', '', $room->{'COL 2'}) : $room->{'COL 2'};
+                            $roomPrice = (float) $cleanPrice;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Room price lookup failed', ['error' => $e->getMessage(), 'room_no' => $admission->room_no]);
+                    // Continue with default price
+                }
+                
+                $roomService = [
+                    'type' => 'room',
+                    'description' => $admission->room_no ?: 'Room',
+                    'source' => 'room',
+                    'quantity' => 1,
+                    'unit_price' => $roomPrice,
+                ];
+                
+                // Get ICD-10 service from admission if available
+                $icdServices = [];
+                try {
+                    if ($admission->admission_diagnosis) {
+                        // Try to get ICD rates from database first
+                        $icdRate = \DB::table('icd10namepricerate')
+                            ->where('COL 1', $admission->admission_diagnosis)
+                            ->first();
+                        
+                        if ($icdRate) {
+                            $icdServices[] = [
+                                'type' => 'professional',
+                                'description' => $icdRate->{'COL 2'} ?? $admission->admission_diagnosis, // Description from COL 2
+                                'icd_code' => $admission->admission_diagnosis,
+                                'source' => 'admission',
+                                'quantity' => 1,
+                                'case_rate' => $icdRate->{'COL 3'} ?? 2340, // Case rate from COL 3
+                                'unit_price' => $icdRate->{'COL 4'} ?? 7800, // Professional fee from COL 4
+                            ];
+                        } else {
+                            // Fallback with corrected values (case_rate should be lower, professional_fee higher)
+                            $icdServices[] = [
+                                'type' => 'professional',
+                                'description' => $admission->admission_diagnosis,
+                                'icd_code' => $admission->admission_diagnosis,
+                                'source' => 'admission',
+                                'quantity' => 1,
+                                'case_rate' => 2340, // Case rate (lower amount)
+                                'unit_price' => 7800, // Professional fee (higher amount)
+                            ];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('ICD service lookup failed', ['error' => $e->getMessage(), 'diagnosis' => $admission->admission_diagnosis]);
+                    // Continue without ICD services
+                }
+                
+                // Get lab orders for this admission - STRICTLY only this admission
+                $labOrders = \DB::table('lab_orders')
+                    ->where('patient_id', $patientId)
+                    ->where('admission_id', '=', $admissionId) // Exact match only
+                    ->get();
+                
+
+                
+                $labServices = $labOrders->map(function($lab) {
+                    return [
+                        'type' => 'laboratory',
+                        'description' => $lab->test_requested,
+                        'source' => 'lab_order',
+                        'quantity' => 1,
+                        'unit_price' => $lab->price ?? 360, // Default lab price
+                    ];
+                });
+                
+                // Get medicines for this admission - STRICTLY only this admission
+                $medicines = \DB::table('patient_medicines as pm')
+                    ->join('pharmacy_requests as pr', 'pm.pharmacy_request_id', '=', 'pr.id')
+                    ->where('pm.patient_id', $patientId)
+                    ->where('pr.admission_id', '=', $admissionId) // Exact match only
+                    ->whereNotNull('pr.admission_id') // Must have admission_id (exclude NULL values)
+                    ->select('pm.*')
+                    ->get();
+                
+
+                
+                $medicineServices = $medicines->map(function($medicine) {
+                    return [
+                        'type' => 'medicine',
+                        'description' => $medicine->generic_name ?: $medicine->brand_name,
+                        'source' => 'patient_medicine',
+                        'quantity' => $medicine->quantity,
+                        'unit_price' => $medicine->unit_price,
+                    ];
+                });
+                
+            // Combine all services
+            $billableServices = collect([$roomService])
+                ->merge($icdServices)
+                ->merge($labServices)
+                ->merge($medicineServices)
+                ->values()
+                ->toArray();
+                
+
             
             return response()->json([
                 'patient' => [
@@ -371,14 +554,37 @@ class BillingController extends Controller
                             ->orWhere('last_name', 'LIKE', "%{$query}%")
                             ->orWhere('patient_no', 'LIKE', "%{$query}%");
                       })
-                      ->limit(10)
+                      ->with(['admissions.billings'])
+                      ->limit(20) // Increased limit to account for filtering
                       ->get()
+                      ->filter(function ($patient) {
+                          // Include patient if they have no admissions
+                          if ($patient->admissions->isEmpty()) {
+                              return true;
+                          }
+                          
+                          // Check if patient has at least one admission without billing
+                          foreach ($patient->admissions as $admission) {
+                              $hasNoBilling = $admission->billings->isEmpty();
+                              $hasUnfinishedBilling = $admission->billings->where('status', 'pending')->isNotEmpty();
+                              
+                              // Include patient if they have an admission with no billing or pending billing
+                              if ($hasNoBilling || $hasUnfinishedBilling) {
+                                  return true;
+                              }
+                          }
+                          
+                          // Exclude patient if all admissions have completed billing (paid status)
+                          return false;
+                      })
+                      ->take(10) // Final limit after filtering
                       ->map(function ($patient) {
                           return [
                               'id' => $patient->id,
                               'text' => $patient->display_name . ' (Patient #: ' . $patient->patient_no . ')'
                           ];
-                      });
+                      })
+                      ->values(); // Reindex array
 
         return response()->json(['patients' => $patients]);
     }
@@ -396,7 +602,7 @@ class BillingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Billing marked as paid successfully.'
+                'message' => 'Billing marked as paid successfully. Patient clearance provided.'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -406,26 +612,33 @@ class BillingController extends Controller
         }
     }
 
+
+
     /**
-     * Mark billing as unpaid (revert to pending)
+     * Get patient admissions for billing
      */
-    public function markAsUnpaid(Billing $billing)
+    public function getPatientAdmissions(Request $request, $patientId)
     {
         try {
-            $billing->update([
-                'status' => 'pending',
-                'payment_date' => null
-            ]);
+            $patient = Patient::findOrFail($patientId);
+            
+            $admissions = $patient->admissions()
+                                ->orderBy('admission_date', 'desc')
+                                ->get()
+                                ->map(function ($admission) {
+                                    return [
+                                        'id' => $admission->id,
+                                        'admission_number' => $admission->admission_number,
+                                        'doctor_name' => $admission->doctor_name,
+                                        'admission_date' => $admission->admission_date,
+                                        'status' => $admission->status,
+                                        'diagnosis' => $admission->admission_diagnosis
+                                    ];
+                                });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Billing marked as unpaid successfully.'
-            ]);
+            return response()->json(['admissions' => $admissions]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to mark billing as unpaid: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['error' => 'Failed to fetch patient admissions: ' . $e->getMessage()], 500);
         }
     }
 }
