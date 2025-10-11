@@ -1,30 +1,29 @@
-@extends('layouts.doctor')
+<?php $__env->startSection('title', 'Chat - ' . $chatRoom->name); ?>
 
-@section('title', 'Chat - ' . $chatRoom->name)
-
-@section('content')
-<link rel="stylesheet" href="{{ asset('css/chat/chat.css') }}">
+<?php $__env->startSection('content'); ?>
+<link rel="stylesheet" href="<?php echo e(asset('css/chat/chat.css')); ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <div class="chat-room-container">
     <!-- Chat Header -->
     <div class="chat-room-header">
         <div class="header-left">
-            <a href="{{ route('chat.index') }}" class="back-btn">
+            <a href="<?php echo e(route('chat.index')); ?>" class="back-btn">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div class="room-info">
-                <h2>{{ $chatRoom->name }}</h2>
+                <h2><?php echo e($chatRoom->name); ?></h2>
                 <div class="room-details">
-                    @if($chatRoom->patient)
+                    <?php if($chatRoom->patient): ?>
                         <span class="patient-info">
                             <i class="fas fa-user"></i>
-                            Patient #{{ $chatRoom->patient_no }} - {{ $chatRoom->patient->display_name }}
+                            Patient #<?php echo e($chatRoom->patient_no); ?> - <?php echo e($chatRoom->patient->display_name); ?>
+
                         </span>
-                    @endif
+                    <?php endif; ?>
                     <span class="participant-count">
                         <i class="fas fa-users"></i>
-                        {{ count($chatRoom->participants ?? []) }} participants
+                        <?php echo e(count($chatRoom->participants ?? [])); ?> participants
                     </span>
                 </div>
             </div>
@@ -47,86 +46,90 @@
             </div>
             
             <div class="participants-list">
-                <!-- Debug: Total participants: {{ count($chatRoom->getParticipantUsers()) }} -->
-                <!-- Debug: Participant IDs in room: {{ json_encode($chatRoom->participants ?? []) }} -->
-                @foreach($chatRoom->getParticipantUsers() as $participant)
+                <!-- Debug: Total participants: <?php echo e(count($chatRoom->getParticipantUsers())); ?> -->
+                <!-- Debug: Participant IDs in room: <?php echo e(json_encode($chatRoom->participants ?? [])); ?> -->
+                <?php $__currentLoopData = $chatRoom->getParticipantUsers(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $participant): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <div class="participant-item">
                         <div class="participant-info">
-                            <strong>{{ $participant->name ?? 'Unknown User' }}</strong>
-                            <span class="participant-role">{{ ucfirst($participant->role ?? 'unknown') }}</span>
-                            @if($participant->id === $chatRoom->created_by)
+                            <strong><?php echo e($participant->name ?? 'Unknown User'); ?></strong>
+                            <span class="participant-role"><?php echo e(ucfirst($participant->role ?? 'unknown')); ?></span>
+                            <?php if($participant->id === $chatRoom->created_by): ?>
                                 <span class="creator-badge">Creator</span>
-                            @endif
-                            <!-- Debug info: ID={{ $participant->id ?? 'NULL' }} -->
+                            <?php endif; ?>
+                            <!-- Debug info: ID=<?php echo e($participant->id ?? 'NULL'); ?> -->
                         </div>
-                        @if($chatRoom->created_by === auth()->id() && $participant->id && $participant->id !== $chatRoom->created_by)
-                            <button type="button" class="btn btn-danger btn-xs btn-remove-participant" data-user-id="{{ $participant->id }}" title="Remove {{ $participant->name }} (ID: {{ $participant->id }})">
+                        <?php if($chatRoom->created_by === auth()->id() && $participant->id && $participant->id !== $chatRoom->created_by): ?>
+                            <button type="button" class="btn btn-danger btn-xs btn-remove-participant" data-user-id="<?php echo e($participant->id); ?>" title="Remove <?php echo e($participant->name); ?> (ID: <?php echo e($participant->id); ?>)">
                                 <i class="fas fa-user-minus"></i>
                             </button>
-                        @endif
+                        <?php endif; ?>
                     </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
 
-            @if($allUsers->count() > 0)
+            <?php if($allUsers->count() > 0): ?>
                 <div class="add-participant-section">
                     <h4><i class="fas fa-user-md"></i> Add Doctor</h4>
                     <select id="memberSelect" class="form-control">
                         <option value="">Select a doctor to add...</option>
-                        @foreach($allUsers as $userData)
-                            <option value="{{ $userData['id'] }}" data-role="{{ strtolower($userData['role']) }}">
-                                {{ $userData['name'] }}
+                        <?php $__currentLoopData = $allUsers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $userData): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($userData['id']); ?>" data-role="<?php echo e(strtolower($userData['role'])); ?>">
+                                <?php echo e($userData['name']); ?>
+
                             </option>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                     <button class="btn btn-success btn-sm" onclick="addSelectedMember()">
                         <i class="fas fa-user-plus"></i> Add Doctor
                     </button>
                 </div>
-            @else
+            <?php else: ?>
                 <div class="no-users-available" style="padding: 10px; color: #666;">
                     <em>No other doctors available to add</em>
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
 
         <!-- Messages Area -->
         <div class="messages-container">
             <div class="messages-list" id="messagesList">
-                @foreach($chatRoom->messages as $message)
-                    <div class="message {{ $message->user_id === auth()->id() ? 'own-message' : 'other-message' }} {{ $message->isSystemMessage() ? 'system-message' : '' }}" data-message-id="{{ $message->id }}">
-                        @if(!$message->isSystemMessage())
+                <?php $__currentLoopData = $chatRoom->messages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $message): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="message <?php echo e($message->user_id === auth()->id() ? 'own-message' : 'other-message'); ?> <?php echo e($message->isSystemMessage() ? 'system-message' : ''); ?>" data-message-id="<?php echo e($message->id); ?>">
+                        <?php if(!$message->isSystemMessage()): ?>
                             <div class="message-header">
-                                <strong class="sender-name">{{ $message->sender_name }}</strong>
-                                <span class="sender-role">{{ $message->sender_role }}</span>
-                                <span class="message-time">{{ $message->short_time }}</span>
+                                <strong class="sender-name"><?php echo e($message->sender_name); ?></strong>
+                                <span class="sender-role"><?php echo e($message->sender_role); ?></span>
+                                <span class="message-time"><?php echo e($message->short_time); ?></span>
                             </div>
-                        @endif
+                        <?php endif; ?>
                         <div class="message-content">
-                            {{ $message->message }}
-                            @if($message->hasAttachment())
+                            <?php echo e($message->message); ?>
+
+                            <?php if($message->hasAttachment()): ?>
                                 <div class="message-attachment">
-                                    <i class="fas {{ $message->attachment_icon }}"></i>
-                                    @if($message->attachment_mime_type === 'application/pdf')
-                                        <button type="button" class="attachment-link" onclick="viewChatAttachmentPdf({{ $message->id }})">
-                                            {{ $message->attachment_original_name }}
+                                    <i class="fas <?php echo e($message->attachment_icon); ?>"></i>
+                                    <?php if($message->attachment_mime_type === 'application/pdf'): ?>
+                                        <button type="button" class="attachment-link" onclick="viewChatAttachmentPdf(<?php echo e($message->id); ?>)">
+                                            <?php echo e($message->attachment_original_name); ?>
+
                                         </button>
-                                    @else
-                                        <a href="{{ route('chat.downloadAttachment', $message->id) }}" 
+                                    <?php else: ?>
+                                        <a href="<?php echo e(route('chat.downloadAttachment', $message->id)); ?>" 
                                            class="attachment-link" 
                                            target="_blank">
-                                            {{ $message->attachment_original_name }}
+                                            <?php echo e($message->attachment_original_name); ?>
+
                                         </a>
-                                    @endif
-                                    <span class="attachment-size">({{ number_format($message->attachment_size / 1024, 1) }} KB)</span>
+                                    <?php endif; ?>
+                                    <span class="attachment-size">(<?php echo e(number_format($message->attachment_size / 1024, 1)); ?> KB)</span>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
-                        @if($message->isSystemMessage())
-                            <div class="message-time">{{ $message->short_time }}</div>
-                        @endif
+                        <?php if($message->isSystemMessage()): ?>
+                            <div class="message-time"><?php echo e($message->short_time); ?></div>
+                        <?php endif; ?>
                     </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
 
             <!-- Message Input -->
@@ -332,7 +335,7 @@
 </style>
 
 <script>
-const chatRoomId = {{ $chatRoom->id }};
+const chatRoomId = <?php echo e($chatRoom->id); ?>;
 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 let lastMessageId = 0;
 let isRefreshing = false;
@@ -1023,4 +1026,5 @@ document.getElementById('messageInput').addEventListener('keypress', function(e)
 });
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.doctor', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\xamppLatest\htdocs\HIMSDrRomelCruz\resources\views/chat/show.blade.php ENDPATH**/ ?>

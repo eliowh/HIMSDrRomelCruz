@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BillingController;
@@ -87,7 +88,27 @@ Route::get('/password-reset-success', [UserController::class, 'passwordResetSucc
 |
 */
 
-Route::middleware(['auth', 'role:doctor'])->group(function () {
+// Debug route - remove after fixing (outside middleware)
+Route::get('/debug-chat-participants', function() {
+    $room = App\Models\ChatRoom::first();
+    if ($room) {
+        $participants = $room->participants ?? [];
+        $users = $room->getParticipantUsers();
+        
+        return response()->json([
+            'room_id' => $room->id,
+            'room_name' => $room->name,
+            'participants_array' => $participants,
+            'valid_users' => $users->map(function($u) {
+                return ['id' => $u->id, 'name' => $u->name, 'email' => $u->email];
+            })->toArray(),
+            'all_users_in_db' => App\Models\User::select('id', 'name', 'email')->get()->toArray()
+        ]);
+    }
+    return response()->json(['error' => 'No chat rooms found']);
+});
+
+Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/doctor/home', [App\Http\Controllers\DoctorController::class, 'dashboard'])->name('doctor.dashboard');
     
@@ -116,6 +137,7 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
 
+    // Chat/Messaging Routes (Legacy)
     // Doctors autosuggest (used by doctor edit forms)
     Route::get('/doctors/search', function (\Illuminate\Http\Request $request) {
         $q = $request->query('q', '');
@@ -164,6 +186,7 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     Route::delete('/doctor/chat/{id}/remove-participant', [App\Http\Controllers\ChatController::class, 'removeParticipant'])->name('chat.removeParticipant');
     Route::get('/doctor/chat/{id}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.getMessages');
     Route::patch('/doctor/chat/{id}/archive', [App\Http\Controllers\ChatController::class, 'archive'])->name('chat.archive');
+    Route::get('/doctor/chat/attachment/{id}/download', [App\Http\Controllers\ChatController::class, 'downloadAttachment'])->name('chat.downloadAttachment');
 
     // Schedule
     Route::get('/doctor/schedule', function () {

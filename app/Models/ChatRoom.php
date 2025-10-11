@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ChatRoom extends Model
 {
@@ -104,7 +105,24 @@ class ChatRoom extends Model
     public function getParticipantUsers()
     {
         $participantIds = $this->participants ?? [];
-        return User::whereIn('id', $participantIds)->get();
+        $users = User::whereIn('id', $participantIds)->get();
+        
+        // Clean up participants list if there are invalid IDs
+        $validIds = $users->pluck('id')->toArray();
+        $invalidIds = array_diff($participantIds, $validIds);
+        
+        if (!empty($invalidIds)) {
+            Log::warning('Found invalid participant IDs in chat room ' . $this->id, [
+                'invalid_ids' => $invalidIds,
+                'valid_ids' => $validIds,
+                'original_participants' => $participantIds
+            ]);
+            
+            // Update to only keep valid participant IDs
+            $this->update(['participants' => array_values($validIds)]);
+        }
+        
+        return $users;
     }
 
     /**

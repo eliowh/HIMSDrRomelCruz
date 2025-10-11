@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
@@ -110,37 +112,115 @@ class ChatController extends Controller
      */
     public function sendMessage(Request $request, $id)
     {
-        $request->validate([
-            'message' => 'required|string|max:1000'
-        ]);
-
-        $user = Auth::user();
-        $chatRoom = ChatRoom::findOrFail($id);
-
-        // Check if user has access to this chat room
-        if (!$chatRoom->hasParticipant($user->id) && $chatRoom->created_by !== $user->id) {
-            abort(403, 'You do not have access to this chat room.');
-        }
-
-        $message = ChatMessage::create([
-            'chat_room_id' => $chatRoom->id,
-            'user_id' => $user->id,
-            'message' => $request->message,
-            'message_type' => 'text',
-        ]);
-
-        // Update chat room activity
-        $chatRoom->updateActivity();
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => $message->load('user'),
-                'formatted_time' => $message->formatted_time
+        try {
+            // Log the request for debugging
+            Log::info('Processing message request', [
+                'chat_room_id' => $id,
+                'has_message' => !empty($request->message),
+                'has_file' => $request->hasFile('attachment'),
+                'file_size' => $request->hasFile('attachment') ? $request->file('attachment')->getSize() : 0
             ]);
-        }
 
-        return redirect()->back();
+            $request->validate([
+                'message' => 'nullable|string|max:1000',
+                'attachment' => 'nullable|file|max:10240|mimes:jpeg,png,gif,pdf,doc,docx,txt,xlsx,xls'
+            ]);
+
+            // Ensure either message or attachment is provided
+            if (!$request->message && !$request->hasFile('attachment')) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Either message text or file attachment is required.'
+                ], 400);
+            }
+
+            $user = Auth::user();
+            $chatRoom = ChatRoom::findOrFail($id);
+
+            // Check if user has access to this chat room
+            if (!$chatRoom->hasParticipant($user->id) && $chatRoom->created_by !== $user->id) {
+                abort(403, 'You do not have access to this chat room.');
+            }
+
+            $messageData = [
+                'chat_room_id' => $chatRoom->id,
+                'user_id' => $user->id,
+                'message' => $request->message ?? '',
+                'message_type' => 'text',
+            ];
+
+            // Handle file attachment if present
+            if ($request->hasFile('attachment')) {
+                Log::info('Processing file attachment');
+                
+                $file = $request->file('attachment');
+                
+                // Generate unique filename
+                $filename = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+                
+                // Store the file using Laravel's storage system
+                $filePath = $file->storeAs('chat-attachments', $filename);
+
+                // Add attachment data to message
+                $messageData['attachment_filename'] = $filename;
+                $messageData['attachment_original_name'] = $file->getClientOriginalName();
+                $messageData['attachment_mime_type'] = $file->getMimeType();
+                $messageData['attachment_size'] = $file->getSize();
+                $messageData['attachment_path'] = $filePath;
+                $messageData['message_type'] = 'attachment';
+                
+                Log::info('File attachment processed successfully', ['filename' => $filename]);
+            }
+
+            $message = ChatMessage::create($messageData);
+            Log::info('Message created successfully', ['message_id' => $message->id]);
+
+            // Update chat room activity
+            $chatRoom->updateActivity();
+
+            if ($request->expectsJson()) {
+                $response = [
+                    'success' => true,
+                    'message' => [
+                        'id' => $message->id,
+                        'message' => $message->message,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'role' => $user->role,
+                        ],
+                        'created_at' => $message->created_at->toISOString(),
+                        'has_attachment' => $message->hasAttachment(),
+                        'attachment_original_name' => $message->attachment_original_name,
+                        'attachment_mime_type' => $message->attachment_mime_type,
+                        'attachment_size' => $message->attachment_size,
+                    ],
+                    'formatted_time' => $message->formatted_time,
+                ];
+                
+                Log::info('Returning JSON response', ['response_keys' => array_keys($response)]);
+                return response()->json($response);
+            }
+
+            return redirect()->back();
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error in sendMessage', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error sending message', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'An error occurred while sending the message: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -201,49 +281,104 @@ class ChatController extends Controller
      */
     public function removeParticipant(Request $request, $id)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id'
-        ]);
+        try {
+            Log::info('Remove participant request', [
+                'user_id' => $request->user_id,
+                'user_id_type' => gettype($request->user_id),
+                'chat_room_id' => $id,
+                'request_data' => $request->all(),
+                'raw_input' => $request->getContent()
+            ]);
 
-        $user = Auth::user();
-        $chatRoom = ChatRoom::findOrFail($id);
-        $participantToRemove = User::findOrFail($request->user_id);
+            // Basic validation
+            $userId = $request->user_id;
+            if (!$userId || $userId === '' || $userId === 'null' || $userId === 'undefined') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User ID is required and cannot be empty'
+                ], 422);
+            }
 
-        // Check if current user has access to this chat room
-        if (!$chatRoom->hasParticipant($user->id) && $chatRoom->created_by !== $user->id) {
-            abort(403, 'You do not have access to this chat room.');
-        }
+            $userId = intval($userId);
+            if ($userId <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid user ID format: ' . $request->user_id
+                ], 422);
+            }
 
-        // Don't allow removing the creator
-        if ($participantToRemove->id === $chatRoom->created_by) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot remove the chat room creator'
-            ], 400);
-        }
+            $user = Auth::user();
+            $chatRoom = ChatRoom::findOrFail($id);
+            
+            // Check if the user to remove exists
+            $participantToRemove = User::find($userId);
+            if (!$participantToRemove) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found in database'
+                ], 404);
+            }
 
-        // Remove the participant
-        $chatRoom->removeParticipant($participantToRemove->id);
+            Log::info('Participant removal attempt', [
+                'current_user' => $user->id,
+                'participant_to_remove' => $participantToRemove->id,
+                'chat_room_creator' => $chatRoom->created_by,
+                'chat_room_participants' => $chatRoom->participants
+            ]);
 
-        // Send a system message
-        ChatMessage::create([
-            'chat_room_id' => $chatRoom->id,
-            'user_id' => $user->id,
-            'message' => "{$participantToRemove->name} was removed from the conversation by {$user->name}",
-            'message_type' => 'system',
-        ]);
+            // Check if current user has access to this chat room
+            if (!$chatRoom->hasParticipant($user->id) && $chatRoom->created_by !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this chat room.'
+                ], 403);
+            }
 
-        // Update chat room activity
-        $chatRoom->updateActivity();
+            // Don't allow removing the creator
+            if ($participantToRemove->id === $chatRoom->created_by) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot remove the chat room creator'
+                ], 400);
+            }
 
-        if ($request->expectsJson()) {
+            // Check if participant is actually in the chat room
+            if (!$chatRoom->hasParticipant($participantToRemove->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User is not a participant in this chat room'
+                ], 400);
+            }
+
+            // Remove the participant
+            $chatRoom->removeParticipant($participantToRemove->id);
+
+            // Send a system message
+            ChatMessage::create([
+                'chat_room_id' => $chatRoom->id,
+                'user_id' => $user->id,
+                'message' => "{$participantToRemove->name} was removed from the conversation by {$user->name}",
+                'message_type' => 'system',
+            ]);
+
+            // Update chat room activity
+            $chatRoom->updateActivity();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Participant removed successfully'
             ]);
-        }
 
-        return redirect()->back()->with('success', 'Participant removed successfully');
+        } catch (\Exception $e) {
+            Log::error('Error removing participant: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request_data' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while removing the participant: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -276,6 +411,10 @@ class ChatController extends Controller
                     'formatted_time' => $message->formatted_time,
                     'short_time' => $message->short_time,
                     'is_own_message' => $message->user_id === auth()->id(),
+                    'has_attachment' => $message->hasAttachment(),
+                    'attachment_original_name' => $message->attachment_original_name,
+                    'attachment_mime_type' => $message->attachment_mime_type,
+                    'attachment_size' => $message->attachment_size,
                 ];
             })
         ]);
@@ -297,5 +436,35 @@ class ChatController extends Controller
         $chatRoom->update(['is_active' => false]);
 
         return redirect()->route('chat.index')->with('success', 'Chat room archived successfully');
+    }
+
+    /**
+     * Download a chat message attachment.
+     */
+    public function downloadAttachment($messageId)
+    {
+        try {
+            $message = ChatMessage::findOrFail($messageId);
+            
+            // Check if message has attachment
+            if (!$message->hasAttachment()) {
+                abort(404, 'No attachment found');
+            }
+            
+            // Check if file exists in storage
+            if (!Storage::exists($message->attachment_path)) {
+                abort(404, 'File not found in storage');
+            }
+            
+            $fileContent = Storage::get($message->attachment_path);
+            
+            return response($fileContent)
+                ->header('Content-Type', $message->attachment_mime_type)
+                ->header('Content-Disposition', 'inline; filename="' . $message->attachment_original_name . '"');
+                
+        } catch (\Exception $e) {
+            Log::error('Error downloading attachment: ' . $e->getMessage());
+            abort(500, 'Error loading file attachment');
+        }
     }
 }
