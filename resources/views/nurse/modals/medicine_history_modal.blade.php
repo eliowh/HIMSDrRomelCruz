@@ -380,8 +380,35 @@ function loadMedicineHistory(patientId) {
     // Show loading state
     showMedicineHistoryLoading();
     
-    // Fetch complete medicine history
-    fetch(`/api/patients/${patientId}/medicines`)
+    // Get the currently selected admission ID from the main interface
+    let admissionId = null;
+    try {
+        // Look for the selected admission in the patient details area
+        const selectedAdmission = document.querySelector('.admission-item.selected-admission');
+        if (selectedAdmission) {
+            admissionId = selectedAdmission.getAttribute('data-admission-id');
+            console.log('Found selected admission ID:', admissionId);
+        } else {
+            // Fallback: look for the active admission if no specific selection
+            const activeAdmission = document.querySelector('.admission-item.active-admission');
+            if (activeAdmission) {
+                admissionId = activeAdmission.getAttribute('data-admission-id');
+                console.log('Using active admission ID:', admissionId);
+            }
+        }
+    } catch (e) {
+        console.log('Could not determine current admission ID:', e.message);
+    }
+    
+    // Build API URL with admission filter if we have an active admission
+    const apiUrl = admissionId ? 
+        `/api/patients/${patientId}/medicines?admission_id=${admissionId}` : 
+        `/api/patients/${patientId}/medicines`;
+    
+    console.log('Loading medicine history with URL:', apiUrl, 'Admission ID:', admissionId);
+    
+    // Fetch medicine history (admission-specific if admission ID available)
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);

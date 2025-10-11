@@ -149,6 +149,32 @@
                                                     <small>{{ $billing->payment_date->diffForHumans() }}</small>
                                                 </p>
                                             @endif
+                                            
+                                            @if($billing->payment_amount && $billing->change_amount !== null)
+                                            <div class="mt-3 p-3 bg-light rounded">
+                                                <div class="row text-start">
+                                                    <div class="col-sm-6">
+                                                        <strong class="text-info">
+                                                            <i class="fas fa-money-bill-wave"></i> Amount Received:
+                                                        </strong><br>
+                                                        <span class="fs-5 text-success">₱{{ number_format($billing->payment_amount, 2) }}</span>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <strong class="text-warning">
+                                                            <i class="fas fa-exchange-alt"></i> Change Given:
+                                                        </strong><br>
+                                                        <span class="fs-5 text-danger">₱{{ number_format($billing->change_amount, 2) }}</span>
+                                                    </div>
+                                                </div>
+                                                @if($billing->processedBy)
+                                                <div class="mt-2 text-start">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user"></i> Processed by: <strong>{{ $billing->processedBy->name }}</strong>
+                                                    </small>
+                                                </div>
+                                                @endif
+                                            </div>
+                                            @endif
                                         @else
                                             <h3 class="text-warning"><i class="fas fa-clock"></i> PENDING</h3>
                                             <p class="text-muted">Awaiting payment processing</p>
@@ -196,6 +222,21 @@
                                                 <div class="col"><h5><strong>Net Amount:</strong></h5></div>
                                                 <div class="col-auto"><h5 class="text-primary"><strong>₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong></h5></div>
                                             </div>
+                                            
+                                            @if($billing->status === 'paid' && $billing->payment_amount)
+                                            <hr class="my-3">
+                                            <h6 class="text-success mb-2"><i class="fas fa-money-check-alt"></i> Payment Transaction</h6>
+                                            <div class="row mb-1">
+                                                <div class="col text-success"><strong>Amount Paid:</strong></div>
+                                                <div class="col-auto text-success"><strong>₱{{ number_format($billing->payment_amount, 2) }}</strong></div>
+                                            </div>
+                                            @if($billing->change_amount > 0)
+                                            <div class="row">
+                                                <div class="col text-warning"><strong>Change Returned:</strong></div>
+                                                <div class="col-auto text-warning"><strong>₱{{ number_format($billing->change_amount, 2) }}</strong></div>
+                                            </div>
+                                            @endif
+                                            @endif
                                         </div>
 
                                         <!-- Savings Summary -->
@@ -240,12 +281,9 @@
                                                     </a>
                                                 </div>
                                                 <hr>
-                                                <button type="button" 
-                                                        class="btn btn-outline-secondary mark-as-unpaid-btn" 
-                                                        data-billing-id="{{ $billing->id }}"
-                                                        data-billing-number="{{ $billing->billing_number }}">
-                                                    <i class="fas fa-undo"></i> Revert to Unpaid
-                                                </button>
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-check-circle"></i> Payment has been finalized and cannot be reverted for security reasons.
+                                                </div>
                                             @endif
                                             <a href="/cashier/billing" class="btn btn-outline-primary">
                                                 <i class="fas fa-list"></i> Back to Billing List
@@ -332,49 +370,7 @@
         }
     }
 
-    async function markBillingAsUnpaid(billingId, button) {
-        const billingNumber = button.dataset.billingNumber;
-        
-        const confirmed = await confirmPaymentAction(
-            `Revert billing ${billingNumber} to UNPAID status?\n\nThis will:\n• Clear the payment timestamp\n• Change status back to PENDING\n• Require payment processing again`, 
-            'Revert Payment Status'
-        );
-        
-        if (!confirmed) return;
-        
-        try {
-            showBillingLoading('Reverting payment status...');
-            
-            button.disabled = true;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            
-            const response = await fetch(`/cashier/billing/${billingId}/mark-as-unpaid`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                showBillingNotification('success', 'Payment Status Reverted', 
-                    `Billing ${billingNumber} has been reverted to UNPAID status. Click OK to refresh and see the updated status.`);
-            } else {
-                closeBillingNotification();
-                showBillingNotification('error', 'Revert Error', data.message);
-                button.disabled = false;
-                button.innerHTML = originalText;
-            }
-        } catch (error) {
-            closeBillingNotification();
-            showBillingNotification('error', 'Network Error', 'Failed to revert payment status: ' + error.message);
-            button.disabled = false;
-            button.innerHTML = originalText;
-        }
-    }
+    // Revert functionality removed for security - preventing payment theft
     </script>
 
     <style>

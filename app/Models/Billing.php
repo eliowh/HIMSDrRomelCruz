@@ -11,6 +11,7 @@ class Billing extends Model
 
     protected $fillable = [
         'patient_id',
+        'admission_id',
         'billing_number',
         'total_amount',
         'philhealth_deduction',
@@ -19,6 +20,9 @@ class Billing extends Model
         'status',
         'billing_date',
         'payment_date',
+        'payment_amount',
+        'change_amount',
+        'processed_by',
         'room_charges',
         'professional_fees',
         'medicine_charges',
@@ -41,6 +45,8 @@ class Billing extends Model
         'philhealth_deduction' => 'decimal:2',
         'senior_pwd_discount' => 'decimal:2',
         'net_amount' => 'decimal:2',
+        'payment_amount' => 'decimal:2',
+        'change_amount' => 'decimal:2',
         'room_charges' => 'decimal:2',
         'professional_fees' => 'decimal:2',
         'medicine_charges' => 'decimal:2',
@@ -53,6 +59,11 @@ class Billing extends Model
         return $this->belongsTo(Patient::class);
     }
 
+    public function admission()
+    {
+        return $this->belongsTo(Admission::class);
+    }
+
     public function billingItems()
     {
         return $this->hasMany(BillingItem::class);
@@ -61,6 +72,11 @@ class Billing extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function processedBy()
+    {
+        return $this->belongsTo(User::class, 'processed_by');
     }
 
     // Calculate discounts

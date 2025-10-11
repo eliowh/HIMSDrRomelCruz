@@ -5,9 +5,15 @@
         <h3>Request Medicine (Send to Pharmacy)</h3>
         <form id="medicineRequestForm">
             <input type="hidden" id="medRequestPatientId" name="patient_id">
+            <input type="hidden" id="medRequestAdmissionId" name="admission_id">
             <div class="form-group">
                 <label>Patient:</label>
                 <p id="medRequestPatientInfo" class="patient-info-display"></p>
+            </div>
+            
+            <div class="form-group" id="medAdmissionInfoGroup" style="display: none;">
+                <label>Current Admission:</label>
+                <p id="medRequestAdmissionInfo" class="admission-info-display"></p>
             </div>
 
             <div class="form-group">
@@ -167,6 +173,32 @@ function openMedicineRequestModal(patientId, patientName, patientNo){
     window.isModalOpen = true;
     document.getElementById('medRequestPatientId').value = patientId;
     document.getElementById('medRequestPatientInfo').textContent = `${patientName} (ID: ${patientNo})`;
+    
+    // Get the active admission ID for this patient
+    fetch(`/api/patients/${patientId}/active-admission`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.admission) {
+                document.getElementById('medRequestAdmissionId').value = data.admission.id;
+                
+                // Show admission info
+                const admissionInfo = `Admission #${data.admission.admission_number} - Room ${data.admission.room_no || 'N/A'} - Dr. ${data.admission.doctor_name || 'N/A'}`;
+                document.getElementById('medRequestAdmissionInfo').textContent = admissionInfo;
+                document.getElementById('medAdmissionInfoGroup').style.display = 'block';
+            } else {
+                // No active admission - show error
+                nurseError('No Active Admission', 'This patient has no active admission. Please create an admission first before requesting medicine.');
+                closeMedicineRequestModal();
+                return;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching active admission:', error);
+            nurseError('Error', 'Unable to verify patient admission status. Please try again.');
+            closeMedicineRequestModal();
+            return;
+        });
+    
     document.getElementById('medicineRequestForm').reset();
     document.getElementById('medicineRequestModal').classList.add('show');
 }
@@ -176,3 +208,16 @@ function closeMedicineRequestModal(){
     setTimeout(()=>{ window.isModalOpen = false; }, 300);
 }
 </script>
+
+<style>
+.admission-info-display {
+    background: #e8f5e8;
+    border: 1px solid #28a745;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #155724;
+    margin: 0;
+}
+</style>

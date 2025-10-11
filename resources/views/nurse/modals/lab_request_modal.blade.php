@@ -5,10 +5,16 @@
         <h3>Request Lab Test</h3>
         <form id="labRequestForm">
             <input type="hidden" id="requestPatientId" name="patient_id">
+            <input type="hidden" id="requestAdmissionId" name="admission_id">
             
             <div class="form-group">
                 <label>Patient:</label>
                 <p id="requestPatientInfo" class="patient-info-display"></p>
+            </div>
+            
+            <div class="form-group" id="admissionInfoGroup" style="display: none;">
+                <label>Current Admission:</label>
+                <p id="requestAdmissionInfo" class="admission-info-display"></p>
             </div>
             
             <div class="form-row">
@@ -259,3 +265,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<style>
+.admission-info-display {
+    background: #e8f5e8;
+    border: 1px solid #28a745;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #155724;
+    margin: 0;
+}
+</style>

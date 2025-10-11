@@ -52,6 +52,21 @@
             </div>
 
             <div class="form-group">
+                <label for="sex">Sex</label>
+                <select id="sex" name="sex" required>
+                    <option value="" disabled selected>-- Select Sex --</option>
+                    <option value="male" {{ old('sex') == 'male' ? 'selected' : '' }}>Male</option>
+                    <option value="female" {{ old('sex') == 'female' ? 'selected' : '' }}>Female</option>
+                    <option value="other" {{ old('sex') == 'other' ? 'selected' : '' }}>Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="contact_number">Contact Number</label>
+                <input id="contact_number" type="number" name="contact_number" placeholder="Enter contact number" min="1000000000" max="99999999999" maxlength="11" oninput="if(this.value.length > 11) this.value = this.value.slice(0, 11);" value="{{ old('contact_number') }}">
+            </div>
+
+            <div class="form-group">
                 <label for="province">Province</label>
                 <input id="province" type="text" name="province" placeholder="Enter province" value="{{ old('province') }}">
             </div>

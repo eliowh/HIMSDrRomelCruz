@@ -232,8 +232,10 @@
                                 <dl class="patient-details">
                                     <dt>Patient No</dt><dd id="md-patient_no">-</dd>
                                     <dt>Full Name</dt><dd id="md-name">-</dd>
+                                    <dt>Sex</dt><dd id="md-sex">-</dd>
                                     <dt>Date of Birth</dt><dd id="md-dob">-</dd>
                                     <dt>Age</dt><dd id="md-age">-</dd>
+                                    <dt>Contact Number</dt><dd id="md-contact_number">-</dd>
                                     <dt>Location</dt><dd id="md-location">-</dd>
                                     <dt>Nationality</dt><dd id="md-nationality">-</dd>
                                 </dl>
@@ -362,6 +364,9 @@
                 ].filter(n => n && n !== '-').join(', ');
                 document.getElementById('md-name').textContent = or(fullName);
                 
+                // Format sex
+                document.getElementById('md-sex').textContent = patient.sex ? formatName(patient.sex) : '-';
+                
                 document.getElementById('md-dob').textContent = formatDate(patient.date_of_birth);
                 
                 // Compute age (years) from DOB
@@ -376,6 +381,9 @@
                     ageText = years + ' years';
                 }
                 document.getElementById('md-age').textContent = ageText;
+                
+                // Format contact number
+                document.getElementById('md-contact_number').textContent = patient.contact_number || '-';
                 
                 // Format location
                 const location = [

@@ -25,6 +25,7 @@ class PharmacyRequest extends Model
 
     protected $fillable = [
         'patient_id',
+        'admission_id',
         'requested_by',
         'pharmacist_id',
         'patient_name',
@@ -83,6 +84,11 @@ class PharmacyRequest extends Model
     public function cancelledBy()
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    public function admission()
+    {
+        return $this->belongsTo(Admission::class);
     }
 
     /**

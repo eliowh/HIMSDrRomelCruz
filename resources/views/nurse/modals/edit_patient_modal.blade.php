@@ -25,6 +25,21 @@
                         <label for="edit_date_of_birth">Date of Birth</label>
                         <input id="edit_date_of_birth" name="date_of_birth" type="date" required />
                     </div>
+
+                    <div class="form-group">
+                        <label for="edit_sex">Sex</label>
+                        <select id="edit_sex" name="sex" required>
+                            <option value="" disabled>-- Select Sex --</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_contact_number">Contact Number</label>
+                        <input id="edit_contact_number" type="number" name="contact_number" placeholder="Enter contact number" min="1000000000" max="99999999999" maxlength="11" oninput="if(this.value.length > 11) this.value = this.value.slice(0, 11);" />
+                    </div>
                     
                     <div class="form-group">
                         <label for="edit_province">Province</label>

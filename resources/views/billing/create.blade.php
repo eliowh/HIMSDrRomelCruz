@@ -46,6 +46,15 @@
                                 <small class="text-muted">Search by name or patient number</small>
                             </div>
                             <div class="col-md-6">
+                                <label for="admission_id" class="form-label">Select Admission <span class="text-danger">*</span></label>
+                                <select name="admission_id" id="admission_id" class="form-select" required disabled>
+                                    <option value="">Select patient first...</option>
+                                </select>
+                                <small class="text-muted">Choose the specific admission to bill</small>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
                                 <label class="form-label">Patient Status & Discounts</label>
                                 <div class="d-flex gap-3 align-items-center mt-2 flex-wrap">
                                     <div class="form-check">
@@ -87,7 +96,7 @@
                 <div class="card shadow mb-4">
                     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list-ul"></i> Patient Services & Charges</h5>
-                        <button type="button" class="btn btn-light btn-sm" onclick="loadPatientServices()" id="loadServicesBtn" disabled>
+                        <button type="button" class="btn btn-light btn-sm" onclick="loadPatientServices(document.getElementById('admission_id').value)" id="loadServicesBtn" disabled>
                             <i class="fas fa-sync"></i> Load Patient Services
                         </button>
                     </div>
@@ -201,22 +210,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // Discount checkboxes
     document.getElementById('is_senior_citizen').addEventListener('change', calculateTotals);
     document.getElementById('is_pwd').addEventListener('change', calculateTotals);
+    
+    // Admission selection - reload services when admission changes
+    document.getElementById('admission_id').addEventListener('change', function() {
+        const selectedAdmission = this.value;
+        if (selectedAdmission) {
+            console.log('Admission selected:', selectedAdmission);
+            loadPatientServices(selectedAdmission);
+        }
+    });
 });
 
-async function loadPatientServices() {
+async function loadPatientServices(admissionId = null) {
     const patientId = document.getElementById('patient_id').value;
-    console.log('Loading patient services for patient ID:', patientId);
+    console.log('Loading patient services for patient ID:', patientId, 'admission ID:', admissionId);
     
     if (!patientId) {
         console.log('No patient ID provided');
         return;
     }
     
+    if (!admissionId) {
+        console.log('No admission ID provided - services require admission selection');
+        document.getElementById('patientServicesContainer').innerHTML = '';
+        document.getElementById('selectPatientAlert').style.display = 'none';
+        document.getElementById('noServicesAlert').innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Please select an admission first to load services and charges.</div>';
+        document.getElementById('noServicesAlert').style.display = 'block';
+        return;
+    }
+    
     try {
         showBillingLoading('Loading patient services...');
         
-        console.log('Fetching from URL:', `/billing/patient-services/${patientId}`);
-        const response = await fetch(`/billing/patient-services/${patientId}`);
+        // Build URL with admission filter if provided
+        const url = admissionId ? 
+            `/billing/patient-services/${patientId}?admission_id=${admissionId}` : 
+            `/billing/patient-services/${patientId}`;
+        
+        console.log('Fetching from URL:', url);
+        const response = await fetch(url);
         console.log('Response status:', response.status);
         
         if (!response.ok) {
@@ -251,9 +283,12 @@ async function loadPatientServices() {
 
 function displayPatientServices(services) {
     const container = document.getElementById('patientServicesContainer');
+    // Completely clear the container first
     container.innerHTML = '';
     
-    services.forEach((service, index) => {
+    // Force a brief pause to ensure DOM clears
+    setTimeout(() => {
+        services.forEach((service, index) => {
         const serviceHtml = `
             <div class="patient-service mb-3 p-3 border rounded">
                 <input type="hidden" name="billing_items[${index}][item_type]" value="${service.type}">
@@ -324,10 +359,11 @@ function displayPatientServices(services) {
                 </div>
             </div>
         `;
-        container.innerHTML += serviceHtml;
-    });
-    
-    calculateTotals();
+            container.innerHTML += serviceHtml;
+        });
+        
+        calculateTotals();
+    }, 10); // Small delay to ensure DOM clears
 }
 
 function updateServicePrice(input, index) {
@@ -443,12 +479,80 @@ function selectPatient(patient) {
     // Update PhilHealth status display
     updatePhilhealthStatus();
     
-    // Load patient services
+    // Load patient admissions
+    loadPatientAdmissions(patient.id);
+    
+    // Enable load services button but don't auto-load
     const loadBtn = document.getElementById('loadServicesBtn');
     if (loadBtn) {
         loadBtn.disabled = false;
     }
-    loadPatientServices();
+    
+    // Clear any existing services since no admission is selected yet
+    document.getElementById('patientServicesContainer').innerHTML = '';
+    document.getElementById('selectPatientAlert').style.display = 'none';
+    document.getElementById('noServicesAlert').style.display = 'block';
+}
+
+// Load patient admissions
+async function loadPatientAdmissions(patientId) {
+    const admissionSelect = document.getElementById('admission_id');
+    
+    // Clear and disable admission select while loading
+    admissionSelect.innerHTML = '<option value="">Loading admissions...</option>';
+    admissionSelect.disabled = true;
+    
+    try {
+        const response = await fetch(`/billing/patient-admissions/${patientId}`);
+        const data = await response.json();
+        
+        // Clear the loading option and add disabled placeholder
+        admissionSelect.innerHTML = '<option value="" disabled selected>Select an admission</option>';
+        
+        if (data.admissions && data.admissions.length > 0) {
+            // Filter only active admissions (not discharged)
+            const activeAdmissions = data.admissions.filter(admission => admission.status === 'active');
+            
+            if (activeAdmissions.length > 0) {
+                let firstActiveAdmission = null;
+                
+                activeAdmissions.forEach((admission, index) => {
+                    const option = document.createElement('option');
+                    option.value = admission.id;
+                    option.textContent = `${admission.admission_number} - ${admission.doctor_name} (${admission.status}) - ${new Date(admission.admission_date).toLocaleDateString()}`;
+                    admissionSelect.appendChild(option);
+                    
+                    // Store the first active admission for auto-selection
+                    if (index === 0) {
+                        firstActiveAdmission = admission;
+                    }
+                });
+                
+                admissionSelect.disabled = false;
+                
+                // Automatically select the first active admission
+                if (firstActiveAdmission) {
+                    admissionSelect.value = firstActiveAdmission.id;
+                    
+                    // Trigger the admission change event to load services
+                    const event = new Event('change');
+                    admissionSelect.dispatchEvent(event);
+                }
+            } else {
+                // No active admissions - only discharged ones exist
+                admissionSelect.innerHTML = '<option value="" disabled>No active admissions available for billing</option>';
+                admissionSelect.disabled = true;
+            }
+        } else {
+            // No admissions at all
+            admissionSelect.innerHTML = '<option value="" disabled>No admissions found for this patient</option>';
+            admissionSelect.disabled = true;
+        }
+    } catch (error) {
+        console.error('Error loading patient admissions:', error);
+        admissionSelect.innerHTML = '<option value="">Error loading admissions</option>';
+        admissionSelect.disabled = true;
+    }
 }
 
 // PhilHealth status management

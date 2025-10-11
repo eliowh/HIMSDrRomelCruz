@@ -43,6 +43,7 @@ class LabOrderController extends Controller
     {
         $request->validate([
             'patient_id' => 'required|exists:patients,id',
+            'admission_id' => 'nullable|exists:admissions,id',
             'test_requested' => 'required|string|max:500',
             'notes' => 'nullable|string|max:1000',
             'priority' => 'required|in:normal,urgent,stat',
@@ -53,6 +54,7 @@ class LabOrderController extends Controller
 
         $labOrder = LabOrder::create([
             'patient_id' => $patient->id,
+            'admission_id' => $request->admission_id,
             'requested_by' => auth()->id(),
             'patient_name' => $patient->first_name . ' ' . $patient->last_name,
             'patient_no' => $patient->patient_no,
@@ -165,14 +167,21 @@ class LabOrderController extends Controller
      * @param int $patientId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getPatientTestHistory($patientId)
+    public function getPatientTestHistory(Request $request, $patientId)
     {
         try {
             // Get all lab orders for the patient, ordered by latest first
-            $testHistory = LabOrder::where('patient_id', $patientId)
-                ->with(['requestedBy', 'labTech'])
-                ->orderBy('requested_at', 'desc')
-                ->get();
+            $query = LabOrder::where('patient_id', $patientId)
+                ->with(['requestedBy', 'labTech']);
+            
+            // Filter by admission if admission_id is provided - STRICT filtering
+            $admissionId = $request->query('admission_id');
+            if ($admissionId) {
+                // Only show lab orders that are explicitly linked to this admission
+                $query->where('admission_id', '=', $admissionId);
+            }
+            
+            $testHistory = $query->orderBy('requested_at', 'desc')->get();
             
             // Add price information to each test (use stored price or fallback to lookup)
             $testHistoryWithPrices = $testHistory->map(function($test) {
