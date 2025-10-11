@@ -23,7 +23,13 @@
             <li>
                 <a href="/doctor/chat"
                    class="sidebar-btn{{ request()->is('doctor/chat*') ? ' active' : '' }}">
-                    <span class="icon">💬</span> <span class="text">Messages</span>
+                    <span class="icon">💬</span> <span class="text">Messages (Legacy)</span>
+                </a>
+            </li>
+            <li>
+                <a href="/doctor/stream-chat"
+                   class="sidebar-btn{{ request()->is('doctor/stream-chat*') ? ' active' : '' }}">
+                    <span class="icon">🚀</span> <span class="text">Stream Chat</span>
                 </a>
             </li>
          

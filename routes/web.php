@@ -110,7 +110,7 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
 
-    // Chat/Messaging Routes
+    // Chat/Messaging Routes (Legacy)
     Route::get('/doctor/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
     Route::get('/doctor/chat/{id}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.show');
     Route::post('/doctor/chat/create-for-patient', [App\Http\Controllers\ChatController::class, 'createOrGetForPatient'])->name('chat.createForPatient');
@@ -119,6 +119,15 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     Route::delete('/doctor/chat/{id}/remove-participant', [App\Http\Controllers\ChatController::class, 'removeParticipant'])->name('chat.removeParticipant');
     Route::get('/doctor/chat/{id}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.getMessages');
     Route::patch('/doctor/chat/{id}/archive', [App\Http\Controllers\ChatController::class, 'archive'])->name('chat.archive');
+
+    // Stream Chat Routes (New)
+    Route::get('/doctor/stream-chat', [App\Http\Controllers\StreamChatController::class, 'index'])->name('stream-chat.index');
+    Route::get('/doctor/stream-chat/{channelType}/{channelId}', [App\Http\Controllers\StreamChatController::class, 'show'])->name('stream-chat.show');
+    Route::post('/doctor/stream-chat/create-for-patient', [App\Http\Controllers\StreamChatController::class, 'createForPatient'])->name('stream-chat.createForPatient');
+    Route::post('/doctor/stream-chat/{channelType}/{channelId}/add-participant', [App\Http\Controllers\StreamChatController::class, 'addParticipant'])->name('stream-chat.addParticipant');
+    Route::delete('/doctor/stream-chat/{channelType}/{channelId}/remove-participant', [App\Http\Controllers\StreamChatController::class, 'removeParticipant'])->name('stream-chat.removeParticipant');
+    Route::get('/doctor/stream-chat/{channelType}/{channelId}/available-doctors', [App\Http\Controllers\StreamChatController::class, 'getAvailableDoctors'])->name('stream-chat.availableDoctors');
+    Route::get('/doctor/stream-chat/user-token', [App\Http\Controllers\StreamChatController::class, 'getUserToken'])->name('stream-chat.userToken');
 
     // Schedule
     Route::get('/doctor/schedule', function () {

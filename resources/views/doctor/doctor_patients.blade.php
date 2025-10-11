@@ -12,6 +12,46 @@
 <link rel="stylesheet" href="{{ asset('css/doctorcss/two_column_form.css') }}">
 <link rel="stylesheet" href="{{ asset('css/doctorcss/suggestion_dropdowns.css') }}">
 <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
+
+<style>
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-group .btn {
+    flex: 1;
+    min-width: 110px;
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+}
+
+.btn.primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+}
+
+.btn.secondary {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+}
+
+.btn.secondary:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+</style>
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
@@ -135,9 +175,14 @@
                 </div>
 
                 <div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
-                    <button id="btnMessage" class="btn secondary">
-                        <i class="fas fa-comments"></i> Message
-                    </button>
+                    <div class="btn-group">
+                        <button id="btnMessage" class="btn secondary">
+                            <i class="fas fa-comments"></i> Legacy Chat
+                        </button>
+                        <button id="btnStreamChat" class="btn primary">
+                            <i class="fas fa-comments"></i> Stream Chat
+                        </button>
+                    </div>
                     <button id="btnEditPatient" class="btn secondary">Edit</button>
                 </div>
             </div>
@@ -722,59 +767,126 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // wire message button to create/open chat for selected patient
+    // wire message buttons to create/open chat for selected patient
     const btnMessage = document.getElementById('btnMessage');
+    const btnStreamChat = document.getElementById('btnStreamChat');
+    
+    // Legacy chat button
     if (btnMessage) {
         btnMessage.addEventListener('click', function(){
-            const patientNo = document.getElementById('md-patient_no').textContent;
-            if(!patientNo || patientNo === '-') { doctorError('Selection Error', 'No patient selected'); return; }
-            
-            // find the row with that patient_no
-            const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
-            if(!row) { doctorError('Search Error', 'Patient not found'); return; }
-            
-            try{ 
-                const patient = JSON.parse(row.getAttribute('data-patient')); 
-                console.log('Creating chat for patient:', patient);
-                
-                // Show loading state
-                btnMessage.disabled = true;
-                btnMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Chat...';
-                
-                // Create or get chat room for this patient
-                fetch('/doctor/chat/create-for-patient', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': _csrf()
-                    },
-                    body: JSON.stringify({
-                        patient_id: patient.id
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Redirect to chat room
-                        window.location.href = data.redirect_url;
-                    } else {
-                        throw new Error(data.message || 'Failed to create chat room');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error creating chat:', error);
-                    doctorError('Chat Error', 'Failed to create chat room: ' + error.message);
-                })
-                .finally(() => {
-                    // Reset button state
-                    btnMessage.disabled = false;
-                    btnMessage.innerHTML = '<i class="fas fa-comments"></i> Message';
-                });
-            } catch(e) { 
-                console.error('JSON parse error:', e); 
-                doctorError('Data Error', 'Failed to process patient data: ' + e.message); 
-            }
+            createLegacyChat();
         });
+    }
+    
+    // Stream chat button
+    if (btnStreamChat) {
+        btnStreamChat.addEventListener('click', function(){
+            createStreamChat();
+        });
+    }
+    
+    // Function to create legacy chat
+    function createLegacyChat() {
+        const patientNo = document.getElementById('md-patient_no').textContent;
+        if(!patientNo || patientNo === '-') { doctorError('Selection Error', 'No patient selected'); return; }
+        
+        // find the row with that patient_no
+        const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
+        if(!row) { doctorError('Search Error', 'Patient not found'); return; }
+        
+        try{ 
+            const patient = JSON.parse(row.getAttribute('data-patient')); 
+            console.log('Creating legacy chat for patient:', patient);
+            
+            // Show loading state
+            btnMessage.disabled = true;
+            btnMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            // Create or get chat room for this patient
+            fetch('/doctor/chat/create-for-patient', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': _csrf()
+                },
+                body: JSON.stringify({
+                    patient_id: patient.id
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to chat room
+                    window.location.href = data.redirect_url;
+                } else {
+                    throw new Error(data.message || 'Failed to create chat room');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating legacy chat:', error);
+                doctorError('Chat Error', 'Failed to create chat room: ' + error.message);
+            })
+            .finally(() => {
+                // Reset button state
+                btnMessage.disabled = false;
+                btnMessage.innerHTML = '<i class="fas fa-comments"></i> Legacy Chat';
+            });
+        } catch(e) { 
+            console.error('JSON parse error:', e); 
+            doctorError('Data Error', 'Failed to process patient data: ' + e.message); 
+        }
+    }
+    
+    // Function to create Stream chat
+    function createStreamChat() {
+        const patientNo = document.getElementById('md-patient_no').textContent;
+        if(!patientNo || patientNo === '-') { doctorError('Selection Error', 'No patient selected'); return; }
+        
+        // find the row with that patient_no
+        const row = Array.from(rows).find(r => r.querySelector('.col-no')?.textContent.trim() === patientNo.toString());
+        if(!row) { doctorError('Search Error', 'Patient not found'); return; }
+        
+        try{ 
+            const patient = JSON.parse(row.getAttribute('data-patient')); 
+            console.log('Creating Stream chat for patient:', patient);
+            
+            // Show loading state
+            btnStreamChat.disabled = true;
+            btnStreamChat.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            // Create or get Stream chat for this patient
+            fetch('/doctor/stream-chat/create-for-patient', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': _csrf()
+                },
+                body: JSON.stringify({
+                    patient_id: patient.id
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Redirect to Stream chat
+                    window.location.href = data.redirect_url;
+                } else {
+                    throw new Error(data.message || 'Failed to create Stream chat');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating Stream chat:', error);
+                doctorError('Stream Chat Error', 'Failed to create Stream chat: ' + error.message);
+            })
+            .finally(() => {
+                // Reset button state
+                btnStreamChat.disabled = false;
+                btnStreamChat.innerHTML = '<i class="fas fa-comments"></i> Stream Chat';
+            });
+        } catch(e) { 
+            console.error('JSON parse error:', e); 
+            doctorError('Data Error', 'Failed to process patient data: ' + e.message); 
+        }
     }
 });
 
