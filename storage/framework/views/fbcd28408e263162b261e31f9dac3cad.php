@@ -1,41 +1,44 @@
-@php
-    $doctorName = auth()->user()->name ?? 'Doctor';
-@endphp
+<?php
+    $labtechName = auth()->user()->name ?? 'Lab Technician';
+?>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Technician Dashboard</title>
+    <link rel="stylesheet" href="<?php echo e(asset('css/labtechcss/labtech.css')); ?>">
+</head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
-        <span>Doctor Panel</span>
+        <span>Lab Tech Panel</span>
     </div>
     <nav>
         <ul>
             <li>
-                <a href="/doctor/home"
-                   class="sidebar-btn{{ request()->is('doctor/home') ? ' active' : '' }}">
+                <a href="<?php echo e(asset('/labtech/home')); ?>"
+                   class="sidebar-btn<?php echo e(request()->is('labtech/home') ? ' active' : ''); ?>">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="/doctor/patients"
-                   class="sidebar-btn{{ request()->is('doctor/patients') ? ' active' : '' }}">
-                    <span class="icon">👥</span> <span class="text">Patients</span>
+                <a href="<?php echo e(asset('/labtech/orders')); ?>"
+                   class="sidebar-btn<?php echo e(request()->is('labtech/orders') ? ' active' : ''); ?>">
+                    <span class="icon">🧪</span> <span class="text">Orders</span>
                 </a>
             </li>
             <li>
-                <a href="/doctor/chat"
-                   class="sidebar-btn{{ request()->is('doctor/chat*') ? ' active' : '' }}">
-                    <span class="icon">💬</span> <span class="text">Messages</span>
+                <a href="<?php echo e(asset('/labtech/patients')); ?>"
+                   class="sidebar-btn<?php echo e(request()->is('labtech/patients') ? ' active' : ''); ?>">
+                    <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
-            </li>
-         
-            <li>
-                <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">
-                    @csrf
-                    <button type="button" class="sidebar-btn" onclick="confirmLogout('doctor-logout-form')">
-                        <span class="icon">🚪</span> <span class="text">Log Out</span>
-                    </button>
-                </form>
             </li>
         </ul>
+        <form action="/logout" method="POST" id="labtech-logout-form" class="logout-form">
+            <?php echo csrf_field(); ?>
+            <button type="button" class="sidebar-btn" onclick="confirmLogout('labtech-logout-form')">
+                <span class="icon">🚪</span> <span class="text">Logout</span>
+            </button>
+        </form>
     </nav>
 </div>
 
@@ -46,7 +49,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.querySelector('.main-content');
-        const isCollapsed = localStorage.getItem('doctorSidebarCollapsed') === 'true';
+        const isCollapsed = localStorage.getItem('labtechSidebarCollapsed') === 'true';
         
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
@@ -132,8 +135,8 @@
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('expanded');
             
-            // Save state to localStorage with unique key for doctor
-            localStorage.setItem('doctorSidebarCollapsed', sidebar.classList.contains('collapsed'));
+            // Save state to localStorage with unique key for lab technician
+            localStorage.setItem('labtechSidebarCollapsed', sidebar.classList.contains('collapsed'));
             
             // Reset toggle flag after animation completes - but DON'T recalculate height
             setTimeout(() => {
@@ -144,4 +147,4 @@
         });
     });
 </script>
-@include('shared.logout_modal')
+<?php echo $__env->make('shared.logout_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\xamppLatest\htdocs\HIMSDrRomelCruz\resources\views/labtech/labtech_sidebar.blade.php ENDPATH**/ ?>

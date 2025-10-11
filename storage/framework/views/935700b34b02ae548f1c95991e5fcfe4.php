@@ -1,6 +1,6 @@
-@php
+<?php
     $doctorName = auth()->user()->name ?? 'Doctor';
-@endphp
+?>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
@@ -10,26 +10,26 @@
         <ul>
             <li>
                 <a href="/doctor/home"
-                   class="sidebar-btn{{ request()->is('doctor/home') ? ' active' : '' }}">
+                   class="sidebar-btn<?php echo e(request()->is('doctor/home') ? ' active' : ''); ?>">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
                 <a href="/doctor/patients"
-                   class="sidebar-btn{{ request()->is('doctor/patients') ? ' active' : '' }}">
+                   class="sidebar-btn<?php echo e(request()->is('doctor/patients') ? ' active' : ''); ?>">
                     <span class="icon">👥</span> <span class="text">Patients</span>
                 </a>
             </li>
             <li>
                 <a href="/doctor/chat"
-                   class="sidebar-btn{{ request()->is('doctor/chat*') ? ' active' : '' }}">
+                   class="sidebar-btn<?php echo e(request()->is('doctor/chat*') ? ' active' : ''); ?>">
                     <span class="icon">💬</span> <span class="text">Messages</span>
                 </a>
             </li>
          
             <li>
                 <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">
-                    @csrf
+                    <?php echo csrf_field(); ?>
                     <button type="button" class="sidebar-btn" onclick="confirmLogout('doctor-logout-form')">
                         <span class="icon">🚪</span> <span class="text">Log Out</span>
                     </button>
@@ -144,4 +144,4 @@
         });
     });
 </script>
-@include('shared.logout_modal')
+<?php echo $__env->make('shared.logout_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\xamppLatest\htdocs\HIMSDrRomelCruz\resources\views/doctor/doctor_sidebar.blade.php ENDPATH**/ ?>
