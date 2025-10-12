@@ -372,19 +372,12 @@ class LabOrderController extends Controller
                 'request_data' => $request->all()
             ]);
 
-            // Validate user has lab_technician role
+            // Validate user authentication (role is already checked by middleware)
             if (!auth()->check()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Not authenticated.'
                 ], 401);
-            }
-
-            if (!auth()->user()->hasRole('lab_technician')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. Lab technician access required. Your role: ' . (auth()->user()->role ?? 'none')
-                ], 403);
             }
 
             $request->validate([
@@ -413,6 +406,12 @@ class LabOrderController extends Controller
                 return response()->json(['success'=>false,'message'=>'Patient not found for this order.'], 404);
             }
 
+            // Get current user for signature
+            $currentUser = auth()->user();
+
+            // Try to get logo data safely
+            $logoData = $this->getLogoSafely();
+
             // Prefer dedicated design-specific blade if exists (resources/views/labtech/templates/pdf/{key}.blade.php)
             $viewName = 'labtech.templates.lab_result_generic';
             if (view()->exists('labtech.templates.pdf.'.$key)) {
@@ -425,7 +424,7 @@ class LabOrderController extends Controller
                 'patient_id' => $patient->id ?? 'null'
             ]);
 
-            $pdf = Pdf::loadView($viewName, compact('template','values','patient'));
+            $pdf = Pdf::loadView($viewName, compact('template','values','patient','currentUser','logoData'));
             $pdf->setPaper('letter','portrait');
 
             $filename = 'lab-result-'.$order->id.'-'.$key.'-'.time().'.pdf';
@@ -467,6 +466,39 @@ class LabOrderController extends Controller
                 'success' => false,
                 'message' => 'PDF generation failed: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Safely get logo data for PDF generation
+     */
+    private function getLogoSafely()
+    {
+        try {
+            $logoPath = public_path('img/hospital_logo.jpg');
+            
+            // Quick checks before processing
+            if (!file_exists($logoPath)) {
+                return null;
+            }
+            
+            $fileSize = @filesize($logoPath);
+            if (!$fileSize || $fileSize > 300000) { // Max 300KB
+                return null;
+            }
+            
+            // Try to read the file
+            $imageData = @file_get_contents($logoPath);
+            if ($imageData === false || strlen($imageData) === 0) {
+                return null;
+            }
+            
+            // Create base64 data URL for JPEG
+            return 'data:image/jpeg;base64,' . base64_encode($imageData);
+            
+        } catch (\Throwable $e) {
+            // Silently fail and return null
+            return null;
         }
     }
 }

@@ -1,4 +1,4 @@
-@php
+<?php
     $facility = config('lab_settings.facility');
     $signature = config('lab_settings.signature');
     $dateStr = now()->format('l, F j, Y');
@@ -11,7 +11,7 @@
     
     // Get sex from the form values or patient record
     $sex = $values['sex'] ?? ($patient->sex ?? $patient->gender ?? '');
-@endphp
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -48,9 +48,9 @@
     <table class="header-table">
         <tr>
             <td class="header-logo" rowspan="3">
-                @if(isset($logoData) && $logoData)
-                    <img src="{{ $logoData }}" style="width:60px;height:50px;object-fit:contain;object-position:center;" />
-                @else
+                <?php if(isset($logoData) && $logoData): ?>
+                    <img src="<?php echo e($logoData); ?>" style="width:60px;height:50px;object-fit:contain;object-position:center;" />
+                <?php else: ?>
                     <div style="width:70px;height:60px;border:1px solid #000;display:flex;align-items:center;justify-content:center;font-size:6px;background:#e8e8e8;text-align:center;padding:2px;">
                         <div>
                             <div style="font-weight:bold;font-size:7px;">ROMEL</div>
@@ -58,12 +58,12 @@
                             <div style="font-weight:bold;font-size:7px;">HOSPITAL</div>
                         </div>
                     </div>
-                @endif
+                <?php endif; ?>
             </td>
             <td style="text-align:center; border:1px solid #000;">
-                <div class="facility-name">{{ strtoupper($facility['name']) }}</div>
-                <div class="facility-address">{{ $facility['address_line'] }}</div>
-                <div class="facility-license">{{ $facility['license_line'] }}</div>
+                <div class="facility-name"><?php echo e(strtoupper($facility['name'])); ?></div>
+                <div class="facility-address"><?php echo e($facility['address_line']); ?></div>
+                <div class="facility-license"><?php echo e($facility['license_line']); ?></div>
             </td>
         </tr>
         <tr>
@@ -73,10 +73,10 @@
             <td style="padding:0;">
                 <table class="sheet meta-header" style="border:none;border-collapse:collapse;">
                     <tr>
-                        <td style="width:35%;">NAME OF PATIENT<br><span class="value">{{ $patient->first_name }} {{ $patient->last_name }}</span></td>
-                        <td style="width:15%;">AGE/SEX<br><span class="value">{{ $age }}/{{ strtoupper($sex) }}</span></td>
+                        <td style="width:35%;">NAME OF PATIENT<br><span class="value"><?php echo e($patient->first_name); ?> <?php echo e($patient->last_name); ?></span></td>
+                        <td style="width:15%;">AGE/SEX<br><span class="value"><?php echo e($age); ?>/<?php echo e(strtoupper($sex)); ?></span></td>
                         <td style="width:15%;">WARD<br><span class="value"></span></td>
-                        <td style="width:35%;">DATE<br><span class="value">{{ $dateStr }}</span></td>
+                        <td style="width:35%;">DATE<br><span class="value"><?php echo e($dateStr); ?></span></td>
                     </tr>
                 </table>
             </td>
@@ -93,14 +93,14 @@
             </tr>
         </thead>
         <tbody>
-            @foreach(($template['fields'] ?? []) as $row)
+            <?php $__currentLoopData = ($template['fields'] ?? []); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <tr>
-                    <td class="label">{{ strtoupper($row['label']) }}</td>
-                    <td>{{ $values[$row['key']] ?? '' }}</td>
-                    <td>{{ $row['unit'] ?? '' }}</td>
-                    <td>{{ $row['ref'] ?? '' }}</td>
+                    <td class="label"><?php echo e(strtoupper($row['label'])); ?></td>
+                    <td><?php echo e($values[$row['key']] ?? ''); ?></td>
+                    <td><?php echo e($row['unit'] ?? ''); ?></td>
+                    <td><?php echo e($row['ref'] ?? ''); ?></td>
                 </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </tbody>
     </table>
 
@@ -112,12 +112,12 @@
                 <td style="border:1px solid #000; border-right:none; width:20%;"></td>
                 <td style="border:1px solid #000; border-right:none; width:20%;"></td>
                 <td style="border:1px solid #000; width:20%; vertical-align:bottom; text-align:center; font-size:10px; padding-bottom:4px;">
-                    <div style="border-top:1px solid #000; width:100%; padding-top:4px; font-weight:600;">{{ isset($currentUser) && $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? 'Medical Technologist') }}</div>
-                    <div style="font-size:9px;">License No.: {{ $signature['license_no'] ?? '' }}</div>
-                    <div style="font-size:10px; font-weight:700; margin-top:4px;">{{ strtoupper($signature['designation'] ?? 'MEDICAL TECHNOLOGIST') }}</div>
+                    <div style="border-top:1px solid #000; width:100%; padding-top:4px; font-weight:600;"><?php echo e(isset($currentUser) && $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? 'Medical Technologist')); ?></div>
+                    <div style="font-size:9px;">License No.: <?php echo e($signature['license_no'] ?? ''); ?></div>
+                    <div style="font-size:10px; font-weight:700; margin-top:4px;"><?php echo e(strtoupper($signature['designation'] ?? 'MEDICAL TECHNOLOGIST')); ?></div>
                 </td>
             </tr>
         </table>
     </div>
 </body>
-</html>
+</html><?php /**PATH D:\xamppLatest\htdocs\HIMSDrRomelCruz\resources\views/labtech/templates/pdf/hematology.blade.php ENDPATH**/ ?>

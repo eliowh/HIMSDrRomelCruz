@@ -1,3 +1,7 @@
+@php
+    $facility = config('lab_settings.facility');
+    $signature = config('lab_settings.signature');
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,6 +12,10 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #000; padding: 4px 6px; }
         .header { text-align: center; font-weight: bold; }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .header-table td { border: 1px solid #000; padding: 4px; }
+        .logo-cell { width: 80px; text-align: center; vertical-align: middle; }
+        .logo-img { max-width: 70px; max-height: 70px; }
         .section { background: #eee; font-weight: bold; }
         .meta td { border: 1px solid #000; font-size: 11px; }
         .meta th { background: #f5f5f5; }
@@ -16,11 +24,32 @@
     </style>
 </head>
 <body>
-    <div class="header" style="margin-bottom:10px;">
-        <div style="font-size:16px;">ROMEL CRUZ HOSPITAL</div>
-        <div style="font-size:11px;">702 Matimbo, Malolos, Bulacan<br/>DOH-BRL LICENSE NO. 2480</div>
-        <div style="margin-top:6px;font-size:15px;">{{ strtoupper($template['title'] ?? 'LABORATORY RESULT FORM') }}</div>
-    </div>
+    <table class="header-table">
+        <tr>
+            <td class="logo-cell" rowspan="2">
+                @if(isset($logoData) && $logoData)
+                    <img src="{{ $logoData }}" style="width:65px;height:55px;object-fit:contain;object-position:center;" alt="Hospital Logo" />
+                @else
+                    <div style="width:70px;height:60px;border:1px solid #000;display:flex;align-items:center;justify-content:center;font-size:6px;background:#e8e8e8;text-align:center;padding:2px;">
+                        <div>
+                            <div style="font-weight:bold;font-size:7px;">ROMEL</div>
+                            <div style="font-weight:bold;font-size:7px;">CRUZ</div>
+                            <div style="font-weight:bold;font-size:7px;">HOSPITAL</div>
+                        </div>
+                    </div>
+                @endif
+            </td>
+            <td class="header" style="border: 1px solid #000;">
+                <div style="font-size:16px;">{{ $facility['name'] ?? 'ROMEL CRUZ HOSPITAL' }}</div>
+                <div style="font-size:11px;">{{ $facility['address_line'] ?? '702 Matimbo, Malolos, Bulacan' }}<br/>{{ $facility['license_line'] ?? 'DOH-BRL LICENSE NO. 2480' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="header" style="border: 1px solid #000;">
+                <div style="margin-top:6px;font-size:15px;">{{ strtoupper($template['title'] ?? 'LABORATORY RESULT FORM') }}</div>
+            </td>
+        </tr>
+    </table>
 
     <table class="meta" style="margin-bottom:12px;">
         <tr>
@@ -72,9 +101,9 @@
     @endif
 
     <div class="sig-block" style="margin-top:60px;">
-        <div>Jhen-Jhen DG. Guevarra, RMT</div>
-        <div class="small">License No.: ____________</div>
-        <div style="font-weight:bold; margin-top:4px;">MEDICAL TECHNOLOGIST</div>
+        <div>{{ isset($currentUser) && $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? 'Jhen-Jhen DG. Guevarra, RMT') }}</div>
+        <div class="small">License No.: {{ $signature['license_no'] ?? '____________' }}</div>
+        <div style="font-weight:bold; margin-top:4px;">{{ $signature['designation'] ?? 'MEDICAL TECHNOLOGIST' }}</div>
     </div>
 </body>
 </html>
