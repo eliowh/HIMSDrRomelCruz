@@ -11,6 +11,9 @@
     
     // Get sex from the form values or patient record
     $sex = $values['sex'] ?? ($patient->sex ?? $patient->gender ?? '');
+    
+    // Logo and user data are now passed from controller
+    // $logoBase64 and $currentUser variables are available
 @endphp
 <!DOCTYPE html>
 <html>
@@ -33,14 +36,13 @@
         table.results { width:100%; border-collapse:collapse; margin-top:4px; }
         table.results th, table.results td { border:1px solid #000; padding:3px 4px; }
         table.results th { font-size:11px; background:#f8f8f8; letter-spacing:0.5px; }
-        table.results td.label { width:160px; }
+        table.results td.label { width:200px; }
+        .section-header { background:#e8e8e8; font-weight:700; text-align:center; }
         .footer { margin-top:28px; width:100%; }
         .sign-row { height:70px; }
         .signature-block { text-align:center; font-size:10px; }
         .signature-block .line { margin-top:40px; border-top:1px solid #000; width:200px; margin-left:auto; margin-right:auto; }
-        .ref-col { width:120px; }
-        .unit-col { width:70px; }
-        .value-col { width:100px; }
+        .value-col { width:200px; }
         .grid-placeholder { height:140px; border:1px solid #000; border-top:none; border-left:none; border-right:none; }
     </style>
 </head>
@@ -49,9 +51,9 @@
         <tr>
             <td class="header-logo" rowspan="3">
                 @if(isset($logoData) && $logoData)
-                    <img src="{{ $logoData }}" style="width:60px;height:50px;object-fit:contain;object-position:center;" />
+                    <img src="{{ $logoData }}" style="width:60px;height:50px;object-fit:contain;object-position:center;" alt="Hospital Logo" />
                 @else
-                    <div style="width:70px;height:60px;border:1px solid #000;display:flex;align-items:center;justify-content:center;font-size:6px;background:#e8e8e8;text-align:center;padding:2px;">
+                    <div style="width:60px;height:50px;border:1px solid #000;display:flex;align-items:center;justify-content:center;font-size:6px;background:#e8e8e8;text-align:center;padding:2px;">
                         <div>
                             <div style="font-weight:bold;font-size:7px;">ROMEL</div>
                             <div style="font-weight:bold;font-size:7px;">CRUZ</div>
@@ -67,7 +69,7 @@
             </td>
         </tr>
         <tr>
-            <td class="form-title">HEMATOLOGY LABORATORY RESULT FORM</td>
+            <td class="form-title">URINE ANALYSIS RESULT FORM</td>
         </tr>
         <tr>
             <td style="padding:0;">
@@ -83,26 +85,19 @@
         </tr>
     </table>
 
-    <table class="results">
-        <thead>
-            <tr>
-                <th style="width:180px;">EXAMINATION</th>
-                <th class="value-col">VALUE</th>
-                <th class="unit-col">UNIT</th>
-                <th class="ref-col">REFERENCE VALUE</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach(($template['fields'] ?? []) as $row)
-                <tr>
-                    <td class="label">{{ strtoupper($row['label']) }}</td>
-                    <td>{{ $values[$row['key']] ?? '' }}</td>
-                    <td>{{ $row['unit'] ?? '' }}</td>
-                    <td>{{ $row['ref'] ?? '' }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+    @if(isset($template['sections']))
+        @foreach($template['sections'] as $sectionTitle => $fields)
+            <table class="results" style="margin-bottom:8px;">
+                <tr><th colspan="2" class="section-header">{{ strtoupper($sectionTitle) }}</th></tr>
+                @foreach($fields as $field)
+                    <tr>
+                        <td class="label">{{ strtoupper($field['label']) }}</td>
+                        <td class="value-col">{{ $values[$field['key']] ?? '' }}</td>
+                    </tr>
+                @endforeach
+            </table>
+        @endforeach
+    @endif
 
     <div class="footer">
         <table style="width:100%; border-collapse:collapse;">
@@ -112,8 +107,7 @@
                 <td style="border:1px solid #000; border-right:none; width:20%;"></td>
                 <td style="border:1px solid #000; border-right:none; width:20%;"></td>
                 <td style="border:1px solid #000; width:20%; vertical-align:bottom; text-align:center; font-size:10px; padding-bottom:4px;">
-                    <div style="border-top:1px solid #000; width:100%; padding-top:4px; font-weight:600;">{{ isset($currentUser) && $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? 'Medical Technologist') }}</div>
-                    <div style="font-size:9px;">License No.: {{ $signature['license_no'] ?? '' }}</div>
+                    <div style="border-top:1px solid #000; width:100%; padding-top:4px; font-weight:600;">{{ $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? '') }}</div>
                     <div style="font-size:10px; font-weight:700; margin-top:4px;">{{ strtoupper($signature['designation'] ?? 'MEDICAL TECHNOLOGIST') }}</div>
                 </td>
             </tr>

@@ -37,10 +37,22 @@ let __currentLabOrderId = null;
 
 function openLabTemplateModal(orderId){
   __currentLabOrderId = orderId;
-  document.getElementById('labTemplateModal').classList.add('show');
-  document.getElementById('labTemplateModal').classList.add('open');
+  const modal = document.getElementById('labTemplateModal');
+  modal.classList.add('show');
+  modal.classList.add('open');
   backToTemplateList();
   if(!__labTemplates.length){ reloadLabTemplates(); }
+  
+  // Ensure modal is properly focused and inputs can receive focus
+  setTimeout(() => {
+    modal.focus();
+    // Remove any potential focus traps
+    const inputs = modal.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+      input.removeAttribute('readonly');
+      input.removeAttribute('disabled');
+    });
+  }, 100);
 }
 function closeLabTemplateModal(){
   document.getElementById('labTemplateModal').classList.remove('show','open');
@@ -107,9 +119,36 @@ function fetchStructureAndRender(tpl){
     const div=document.createElement('div'); div.textContent='Template structure unavailable. Please reload.'; container.appendChild(div);
   }
 }
+
+function fetchPatientDataForLabOrder(){
+  if(!__currentLabOrderId) return;
+  
+  // Fetch lab order details to get patient information
+  fetch(`/labtech/orders/${__currentLabOrderId}/details`)
+    .then(r=>r.json())
+    .then(j=>{
+      if(j.success && j.order && j.order.patient) {
+        const patient = j.order.patient;
+        // Set sex value in hidden input
+        const sexInput = document.getElementById('patient-sex-input');
+        if(sexInput && patient.sex) {
+          // Convert sex to the format expected by the form (M/F)
+          const sexValue = patient.sex.toLowerCase() === 'male' ? 'M' : 
+                          patient.sex.toLowerCase() === 'female' ? 'F' : 
+                          patient.sex.toUpperCase();
+          sexInput.value = sexValue;
+        }
+      }
+    })
+    .catch(e=>console.error('Error fetching patient data:', e));
+}
 function renderFields(full){
   const container = document.getElementById('labTemplateFields');
   container.querySelectorAll('.field-block').forEach(e=>e.remove());
+  
+  // Get patient data from the lab order to populate sex automatically
+  fetchPatientDataForLabOrder();
+  
   if(full.sections){
     Object.keys(full.sections).forEach(section => {
       const secEl = document.createElement('div');
@@ -118,7 +157,11 @@ function renderFields(full){
       full.sections[section].forEach(f => {
         const row = document.createElement('div');
         row.style.cssText='display:flex;gap:8px;margin-bottom:6px;';
-        row.innerHTML='<label style="flex:0 0 220px;font-size:12px;">'+f.label+'</label><input name="'+f.key+'" style="flex:1;padding:4px 6px;" />';
+        if(f.key === 'sex') {
+          // Skip sex field - will be populated automatically from patient data
+          return;
+        }
+        row.innerHTML='<label style="flex:0 0 220px;font-size:12px;">'+f.label+'</label><input name="'+f.key+'" style="flex:1;padding:4px 6px;" type="text" autocomplete="off" tabindex="0" />';
         secEl.appendChild(row);
       });
       container.appendChild(secEl);
@@ -129,14 +172,35 @@ function renderFields(full){
       const row = document.createElement('div');
       row.style.cssText='display:flex;gap:8px;margin-bottom:6px;';
       if(f.key === 'sex') {
-        row.innerHTML='<label style="flex:0 0 220px;font-size:12px;">'+f.label+'</label><select name="'+f.key+'" style="flex:1;padding:4px 6px;"><option value="">Select...</option><option value="M">Male</option><option value="F">Female</option></select>';
+        // Create hidden input that will be populated with patient sex data
+        row.innerHTML='<input type="hidden" name="'+f.key+'" id="patient-sex-input" />';
       } else {
-        row.innerHTML='<label style="flex:0 0 220px;font-size:12px;">'+f.label+'</label><input name="'+f.key+'" style="flex:1;padding:4px 6px;" />';
+        row.innerHTML='<label style="flex:0 0 220px;font-size:12px;">'+f.label+'</label><input name="'+f.key+'" style="flex:1;padding:4px 6px;" type="text" autocomplete="off" tabindex="0" />';
       }
       block.appendChild(row);
     });
     container.appendChild(block);
   }
+  
+  // Ensure all inputs are focusable
+  setTimeout(() => {
+    const inputs = container.querySelectorAll('input[type="text"]');
+    inputs.forEach(input => {
+      input.removeAttribute('readonly');
+      input.removeAttribute('disabled');
+      input.setAttribute('tabindex', '0');
+      
+      // Add click handler to ensure focus works
+      input.addEventListener('click', function() {
+        this.focus();
+      });
+      
+      // Add focus handler for debugging
+      input.addEventListener('focus', function() {
+        console.log('Input focused:', this.name);
+      });
+    });
+  }, 50);
 }
 function submitLabTemplateForm(e){
   e.preventDefault();
