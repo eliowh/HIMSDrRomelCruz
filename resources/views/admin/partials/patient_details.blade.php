@@ -35,7 +35,7 @@
             </div>
             <div class="info-row">
                 <span class="label">Gender:</span>
-                <span class="value">{{ ucfirst($patient->gender ?? 'N/A') }}</span>
+                <span class="value">{{ ucfirst($patient->sex ?? 'N/A') }}</span>
             </div>
             <div class="info-row">
                 <span class="label">Marital Status:</span>
@@ -46,8 +46,8 @@
         <div class="patient-info-section">
             <h4><i class="fas fa-address-card"></i> Contact Information</h4>
             <div class="info-row">
-                <span class="label">Phone Number:</span>
-                <span class="value">{{ $patient->phone_number ?? 'N/A' }}</span>
+                <span class="label">Contact Number:</span>
+                <span class="value">{{ $patient->contact_number ?? 'N/A' }}</span>
             </div>
             <div class="info-row">
                 <span class="label">Email:</span>

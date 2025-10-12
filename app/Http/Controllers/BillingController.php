@@ -85,11 +85,20 @@ class BillingController extends Controller
             
             // Check PhilHealth membership - prioritize user input over automatic lookup
             $isPhilhealthMember = $request->boolean('is_philhealth_member');
-            
+
             // If checkbox is not checked, fall back to automatic lookup
             if (!$isPhilhealthMember) {
                 $philhealthMember = PhilhealthMember::findByPatient($patient);
                 $isPhilhealthMember = $philhealthMember && $philhealthMember->isEligibleForCoverage();
+            }
+
+            // Server-side enforcement: if any previous billing for this patient used PhilHealth,
+            // force the flag to true to prevent accidental or malicious unchecking from the client.
+            $hadPreviousPhilhealth = Billing::where('patient_id', $patient->id)
+                                            ->where('is_philhealth_member', true)
+                                            ->exists();
+            if ($hadPreviousPhilhealth) {
+                $isPhilhealthMember = true;
             }
             
             // Generate billing number
@@ -322,6 +331,21 @@ class BillingController extends Controller
             $tempBilling->is_senior_citizen = $request->boolean('is_senior_citizen');
             $tempBilling->is_pwd = $request->boolean('is_pwd');
             
+            // Determine final philhealth flag with server-side enforcement
+            $requestedPhilhealth = $request->boolean('is_philhealth_member');
+            $hasPreviousPhilhealth = Billing::where('patient_id', $billing->patient_id)
+                                            ->where('is_philhealth_member', true)
+                                            ->where('id', '!=', $billing->id)
+                                            ->exists();
+
+            if ($hasPreviousPhilhealth) {
+                $finalIsPhilhealth = true;
+            } else {
+                $finalIsPhilhealth = $requestedPhilhealth;
+            }
+
+            $tempBilling->is_philhealth_member = $finalIsPhilhealth;
+
             // PhilHealth deduction based on case_rate only when checked
             $philhealthDeduction = 0;
             if ($tempBilling->is_philhealth_member) {
@@ -347,7 +371,7 @@ class BillingController extends Controller
                 'philhealth_deduction' => $philhealthDeduction,
                 'senior_pwd_discount' => $seniorPwdDiscount,
                 'net_amount' => $netAmount,
-                'is_philhealth_member' => $request->boolean('is_philhealth_member'),
+                'is_philhealth_member' => $finalIsPhilhealth,
                 'is_senior_citizen' => $request->boolean('is_senior_citizen'),
                 'is_pwd' => $request->boolean('is_pwd'),
                 // status updates are managed via payment flow and not editable here

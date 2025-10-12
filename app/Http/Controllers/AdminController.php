@@ -645,7 +645,8 @@ class AdminController extends Controller
     public function patients(Request $request)
     {
         try {
-            $query = \DB::table('patients');
+            // Select explicit columns including contact_number and sex for consistent view rendering
+            $query = \DB::table('patients')->select('id','patient_no','first_name','last_name','date_of_birth','status','created_at','contact_number','sex');
             
             // Get search and sort parameters
             $search = $request->get('q', '');
@@ -654,7 +655,7 @@ class AdminController extends Controller
             $sortDirection = $request->get('direction', 'desc');
             
             // Validate sort column to prevent SQL injection
-            $allowedSortColumns = ['patient_no', 'first_name', 'last_name', 'status', 'room_no', 'created_at'];
+            $allowedSortColumns = ['patient_no', 'first_name', 'last_name', 'status', 'room_no', 'created_at', 'contact_number'];
             if (!in_array($sortBy, $allowedSortColumns)) {
                 $sortBy = 'created_at';
             }
@@ -719,13 +720,30 @@ class AdminController extends Controller
                 'province' => 'nullable|string|max:255',
                 'city' => 'nullable|string|max:255',
                 'barangay' => 'nullable|string|max:255',
-                'status' => 'nullable|in:Active,Discharged,Deceased'
+                'status' => 'nullable|in:Active,Discharged,Deceased',
+                // Support both new and legacy field names
+                'phone_number' => 'nullable|string|max:50',
+                'contact_number' => 'nullable|string|max:50',
+                'gender' => 'nullable|in:male,female,other',
+                'sex' => 'nullable|in:male,female,other'
             ]);
 
             // Update the patient record
+            // Normalize field names: prefer contact_number and sex as DB columns
+            $updateData = $validated;
+            if (isset($validated['phone_number']) && !isset($validated['contact_number'])) {
+                $updateData['contact_number'] = $validated['phone_number'];
+            }
+            if (isset($validated['gender']) && !isset($validated['sex'])) {
+                $updateData['sex'] = $validated['gender'];
+            }
+
+            // Keep only columns that actually exist in the patients table to avoid SQL errors
+            $permitted = array_intersect_key($updateData, array_flip(['first_name','middle_name','last_name','date_of_birth','nationality','province','city','barangay','status','contact_number','sex']));
+
             $updated = \DB::table('patients')
                 ->where('id', $id)
-                ->update(array_merge($validated, [
+                ->update(array_merge($permitted, [
                     'updated_at' => now()
                 ]));
 
@@ -897,6 +915,21 @@ class AdminController extends Controller
                     <div class="form-field">
                         <label>Nationality</label>
                         <input type="text" name="nationality" value="' . htmlspecialchars($patient->nationality ?? '') . '">
+                    </div>
+
+                    <div class="form-field">
+                        <label>Contact Number</label>
+                        <input id="edit_contact_number" type="number" name="contact_number" placeholder="Enter contact number" min="1000000000" max="99999999999" maxlength="11" oninput="if(this.value.length > 11) this.value = this.value.slice(0, 11);" value="' . htmlspecialchars($patient->contact_number ?? '') . '">
+                    </div>
+
+                    <div class="form-field">
+                        <label>Sex</label>
+                        <select name="sex">
+                            <option value="">Select</option>
+                            <option value="male"' . (strtolower($patient->sex ?? '') === 'male' ? ' selected' : '') . '>Male</option>
+                            <option value="female"' . (strtolower($patient->sex ?? '') === 'female' ? ' selected' : '') . '>Female</option>
+                            <option value="other"' . (strtolower($patient->sex ?? '') === 'other' ? ' selected' : '') . '>Other</option>
+                        </select>
                     </div>
                     
                     <div class="form-field">

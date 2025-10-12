@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Patient Records Management</title>
-    <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
-    <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
+    <link rel="stylesheet" href="<?php echo e(asset('css/admincss/admin.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset('css/pagination.css')); ?>">
 </head>
 <body>
-    @php
+    <?php
         $adminName = auth()->user()->name ?? 'Admin';
-    @endphp
-    @include('admin.admin_header')
+    ?>
+    <?php echo $__env->make('admin.admin_header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
     <div class="admin-layout">
-        @include('admin.admin_sidebar')
+        <?php echo $__env->make('admin.admin_sidebar', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
         <div class="main-content">
             <h2>Patient Records Management</h2>
             
@@ -23,15 +23,15 @@
                 <div class="filter-search-controls">
                     <select id="statusFilter" class="role-select">
                         <option value="">All Status</option>
-                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="discharged" {{ request('status') == 'discharged' ? 'selected' : '' }}>Discharged</option>
-                        <option value="deceased" {{ request('status') == 'deceased' ? 'selected' : '' }}>Deceased</option>
+                        <option value="active" <?php echo e(request('status') == 'active' ? 'selected' : ''); ?>>Active</option>
+                        <option value="discharged" <?php echo e(request('status') == 'discharged' ? 'selected' : ''); ?>>Discharged</option>
+                        <option value="deceased" <?php echo e(request('status') == 'deceased' ? 'selected' : ''); ?>>Deceased</option>
                     </select>
-                    <input type="text" id="searchInput" placeholder="Search by patient name or patient number..." class="search-input" value="{{ request('q') }}">
+                    <input type="text" id="searchInput" placeholder="Search by patient name or patient number..." class="search-input" value="<?php echo e(request('q')); ?>">
                     <button id="searchButton" class="search-btn">Search</button>
-                    @if(request('q') || request('status'))
+                    <?php if(request('q') || request('status')): ?>
                         <button id="clearButton" class="clear-btn">Clear</button>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -42,65 +42,70 @@
                         <tr>
                             <th class="sortable" data-sort="patient_no">
                                 Patient No
-                                @if(request('sort') == 'patient_no')
-                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
-                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                <?php if(request('sort') == 'patient_no'): ?>
+                                    <span class="sort-indicator <?php echo e(request('direction') == 'asc' ? 'asc' : 'desc'); ?>">
+                                        <?php echo e(request('direction') == 'asc' ? '↑' : '↓'); ?>
+
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="sort-indicator">↕</span>
-                                @endif
+                                <?php endif; ?>
                             </th>
                             <th class="sortable" data-sort="first_name">
                                 Patient Name
-                                @if(request('sort') == 'first_name')
-                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
-                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                <?php if(request('sort') == 'first_name'): ?>
+                                    <span class="sort-indicator <?php echo e(request('direction') == 'asc' ? 'asc' : 'desc'); ?>">
+                                        <?php echo e(request('direction') == 'asc' ? '↑' : '↓'); ?>
+
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="sort-indicator">↕</span>
-                                @endif
+                                <?php endif; ?>
                             </th>
                             <th>DOB / Age</th>
                             <th class="sortable" data-sort="contact_number">
                                 Contact Number
-                                @if(request('sort') == 'contact_number')
-                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
-                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                <?php if(request('sort') == 'contact_number'): ?>
+                                    <span class="sort-indicator <?php echo e(request('direction') == 'asc' ? 'asc' : 'desc'); ?>">
+                                        <?php echo e(request('direction') == 'asc' ? '↑' : '↓'); ?>
+
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="sort-indicator">↕</span>
-                                @endif
+                                <?php endif; ?>
                             </th>
                             <th class="sortable" data-sort="status">
                                 Status
-                                @if(request('sort') == 'status')
-                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
-                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                <?php if(request('sort') == 'status'): ?>
+                                    <span class="sort-indicator <?php echo e(request('direction') == 'asc' ? 'asc' : 'desc'); ?>">
+                                        <?php echo e(request('direction') == 'asc' ? '↑' : '↓'); ?>
+
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="sort-indicator">↕</span>
-                                @endif
+                                <?php endif; ?>
                             </th>
                             <th class="sortable" data-sort="created_at">
                                 Admission Date
-                                @if(request('sort') == 'created_at' || !request('sort'))
-                                    <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
-                                        {{ request('direction') == 'asc' ? '↑' : '↓' }}
+                                <?php if(request('sort') == 'created_at' || !request('sort')): ?>
+                                    <span class="sort-indicator <?php echo e(request('direction') == 'asc' ? 'asc' : 'desc'); ?>">
+                                        <?php echo e(request('direction') == 'asc' ? '↑' : '↓'); ?>
+
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="sort-indicator">↕</span>
-                                @endif
+                                <?php endif; ?>
                             </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($patients as $patient)
-                        <tr data-status="{{ strtolower($patient->status ?? 'active') }}" data-name="{{ strtolower(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') . ' ' . ($patient->patient_no ?? '')) }}">
-                            <td>{{ $patient->patient_no ?? 'N/A' }}</td>
-                            <td>{{ ($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') }}</td>
+                        <?php $__currentLoopData = $patients; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $patient): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <tr data-status="<?php echo e(strtolower($patient->status ?? 'active')); ?>" data-name="<?php echo e(strtolower(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') . ' ' . ($patient->patient_no ?? ''))); ?>">
+                            <td><?php echo e($patient->patient_no ?? 'N/A'); ?></td>
+                            <td><?php echo e(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '')); ?></td>
                             <td>
-                                @php
+                                <?php
                                     $dobStr = $patient->date_of_birth ? \Carbon\Carbon::parse($patient->date_of_birth)->format('Y-m-d') : 'N/A';
                                     $age = 'N/A';
                                     if ($patient->date_of_birth) {
@@ -108,52 +113,53 @@
                                         $ageYears = intval($dob->diffInYears(now()));
                                         $age = $ageYears . ' years';
                                     }
-                                @endphp
-                                {{ $dobStr }}<br>
-                                <small class="text-muted">{{ $age }}</small>
+                                ?>
+                                <?php echo e($dobStr); ?><br>
+                                <small class="text-muted"><?php echo e($age); ?></small>
                             </td>
-                            <td>{{ $patient->contact_number ?? '' }}</td>
+                            <td><?php echo e($patient->contact_number ?? ''); ?></td>
                             <td>
-                                <span class="status-badge status-{{ strtolower($patient->status ?? 'active') }}">
-                                    {{ ucfirst($patient->status ?? 'active') }}
+                                <span class="status-badge status-<?php echo e(strtolower($patient->status ?? 'active')); ?>">
+                                    <?php echo e(ucfirst($patient->status ?? 'active')); ?>
+
                                 </span>
                             </td>
-                            <td>{{ $patient->created_at ? \Carbon\Carbon::parse($patient->created_at)->format('M d, Y') : 'N/A' }}</td>
+                            <td><?php echo e($patient->created_at ? \Carbon\Carbon::parse($patient->created_at)->format('M d, Y') : 'N/A'); ?></td>
                             <td>
                                 <div class="action-dropdown">
-                                    <button class="action-btn" onclick="toggleDropdown({{ $patient->id ?? $loop->index }})">
+                                    <button class="action-btn" onclick="toggleDropdown(<?php echo e($patient->id ?? $loop->index); ?>)">
                                         <span>⋯</span>
                                     </button>
-                                    <div class="dropdown-content" id="dropdown-{{ $patient->id ?? $loop->index }}">
-                                        <a href="#" onclick="viewPatient({{ $patient->id ?? $loop->index }})">View Details</a>
-                                        <a href="#" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'active')" class="activate-action">Mark Active</a>
-                                        <a href="#" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'discharged')" class="discharge-action">Mark Discharged</a>
-                                        <a href="#" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'deceased')" class="deceased-action">Mark Deceased</a>
+                                    <div class="dropdown-content" id="dropdown-<?php echo e($patient->id ?? $loop->index); ?>">
+                                        <a href="#" onclick="viewPatient(<?php echo e($patient->id ?? $loop->index); ?>)">View Details</a>
+                                        <a href="#" onclick="updatePatientStatus(<?php echo e($patient->id ?? $loop->index); ?>, 'active')" class="activate-action">Mark Active</a>
+                                        <a href="#" onclick="updatePatientStatus(<?php echo e($patient->id ?? $loop->index); ?>, 'discharged')" class="discharge-action">Mark Discharged</a>
+                                        <a href="#" onclick="updatePatientStatus(<?php echo e($patient->id ?? $loop->index); ?>, 'deceased')" class="deceased-action">Mark Deceased</a>
                                     </div>
                                 </div>
                             </td>
                         </tr>
-                        @endforeach
-                        @if($patients->count() == 0)
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php if($patients->count() == 0): ?>
                         <tr class="no-results">
                             <td colspan="7" style="text-align: center; color: #666; padding: 20px;">
-                                @if(request('q') || request('status'))
+                                <?php if(request('q') || request('status')): ?>
                                     No patients found matching your search criteria.
-                                @else
+                                <?php else: ?>
                                     No patients found.
-                                @endif
+                                <?php endif; ?>
                             </td>
                         </tr>
-                        @endif
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
             
             <!-- Pagination Links -->
             <div class="pagination-wrapper">
-                @if(isset($patients) && method_exists($patients, 'hasPages') && $patients->hasPages())
-                    @include('components.custom-pagination', ['paginator' => $patients])
-                @endif
+                <?php if(isset($patients) && method_exists($patients, 'hasPages') && $patients->hasPages()): ?>
+                    <?php echo $__env->make('components.custom-pagination', ['paginator' => $patients], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -489,6 +495,6 @@
     window.closeModal = window.closePatientDetailsModal;
     </script>
 
-    @include('admin.modals.notification_system')
+    <?php echo $__env->make('admin.modals.notification_system', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 </body>
-</html>
+</html><?php /**PATH D:\xampp\htdocs\DrRomelCruzHP\resources\views/admin/admin_patients.blade.php ENDPATH**/ ?>
