@@ -38,12 +38,22 @@ class BillingController extends Controller
             $query->where('status', $request->get('status'));
         }
         
+        // Compute summary statistics (use clones to avoid modifying the base query)
+        $totalBillings = (clone $query)->count();
+        $paidBillsCount = (clone $query)->where('status', 'paid')->count();
+        $pendingBillsCount = (clone $query)->where('status', 'pending')->count();
+        // PhilHealth members: count distinct patients who have billings matching the current filter and flagged as philhealth
+        $philhealthMembersCount = (clone $query)
+                                    ->where('is_philhealth_member', true)
+                                    ->distinct()
+                                    ->count('patient_id');
+
         $billings = $query->orderBy('created_at', 'desc')->paginate(20);
-        
+
         // Append search parameters to pagination links
         $billings->appends($request->only(['search', 'status']));
-        
-        return view('billing.index', compact('billings'));
+
+        return view('billing.index', compact('billings', 'totalBillings', 'paidBillsCount', 'pendingBillsCount', 'philhealthMembersCount'));
     }
 
     public function create()
@@ -507,20 +517,23 @@ class BillingController extends Controller
                     'unit_price' => $roomPrice,
                 ];
                 
-                // Get ICD-10 service from admission if available
+                // Get ICD-10 service from admission if available. Prefer final_diagnosis when present
+                // (doctor-finalized). If missing, fall back to the initial admission_diagnosis set by the nurse.
                 $icdServices = [];
                 try {
-                    if ($admission->admission_diagnosis) {
+                    $diagnosis = $admission->final_diagnosis ?: $admission->admission_diagnosis;
+
+                    if ($diagnosis) {
                         // Try to get ICD rates from database first
                         $icdRate = \DB::table('icd10namepricerate')
-                            ->where('COL 1', $admission->admission_diagnosis)
+                            ->where('COL 1', $diagnosis)
                             ->first();
-                        
+
                         if ($icdRate) {
                             $icdServices[] = [
                                 'type' => 'professional',
-                                'description' => $icdRate->{'COL 2'} ?? $admission->admission_diagnosis, // Description from COL 2
-                                'icd_code' => $admission->admission_diagnosis,
+                                'description' => $icdRate->{'COL 2'} ?? $diagnosis, // Description from COL 2
+                                'icd_code' => $diagnosis,
                                 'source' => 'admission',
                                 'quantity' => 1,
                                 'case_rate' => $icdRate->{'COL 3'} ?? 2340, // Case rate from COL 3
@@ -530,8 +543,8 @@ class BillingController extends Controller
                             // Fallback with corrected values (case_rate should be lower, professional_fee higher)
                             $icdServices[] = [
                                 'type' => 'professional',
-                                'description' => $admission->admission_diagnosis,
-                                'icd_code' => $admission->admission_diagnosis,
+                                'description' => $diagnosis,
+                                'icd_code' => $diagnosis,
                                 'source' => 'admission',
                                 'quantity' => 1,
                                 'case_rate' => 2340, // Case rate (lower amount)
@@ -540,7 +553,7 @@ class BillingController extends Controller
                         }
                     }
                 } catch (\Exception $e) {
-                    \Log::warning('ICD service lookup failed', ['error' => $e->getMessage(), 'diagnosis' => $admission->admission_diagnosis]);
+                    \Log::warning('ICD service lookup failed', ['error' => $e->getMessage(), 'diagnosis' => ($diagnosis ?? $admission->admission_diagnosis)]);
                     // Continue without ICD services
                 }
                 
@@ -598,7 +611,8 @@ class BillingController extends Controller
                     'id' => $patient->id,
                     'name' => $patient->display_name,
                     'patient_no' => $patient->patient_no,
-                    'admission_diagnosis' => $patient->admission_diagnosis
+                    // Return the effective diagnosis used for billing (final_diagnosis if present)
+                    'admission_diagnosis' => ($diagnosis ?? $patient->admission_diagnosis)
                 ],
                 'services' => $billableServices
             ]);

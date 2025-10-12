@@ -140,6 +140,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!pid){ alert('Patient missing'); return; }
         const payload = new FormData();
         payload.append('patient_id', pid);
+    // include active admission id (required by server validator)
+    const admissionId = document.getElementById('medRequestAdmissionId').value;
+    payload.append('admission_id', admissionId || '');
         payload.append('item_code', itemCode.value || '');
         payload.append('generic_name', medSearch.value);
         payload.append('brand_name', '');
@@ -169,11 +172,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Block submission if admission_id not set (safety)
+document.getElementById('medicineRequestForm').addEventListener('submit', function(e){
+    const admissionId = document.getElementById('medRequestAdmissionId').value;
+    if (!admissionId) {
+        e.preventDefault();
+        nurseError('No Active Admission', 'This patient has no active admission. Please verify before requesting medicine.');
+        return false;
+    }
+});
+
 function openMedicineRequestModal(patientId, patientName, patientNo){
     window.isModalOpen = true;
+    // Reset form first to ensure a clean state
+    document.getElementById('medicineRequestForm').reset();
+
     document.getElementById('medRequestPatientId').value = patientId;
     document.getElementById('medRequestPatientInfo').textContent = `${patientName} (ID: ${patientNo})`;
-    
+
     // Get the active admission ID for this patient
     fetch(`/api/patients/${patientId}/active-admission`)
         .then(response => response.json())
@@ -199,7 +215,6 @@ function openMedicineRequestModal(patientId, patientName, patientNo){
             return;
         });
     
-    document.getElementById('medicineRequestForm').reset();
     document.getElementById('medicineRequestModal').classList.add('show');
 }
 

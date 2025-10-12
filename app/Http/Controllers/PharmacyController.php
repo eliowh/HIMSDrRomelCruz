@@ -627,6 +627,15 @@ class PharmacyController extends Controller
      */
     public function storeNurseRequest(Request $request)
     {
+        // Log incoming request for debugging validation issues
+        \Log::info('storeNurseRequest called', [
+            'ip' => $request->ip(),
+            'method' => $request->method(),
+            'content_type' => $request->header('Content-Type'),
+            'all' => $request->all(),
+            'raw' => file_get_contents('php://input')
+        ]);
+
         $validator = Validator::make($request->all(), [
             'patient_id' => 'required|exists:patients,id',
             'admission_id' => 'required|exists:admissions,id',
@@ -652,6 +661,7 @@ class PharmacyController extends Controller
         });
 
         if ($validator->fails()) {
+            \Log::warning('storeNurseRequest validation failed', ['errors' => $validator->errors()->toArray()]);
             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
 
@@ -695,10 +705,10 @@ class PharmacyController extends Controller
         try {
             DB::beginTransaction();
 
-            $request = PharmacyRequest::findOrFail($id);
-            \Log::info("Found request: {$request->id}, Status: {$request->status}");
+            $pharmacyRequest = PharmacyRequest::findOrFail($id);
+            \Log::info("Found request: {$pharmacyRequest->id}, Status: {$pharmacyRequest->status}");
             
-            if ($request->status !== PharmacyRequest::STATUS_PENDING) {
+            if ($pharmacyRequest->status !== PharmacyRequest::STATUS_PENDING) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Only pending requests can be dispensed'
@@ -706,31 +716,31 @@ class PharmacyController extends Controller
             }
 
             // Check if there's enough stock
-            $pharmacyStock = PharmacyStock::where('item_code', $request->item_code)->first();
+            $pharmacyStock = PharmacyStock::where('item_code', $pharmacyRequest->item_code)->first();
             
             // If not found by item_code, try to find by generic_name or brand_name
-            if (!$pharmacyStock && $request->generic_name) {
-                $pharmacyStock = PharmacyStock::where('generic_name', $request->generic_name)->first();
+            if (!$pharmacyStock && $pharmacyRequest->generic_name) {
+                $pharmacyStock = PharmacyStock::where('generic_name', $pharmacyRequest->generic_name)->first();
             }
             
-            if (!$pharmacyStock && $request->brand_name) {
-                $pharmacyStock = PharmacyStock::where('brand_name', $request->brand_name)->first();
+            if (!$pharmacyStock && $pharmacyRequest->brand_name) {
+                $pharmacyStock = PharmacyStock::where('brand_name', $pharmacyRequest->brand_name)->first();
             }
             
-            if (!$pharmacyStock || $pharmacyStock->quantity < $request->quantity) {
+            if (!$pharmacyStock || $pharmacyStock->quantity < $pharmacyRequest->quantity) {
                 $availableQty = $pharmacyStock ? $pharmacyStock->quantity : 0;
-                $medicineName = $request->generic_name ?: ($request->brand_name ?: $request->item_code);
+                $medicineName = $pharmacyRequest->generic_name ?: ($pharmacyRequest->brand_name ?: $pharmacyRequest->item_code);
                 
-                \Log::info("Insufficient stock - Medicine: {$medicineName}, Available: {$availableQty}, Required: {$request->quantity}");
+                \Log::info("Insufficient stock - Medicine: {$medicineName}, Available: {$availableQty}, Required: {$pharmacyRequest->quantity}");
                 
                 return response()->json([
                     'success' => false,
-                    'message' => "Insufficient stock for {$medicineName}. Available: {$availableQty} units, Required: {$request->quantity} units. Please check inventory or reduce quantity."
+                    'message' => "Insufficient stock for {$medicineName}. Available: {$availableQty} units, Required: {$pharmacyRequest->quantity} units. Please check inventory or reduce quantity."
                 ], 400);
             }
 
             // Get patient information
-            $patient = Patient::find($request->patient_id);
+            $patient = Patient::find($pharmacyRequest->patient_id);
             if (!$patient) {
                 return response()->json([
                     'success' => false,
@@ -748,22 +758,22 @@ class PharmacyController extends Controller
             }
 
             // Update pharmacy stock
-            $pharmacyStock->quantity -= $request->quantity;
+            $pharmacyStock->quantity -= $pharmacyRequest->quantity;
             $pharmacyStock->save();
 
             // Create patient medicine record
             $patientMedicineData = [
-                'patient_id' => $request->patient_id,
-                'pharmacy_request_id' => $request->id,
+                'patient_id' => $pharmacyRequest->patient_id,
+                'pharmacy_request_id' => $pharmacyRequest->id,
                 'patient_no' => $patient->patient_no,
-                'patient_name' => $request->patient_name,
-                'item_code' => $request->item_code,
-                'generic_name' => $request->generic_name,
-                'brand_name' => $request->brand_name,
-                'quantity' => $request->quantity,
-                'unit_price' => floatval($request->unit_price ?? 0),
-                'total_price' => floatval($request->total_price ?? 0),
-                'notes' => $request->notes,
+                'patient_name' => $pharmacyRequest->patient_name,
+                'item_code' => $pharmacyRequest->item_code,
+                'generic_name' => $pharmacyRequest->generic_name,
+                'brand_name' => $pharmacyRequest->brand_name,
+                'quantity' => $pharmacyRequest->quantity,
+                'unit_price' => floatval($pharmacyRequest->unit_price ?? 0),
+                'total_price' => floatval($pharmacyRequest->total_price ?? 0),
+                'notes' => $pharmacyRequest->notes,
                 'dispensed_by' => auth()->id(),
                 'dispensed_at' => now(),
             ];
@@ -779,7 +789,7 @@ class PharmacyController extends Controller
                 'updated_at' => now()->format('Y-m-d H:i:s')
             ];
             
-            PharmacyRequest::where('id', $request->id)->update($updateData);
+            $pharmacyRequest->update($updateData);
 
             DB::commit();
 
