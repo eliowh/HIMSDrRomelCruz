@@ -19,14 +19,18 @@ class ChatController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
+        $user = auth()->user();
         
+        // Get chat rooms that this user can access (as creator or participant)
         $chatRooms = ChatRoom::accessibleByUser($user->id)
-            ->with(['patient', 'lastMessage.user'])
+            ->with(['patient', 'lastMessage'])
             ->orderBy('last_activity', 'desc')
             ->get();
 
-        return view('chat.index', compact('chatRooms'));
+        // Set the appropriate layout based on user role
+        $layout = $user->role === 'nurse' ? 'layouts.nurse' : 'layouts.doctor';
+        
+        return view('chat.index', compact('chatRooms'))->with('layout', $layout);
     }
 
     /**
@@ -50,19 +54,20 @@ class ChatController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        // Get only doctors for the add participant dropdown (excluding current participants)
-        // Since this is a doctor-exclusive chat system, only doctors can be added
+        // Get all roles for the add participant dropdown (excluding current participants)
+        // Support all healthcare roles in group chats
         $allUsers = User::whereNotIn('id', $chatRoom->participants ?? [])
             ->where('id', '!=', $user->id) // Don't include current user
-            ->where('role', 'doctor') // Only doctors
+            ->whereIn('role', ['doctor', 'nurse', 'admin', 'lab_technician', 'cashier', 'inventory', 'pharmacy', 'billing']) // All healthcare roles
             ->select('id', 'name', 'role')
+            ->orderBy('role')
             ->orderBy('name')
             ->get()
             ->map(function ($userData) {
                 return [
                     'id' => $userData->id,
                     'name' => $userData->name,
-                    'role' => ucfirst($userData->role)
+                    'role' => $userData->role // Keep original role for grouping
                 ];
             });
 
@@ -423,19 +428,74 @@ class ChatController extends Controller
     /**
      * Archive a chat room.
      */
-    public function archive($id)
+    /**
+     * Create a group chat with specific roles
+     */
+    public function createRoleGroup(Request $request)
     {
-        $user = Auth::user();
-        $chatRoom = ChatRoom::findOrFail($id);
+        $user = auth()->user();
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'in:doctor,nurse,admin,lab_technician,cashier,inventory,pharmacy,billing',
+            'patient_no' => 'nullable|string|max:50'
+        ]);
 
-        // Only creator can archive
-        if ($chatRoom->created_by !== $user->id) {
-            abort(403, 'Only the chat room creator can archive this conversation.');
+        // Get all users with the specified roles
+        $targetUsers = User::whereIn('role', $request->roles)
+            ->where('id', '!=', $user->id) // Don't include current user as they'll be added as creator
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($targetUsers)) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'No users found with the specified roles'
+            ]);
         }
 
-        $chatRoom->update(['is_active' => false]);
+        // Add current user to participants
+        $participants = array_merge([$user->id], $targetUsers);
 
-        return redirect()->route('chat.index')->with('success', 'Chat room archived successfully');
+        $chatRoom = ChatRoom::create([
+            'name' => $request->name,
+            'patient_no' => $request->patient_no,
+            'created_by' => $user->id,
+            'participants' => $participants
+        ]);
+
+        // Send system message about group creation
+        $roleNames = array_map('ucfirst', $request->roles);
+        $rolesText = implode(', ', $roleNames);
+        
+        ChatMessage::create([
+            'chat_room_id' => $chatRoom->id,
+            'user_id' => null, // System message
+            'message' => "{$user->name} created a group chat for roles: {$rolesText}",
+            'message_type' => 'system'
+        ]);
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Group chat created successfully',
+            'chat_room_id' => $chatRoom->id
+        ]);
+    }
+
+    public function archive(Request $request, $id)
+    {
+        $chatRoom = ChatRoom::findOrFail($id);
+        $user = auth()->user();
+
+        // Check if user is creator or has permission to archive
+        if ($chatRoom->created_by !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Only the creator can archive this chat room'], 403);
+        }
+
+        $chatRoom->update(['archived' => true]);
+
+        return response()->json(['success' => true, 'message' => 'Chat room archived successfully']);
     }
 
     /**

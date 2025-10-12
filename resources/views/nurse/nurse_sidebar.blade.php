@@ -33,6 +33,12 @@
                 </a>
             </li>
             <li>
+                <a href="/nurse/chat" 
+                   class="sidebar-btn{{ request()->is('nurse/chat*') ? ' active' : '' }}">
+                    <span class="icon">💬</span> <span class="text">Messages</span>
+                </a>
+            </li>
+            <li>
                 <form action="/logout" method="POST" id="nurse-logout-form" class="logout-form">
                     @csrf
                     <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout('nurse-logout-form')">

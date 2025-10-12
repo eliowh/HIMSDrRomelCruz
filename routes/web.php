@@ -195,6 +195,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/doctor/chat/{id}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.getMessages');
     Route::patch('/doctor/chat/{id}/archive', [App\Http\Controllers\ChatController::class, 'archive'])->name('chat.archive');
     Route::get('/doctor/chat/attachment/{id}/download', [App\Http\Controllers\ChatController::class, 'downloadAttachment'])->name('chat.downloadAttachment');
+    
+    // Role-based group chat creation
+    Route::post('/doctor/chat/create-role-group', [App\Http\Controllers\ChatController::class, 'createRoleGroup'])->name('chat.createRoleGroup');
 
     // Schedule
     Route::get('/doctor/schedule', function () {
@@ -326,6 +329,18 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     
     // Allow nurses to view analysis PDFs (same as doctors)
     Route::get('/nurse/results/{labOrderId}/analysis-pdf', [LabOrderController::class, 'generateAnalysisPdf'])->name('nurse.results.analysis-pdf');
+    
+    // Chat/Messaging System for Nurses
+    Route::get('/nurse/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('nurse.chat.index');
+    Route::get('/nurse/chat/{id}', [App\Http\Controllers\ChatController::class, 'show'])->name('nurse.chat.show');
+    Route::post('/nurse/chat/create-for-patient', [App\Http\Controllers\ChatController::class, 'createOrGetForPatient'])->name('nurse.chat.createForPatient');
+    Route::post('/nurse/chat/{id}/message', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('nurse.chat.sendMessage');
+    Route::post('/nurse/chat/{id}/add-participant', [App\Http\Controllers\ChatController::class, 'addParticipant'])->name('nurse.chat.addParticipant');
+    Route::delete('/nurse/chat/{id}/remove-participant', [App\Http\Controllers\ChatController::class, 'removeParticipant'])->name('nurse.chat.removeParticipant');
+    Route::get('/nurse/chat/{id}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('nurse.chat.getMessages');
+    Route::patch('/nurse/chat/{id}/archive', [App\Http\Controllers\ChatController::class, 'archive'])->name('nurse.chat.archive');
+    Route::get('/nurse/chat/attachment/{id}/download', [App\Http\Controllers\ChatController::class, 'downloadAttachment'])->name('nurse.chat.downloadAttachment');
+    Route::post('/nurse/chat/create-role-group', [App\Http\Controllers\ChatController::class, 'createRoleGroup'])->name('nurse.chat.createRoleGroup');
     
     // Medicine request history for nurses
     Route::get('/nurse/medicine-request-history', [PharmacyController::class, 'nurseRequestHistory'])->name('nurse.medicine.request.history');
