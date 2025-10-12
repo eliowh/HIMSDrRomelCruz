@@ -627,13 +627,10 @@ class PharmacyController extends Controller
      */
     public function storeNurseRequest(Request $request)
     {
-        // Log incoming request for debugging validation issues
-        \Log::info('storeNurseRequest called', [
-            'ip' => $request->ip(),
-            'method' => $request->method(),
-            'content_type' => $request->header('Content-Type'),
-            'all' => $request->all(),
-            'raw' => file_get_contents('php://input')
+        // Debug: Log the incoming request data
+        \Log::info('Nurse pharmacy request received', [
+            'user_id' => auth()->id(),
+            'request_data' => $request->all()
         ]);
 
         $validator = Validator::make($request->all(), [
@@ -656,12 +653,17 @@ class PharmacyController extends Controller
                 }
             }
             
-            // Validate that the requested item exists in stocks reference masterlist
-            $this->validateStockReference($validator, $request);
+            // Temporarily disable strict stock validation for nurse requests
+            // This allows nurses to request any medicine, pharmacy will verify stock
+            // $this->validateStockReference($validator, $request);
         });
 
         if ($validator->fails()) {
-            \Log::warning('storeNurseRequest validation failed', ['errors' => $validator->errors()->toArray()]);
+            \Log::error('Nurse pharmacy request validation failed', [
+                'user_id' => auth()->id(),
+                'errors' => $validator->errors()->toArray(),
+                'request_data' => $request->all()
+            ]);
             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
 
