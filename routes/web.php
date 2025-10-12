@@ -139,6 +139,11 @@ Route::middleware(['auth'])->group(function () {
     
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
+    
+    // Lab Results page for doctors
+    Route::get('/doctor/results', [LabOrderController::class, 'doctorResults'])->name('doctor.results');
+    Route::post('/doctor/results/save-analysis', [LabOrderController::class, 'saveAnalysis'])->name('doctor.results.saveAnalysis');
+    Route::get('/doctor/results/{labOrderId}/analysis-pdf', [LabOrderController::class, 'generateAnalysisPdf'])->name('doctor.results.analysis-pdf');
 
     // Chat/Messaging Routes (Legacy)
     // Doctors autosuggest (used by doctor edit forms)
