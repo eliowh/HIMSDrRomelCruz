@@ -1,1 +1,0 @@
-<link rel="icon" type="image/png" href="<?php echo e($favicon); ?>"><?php /**PATH D:\xampp\htdocs\DrRomelCruzHP\resources\views\components\favicon.blade.php ENDPATH**/ ?>
