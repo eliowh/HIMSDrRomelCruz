@@ -23,6 +23,7 @@ class User extends Authenticatable
         'password',
         'role',
         'password_reset_token',
+        'license_number',
     ];
 
     /**

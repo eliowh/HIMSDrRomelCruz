@@ -364,7 +364,7 @@
                                 @endforeach
                             </small>
                         </div>
-                        <button type="submit" class="export-btn primary">Export Patient FHIR</button>
+                        <button type="submit" class="export-btn primary">Export Patient Bundle FHIR</button>
                     </form>
                 </div>
 
