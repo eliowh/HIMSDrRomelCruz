@@ -133,6 +133,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Allow doctors to view active admission (read-only access)
     Route::get('/doctor/api/patients/{patientId}/active-admission', [PatientController::class, 'getActiveAdmission'])->name('api.patient.active-admission.doctor');
+
+    // Finalize admission (doctor sets final diagnosis)
+    Route::post('/doctor/admissions/{admissionId}/finalize', [PatientController::class, 'finalizeAdmission'])->name('doctor.admissions.finalize');
     
     // Allow doctors to view lab result PDFs
     Route::get('/doctor/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('doctor.lab.viewPdf');
