@@ -595,6 +595,7 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     Route::get('/billing/{billing}/edit', [App\Http\Controllers\BillingController::class, 'edit'])->name('billing.edit');
     Route::put('/billing/{billing}', [App\Http\Controllers\BillingController::class, 'update'])->name('billing.update');
     // Delete functionality removed for security - preventing billing theft and data loss
+    Route::get('/billing/{billing}/receipt/view', [App\Http\Controllers\BillingController::class, 'viewReceipt'])->name('billing.view.receipt');
     Route::get('/billing/{billing}/receipt', [App\Http\Controllers\BillingController::class, 'exportReceipt'])->name('billing.export.receipt');
 });
 

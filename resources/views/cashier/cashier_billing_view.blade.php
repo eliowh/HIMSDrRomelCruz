@@ -487,11 +487,11 @@
 
     /* Header Gradients */
     .card-header.bg-primary {
-        background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
     }
 
     .card-header.bg-info {
-        background: linear-gradient(135deg, #0dcaf0 0%, #6f42c1 100%) !important;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
     }
 
     .card-header.bg-success {
@@ -503,7 +503,7 @@
     }
 
     .card-header.bg-secondary {
-        background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
     }
 
     /* Table Styling */

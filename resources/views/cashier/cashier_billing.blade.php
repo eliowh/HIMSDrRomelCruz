@@ -27,42 +27,7 @@
                                     <i class="fas fa-sync-alt"></i> Refresh
                                 </button>
                             </div>
-                        </div>
-
-                        <!-- Search and Filter Form -->
-                        <form method="GET" action="{{ url('/cashier/billing') }}" class="mb-4">
-                            <div class="card shadow-sm">
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="input-group">
-                                                <input type="text" name="search" class="form-control" placeholder="Search by billing number, patient name, or patient number..." value="{{ request('search') }}">
-                                                <button class="btn btn-outline-success" type="submit">
-                                                    <i class="fas fa-search"></i> Search
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <select name="status" class="form-select">
-                                                <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
-                                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending Payment</option>
-                                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="d-flex gap-2">
-                                                <button type="submit" class="btn btn-success">
-                                                    <i class="fas fa-filter"></i> Filter
-                                                </button>
-                                                <a href="{{ url('/cashier/billing') }}" class="btn btn-outline-secondary">
-                                                    <i class="fas fa-times"></i> Clear
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                        </div>                       
 
                         <!-- Statistics Cards -->
                         <div class="row mb-4">
@@ -125,6 +90,40 @@
                             <div class="card-header bg-success text-white">
                                 <h5 class="mb-0"><i class="fas fa-list"></i> Patient Billings - Payment Processing</h5>
                             </div>
+                             <!-- Search and Filter Form -->
+                        <form method="GET" action="{{ url('/cashier/billing') }}" class="mb-4">
+                            <div class="card shadow-sm">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text" name="search" class="form-control" placeholder="Search by billing number, patient name, or patient number..." value="{{ request('search') }}">
+                                                <button class="btn btn-outline-success" type="submit">
+                                                    <i class="fas fa-search"></i> Search
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select name="status" class="form-select">
+                                                <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Status</option>
+                                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending Payment</option>
+                                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-success">
+                                                    <i class="fas fa-filter"></i> Filter
+                                                </button>
+                                                <a href="{{ url('/cashier/billing') }}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-times"></i> Clear
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                             <div class="card-body">
                                 <!-- Search Results Summary -->
                                 @if(request('search') || (request('status') && request('status') !== 'all'))

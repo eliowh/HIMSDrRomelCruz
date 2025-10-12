@@ -287,7 +287,7 @@
                     <!-- Quick Actions -->
                     <div class="card shadow">
                         <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+                            <h6 class="mb-0" style="color: #fff"><i class="fas fa-bolt"></i> Quick Actions</h6>
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
@@ -304,9 +304,9 @@
                                     <i class="fas fa-file-pdf"></i> Download Receipt
                                 </a>
 
-                                <button class="btn btn-info" onclick="window.print()">
-                                    <i class="fas fa-print"></i> Print
-                                </button>
+                                <a href="{{ route('billing.view.receipt', $billing) }}" class="btn btn-info" target="_blank">
+                                    <i class="fas fa-print"></i> Print Receipt
+                                </a>
                             </div>
                         </div>
                     </div>

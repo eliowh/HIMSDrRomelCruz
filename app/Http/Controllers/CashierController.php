@@ -128,7 +128,8 @@ class CashierController extends Controller
             return redirect()->back()->with('error', 'Receipt can only be viewed for paid billings.');
         }
         
-        $pdf = Pdf::loadView('billing.receipt', compact('billing'));
+        $logoData = $this->getLogoSafely();
+        $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
         $pdf->setPaper('A4', 'portrait');
         
         return $pdf->stream('billing-receipt-' . $billing->billing_number . '.pdf');
@@ -143,7 +144,8 @@ class CashierController extends Controller
             return redirect()->back()->with('error', 'Receipt can only be downloaded for paid billings.');
         }
         
-        $pdf = Pdf::loadView('billing.receipt', compact('billing'));
+        $logoData = $this->getLogoSafely();
+        $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
         $pdf->setPaper('A4', 'portrait');
         
         return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
@@ -167,5 +169,35 @@ class CashierController extends Controller
                 ->take(10)
                 ->get()
         ];
+    }
+
+    private function getLogoSafely()
+    {
+        try {
+            $logoPath = public_path('img/hospital_logo.jpg');
+            
+            // Quick checks before processing
+            if (!file_exists($logoPath)) {
+                return null;
+            }
+            
+            $fileSize = @filesize($logoPath);
+            if (!$fileSize || $fileSize > 300000) { // Max 300KB
+                return null;
+            }
+            
+            // Try to read the file
+            $imageData = @file_get_contents($logoPath);
+            if ($imageData === false || strlen($imageData) === 0) {
+                return null;
+            }
+            
+            // Create base64 data URL for JPEG
+            return 'data:image/jpeg;base64,' . base64_encode($imageData);
+            
+        } catch (\Throwable $e) {
+            // Silently fail and return null
+            return null;
+        }
     }
 }

@@ -450,11 +450,21 @@ class BillingController extends Controller
     public function exportReceipt(Billing $billing)
     {
         $billing->load(['patient', 'billingItems', 'createdBy']);
+        $logoData = $this->getLogoSafely();
         
-        $pdf = Pdf::loadView('billing.receipt', compact('billing'));
+        $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
         $pdf->setPaper('A4', 'portrait');
         
         return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
+    }
+
+    public function viewReceipt(Billing $billing)
+    {
+        $billing->load(['patient', 'billingItems', 'createdBy']);
+        $logoData = $this->getLogoSafely();
+        $autoPrint = true; // Flag to auto-trigger print dialog
+        
+        return view('billing.receipt', compact('billing', 'logoData', 'autoPrint'));
     }
 
     /**
@@ -722,6 +732,36 @@ class BillingController extends Controller
             return response()->json(['admissions' => $admissions]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to fetch patient admissions: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function getLogoSafely()
+    {
+        try {
+            $logoPath = public_path('img/hospital_logo.jpg');
+            
+            // Quick checks before processing
+            if (!file_exists($logoPath)) {
+                return null;
+            }
+            
+            $fileSize = @filesize($logoPath);
+            if (!$fileSize || $fileSize > 300000) { // Max 300KB
+                return null;
+            }
+            
+            // Try to read the file
+            $imageData = @file_get_contents($logoPath);
+            if ($imageData === false || strlen($imageData) === 0) {
+                return null;
+            }
+            
+            // Create base64 data URL for JPEG
+            return 'data:image/jpeg;base64,' . base64_encode($imageData);
+            
+        } catch (\Throwable $e) {
+            // Silently fail and return null
+            return null;
         }
     }
 }

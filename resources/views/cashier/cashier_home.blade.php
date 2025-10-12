@@ -34,7 +34,10 @@
                 <h2>Welcome, {{ Auth::user()->name }}</h2>
                 <p>This is your dashboard where you can manage billing and payment processing.</p>
                 
-                <!-- Filter Controls -->
+                
+            </div>
+            
+            <!-- Filter Controls -->
                 <div class="filter-controls">
                     <label>Payment Statistics Period:</label>
                     <div class="filter-buttons">
@@ -49,8 +52,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-            
             <!-- Statistics Cards -->
             <div class="stats-container">
                 <div class="stat-card">

@@ -12,25 +12,43 @@
             padding: 20px;
             font-size: 12px;
             line-height: 1.4;
+            color: #000;
         }
         
         .header {
-            text-align: center;
-            border-bottom: 2px solid #333;
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
             padding-bottom: 20px;
             margin-bottom: 20px;
+        }
+        
+        .logo-section {
+            width: 80px;
+            margin-right: 20px;
+        }
+        
+        .logo-section img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+        
+        .header-content {
+            flex: 1;
+            text-align: center;
         }
         
         .hospital-name {
             font-size: 24px;
             font-weight: bold;
-            color: #2c5aa0;
+            color: #000;
             margin-bottom: 5px;
         }
         
         .hospital-address {
             font-size: 12px;
-            color: #666;
+            color: #000;
             margin-bottom: 10px;
         }
         
@@ -38,7 +56,7 @@
             font-size: 18px;
             font-weight: bold;
             margin-top: 10px;
-            color: #333;
+            color: #000;
         }
         
         .billing-info {
@@ -61,12 +79,12 @@
         
         .info-label {
             font-weight: bold;
-            color: #333;
+            color: #000;
             margin-bottom: 3px;
         }
         
         .info-value {
-            color: #555;
+            color: #000;
             margin-bottom: 8px;
         }
         
@@ -78,15 +96,15 @@
         
         .items-table th,
         .items-table td {
-            border: 1px solid #ddd;
+            border: 1px solid #000;
             padding: 8px;
             text-align: left;
         }
         
         .items-table th {
-            background-color: #f8f9fa;
+            background-color: #fff;
             font-weight: bold;
-            color: #333;
+            color: #000;
         }
         
         .items-table .text-right {
@@ -100,22 +118,17 @@
         .item-type {
             display: inline-block;
             padding: 2px 6px;
-            border-radius: 3px;
+            border: 1px solid #000;
             font-size: 10px;
             font-weight: bold;
-            color: white;
+            color: #000;
+            background-color: #fff;
             text-transform: uppercase;
         }
         
-        .item-type.room { background-color: #007bff; }
-        .item-type.medicine { background-color: #28a745; }
-        .item-type.laboratory { background-color: #17a2b8; }
-        .item-type.professional { background-color: #ffc107; color: #333; }
-        .item-type.other { background-color: #6c757d; }
-        
         .summary-section {
             margin-top: 20px;
-            border: 2px solid #333;
+            border: 2px solid #000;
             padding: 15px;
         }
         
@@ -126,7 +139,7 @@
         
         .summary-table td {
             padding: 5px 10px;
-            border-bottom: 1px dotted #ccc;
+            border-bottom: 1px dotted #000;
         }
         
         .summary-table .label {
@@ -141,24 +154,23 @@
         }
         
         .summary-table .total-row td {
-            border-top: 2px solid #333;
-            border-bottom: 2px solid #333;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
             font-size: 16px;
             font-weight: bold;
             padding: 10px;
         }
         
         .savings-section {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-radius: 5px;
+            background-color: #fff;
+            border: 1px solid #000;
             padding: 10px;
             margin-top: 15px;
         }
         
         .savings-title {
             font-weight: bold;
-            color: #155724;
+            color: #000;
             margin-bottom: 5px;
         }
         
@@ -166,38 +178,36 @@
             margin-top: 30px;
             text-align: center;
             font-size: 10px;
-            color: #666;
-            border-top: 1px solid #ddd;
+            color: #000;
+            border-top: 1px solid #000;
             padding-top: 15px;
         }
         
         .status-badge {
             display: inline-block;
             padding: 4px 8px;
-            border-radius: 4px;
+            border: 1px solid #000;
             font-size: 10px;
             font-weight: bold;
             text-transform: uppercase;
+            background-color: #fff;
+            color: #000;
         }
         
-        .status-pending { background-color: #fff3cd; color: #856404; }
-        .status-paid { background-color: #d1ecf1; color: #0c5460; }
-        .status-cancelled { background-color: #f8d7da; color: #721c24; }
-        
         .philhealth-badge {
-            background-color: #cce7ff;
-            color: #004085;
+            background-color: #fff;
+            color: #000;
             padding: 2px 6px;
-            border-radius: 3px;
+            border: 1px solid #000;
             font-size: 10px;
             font-weight: bold;
         }
         
         .discount-badge {
-            background-color: #fff3cd;
-            color: #856404;
+            background-color: #fff;
+            color: #000;
             padding: 2px 6px;
-            border-radius: 3px;
+            border: 1px solid #000;
             font-size: 10px;
             font-weight: bold;
         }
@@ -205,32 +215,54 @@
         .breakdown-section {
             margin-bottom: 15px;
             padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
+            background-color: #fff;
+            border: 1px solid #000;
         }
         
         .breakdown-title {
             font-weight: bold;
             margin-bottom: 10px;
-            color: #333;
+            color: #000;
         }
         
         @media print {
-            body { margin: 0; }
+            body { 
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
             .no-print { display: none; }
+            .header {
+                page-break-inside: avoid;
+            }
+            .logo-section img {
+                max-width: 80px;
+                max-height: 80px;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
     <div class="header">
-        <div class="hospital-name">ROMEL CRUZ HOSPITAL</div>
-        <div class="hospital-address">
-            Hospital Information Management System<br>
-            Complete Healthcare Solutions<br>
-            Contact: (Your Hospital Contact Information)
+        <div class="logo-section">
+            @if(isset($logoData) && $logoData)
+                <img src="{{ $logoData }}" alt="Hospital Logo">
+            @else
+                <div style="width: 80px; height: 80px; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 10px; text-align: center;">
+                    Hospital<br>Logo
+                </div>
+            @endif
         </div>
-        <div class="receipt-title">BILLING RECEIPT</div>
+        <div class="header-content">
+            <div class="hospital-name">ROMEL CRUZ HOSPITAL</div>
+            <div class="hospital-address">
+                702 Matimbo, City of Malolos, Bulacan<br>
+                Tel/Fax No. (044) 791-3025<br>
+                Complete Healthcare Solutions
+            </div>
+            <div class="receipt-title">BILLING RECEIPT</div>
+        </div>
     </div>
 
     <!-- Billing Information -->
@@ -263,7 +295,7 @@
                         <span class="discount-badge">Person with Disability</span>
                     @endif
                     @if(!$billing->is_philhealth_member && !$billing->is_senior_citizen && !$billing->is_pwd)
-                        <span style="color: #666;">Regular Patient</span>
+                        <span>Regular Patient</span>
                     @endif
                 </div>
             </div>
@@ -344,7 +376,7 @@
                         @if($item->icd_code)
                             <code style="font-size: 10px;">{{ $item->icd_code }}</code>
                         @else
-                            <span style="color: #ccc;">N/A</span>
+                            <span>N/A</span>
                         @endif
                     </td>
                     <td class="text-center">{{ $item->quantity }}</td>
@@ -367,14 +399,14 @@
             </tr>
             
             @if($billing->is_philhealth_member && $billing->philhealth_deduction > 0)
-            <tr style="color: #28a745;">
+            <tr>
                 <td class="label">Less: PhilHealth Coverage:</td>
                 <td class="amount">-PHP {{ number_format($billing->philhealth_deduction, 2) }}</td>
             </tr>
             @endif
             
             @if($billing->senior_pwd_discount > 0)
-            <tr style="color: #28a745;">
+            <tr>
                 <td class="label">
                     Less: 
                     @if($billing->is_senior_citizen && $billing->is_pwd)
@@ -389,21 +421,21 @@
             </tr>
             @endif
             
-            <tr class="total-row" style="background-color: #f8f9fa;">
+            <tr class="total-row" style="background-color: #fff;">
                 <td class="label">NET AMOUNT DUE:</td>
-                <td class="amount" style="color: #2c5aa0;">PHP {{ number_format($billing->net_amount, 2) }}</td>
+                <td class="amount" style="font-weight: bold;">PHP {{ number_format($billing->net_amount, 2) }}</td>
             </tr>
             
             @if($billing->status === 'paid' && $billing->payment_amount)
-            <tr style="border-top: 2px solid #2c5aa0;">
-                <td class="label" style="color: #28a745; font-weight: bold;">AMOUNT PAID:</td>
-                <td class="amount" style="color: #28a745; font-weight: bold;">PHP {{ number_format($billing->payment_amount, 2) }}</td>
+            <tr style="border-top: 2px solid #000;">
+                <td class="label" style="font-weight: bold;">AMOUNT PAID:</td>
+                <td class="amount" style="font-weight: bold;">PHP {{ number_format($billing->payment_amount, 2) }}</td>
             </tr>
             
             @if($billing->change_amount > 0)
             <tr>
-                <td class="label" style="color: #dc3545; font-weight: bold;">CHANGE:</td>
-                <td class="amount" style="color: #dc3545; font-weight: bold;">PHP {{ number_format($billing->change_amount, 2) }}</td>
+                <td class="label" style="font-weight: bold;">CHANGE:</td>
+                <td class="amount" style="font-weight: bold;">PHP {{ number_format($billing->change_amount, 2) }}</td>
             </tr>
             @endif
             @endif
@@ -420,9 +452,9 @@
         @endif
         
         @if($billing->status === 'paid' && $billing->payment_date)
-        <div style="margin-top: 15px; padding: 10px; background-color: #e8f5e8; border-radius: 5px; border-left: 4px solid #28a745;">
-            <div style="font-weight: bold; color: #155724; margin-bottom: 5px;">✓ PAYMENT CONFIRMED</div>
-            <div style="font-size: 11px; color: #155724;">
+        <div style="margin-top: 15px; padding: 10px; background-color: #fff; border: 2px solid #000;">
+            <div style="font-weight: bold; color: #000; margin-bottom: 5px;">✓ PAYMENT CONFIRMED</div>
+            <div style="font-size: 11px; color: #000;">
                 <strong>Payment Date:</strong> {{ $billing->payment_date->format('F d, Y \a\t g:i A') }}<br>
                 @if($billing->processed_by)
                 <strong>Processed By:</strong> {{ $billing->processedBy?->name ?? 'System' }}<br>
@@ -436,9 +468,21 @@
     </div>
 
     @if($billing->notes)
-    <div style="margin-top: 20px; padding: 10px; background-color: #fff3cd; border-radius: 5px;">
+    <div style="margin-top: 20px; padding: 10px; background-color: #fff; border: 1px solid #000;">
         <strong>Notes:</strong><br>
         <span style="font-style: italic;">{{ $billing->notes }}</span>
+    </div>
+    @endif
+
+    <!-- Print Button (only show on screen, not in print) -->
+    @if(isset($autoPrint) && $autoPrint)
+    <div class="no-print" style="text-align: center; margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
+        <button onclick="window.print()" class="btn" style="background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+            <i class="fas fa-print"></i> Print Receipt
+        </button>
+        <button onclick="window.close()" class="btn" style="background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; margin-left: 10px;">
+            <i class="fas fa-times"></i> Close
+        </button>
     </div>
     @endif
 
@@ -451,5 +495,17 @@
             Receipt generated on {{ now()->format('F d, Y \a\t g:i A') }}
         </p>
     </div>
+
+    @if(isset($autoPrint) && $autoPrint)
+    <script>
+        // Auto-print when page loads (for print receipt functionality)
+        window.addEventListener('load', function() {
+            // Small delay to ensure page is fully rendered
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+    @endif
 </body>
 </html>
