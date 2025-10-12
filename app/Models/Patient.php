@@ -22,6 +22,8 @@ class Patient extends Model
         'city',
         'barangay',
         'nationality',
+        'general_health_history',
+        'social_history',
     ];
 
     protected $appends = [
@@ -38,6 +40,8 @@ class Patient extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'general_health_history' => 'array',
+        'social_history' => 'array',
     ];
 
     protected static function booted()

@@ -134,6 +134,78 @@
                             <option value="NEPHROLOGIST">NEPHROLOGIST</option>
                         </select>
                     </div>
+
+                    <!-- Health History Section -->
+                    <div class="form-divider"></div>
+                    <div class="section-header full-width">
+                        <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">General Health History</h4>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_chronic_illnesses">Chronic Illnesses</label>
+                        <textarea id="edit_chronic_illnesses" name="chronic_illnesses" rows="2" placeholder="Chronic illnesses (diabetes, hypertension, etc.)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_hospitalization_history">Hospitalization History</label>
+                        <textarea id="edit_hospitalization_history" name="hospitalization_history" rows="2" placeholder="Previous hospitalizations (reason and dates)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_surgery_history">Surgery History</label>
+                        <textarea id="edit_surgery_history" name="surgery_history" rows="2" placeholder="Previous surgeries (type and dates)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_accident_injury_history">Accident/Injury History</label>
+                        <textarea id="edit_accident_injury_history" name="accident_injury_history" rows="2" placeholder="Significant accidents or injuries"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_current_medications">Current Medications</label>
+                        <textarea id="edit_current_medications" name="current_medications" rows="2" placeholder="Current medications, dosages, and frequency"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_long_term_medications">Long-term Medications</label>
+                        <textarea id="edit_long_term_medications" name="long_term_medications" rows="2" placeholder="Previous long-term medications"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_known_allergies">Known Allergies</label>
+                        <textarea id="edit_known_allergies" name="known_allergies" rows="2" placeholder="Allergies and reactions"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_family_history_chronic">Family History of Chronic Diseases</label>
+                        <textarea id="edit_family_history_chronic" name="family_history_chronic" rows="2" placeholder="Family history of chronic diseases"></textarea>
+                    </div>
+
+                    <!-- Social History Section -->
+                    <div class="form-divider"></div>
+                    <div class="section-header full-width">
+                        <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">Social History</h4>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_smoking_history">Smoking History</label>
+                        <textarea id="edit_smoking_history" name="smoking_history" rows="2" placeholder="Smoking frequency, duration, and type"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_alcohol_consumption">Alcohol Consumption</label>
+                        <textarea id="edit_alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Frequency and type of alcohol consumption"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_recreational_drugs">Recreational Drugs</label>
+                        <textarea id="edit_recreational_drugs" name="recreational_drugs" rows="2" placeholder="Recreational drug use"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_exercise_activity">Exercise/Physical Activity</label>
+                        <textarea id="edit_exercise_activity" name="exercise_activity" rows="2" placeholder="Exercise routine and physical activity level"></textarea>
+                    </div>
                     
                     <div class="form-actions full-width">
                         <button type="button" class="btn cancel-btn modal-close">Cancel</button>

@@ -86,6 +86,105 @@
                 <input id="nationality" type="text" name="nationality" placeholder="Enter nationality" required value="{{ old('nationality','Filipino') }}">
             </div>
 
+            <!-- START: Social History -->
+            <div class="form-divider"></div>
+            <div class="section-header full-width">
+                <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">Social History</h4>
+            </div>
+
+            <!-- Lifestyle Habits Category -->
+            <div class="form-group full-width">
+                <label style="font-weight: 600; color: #495057;">Lifestyle Habits</label>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="smoking_history">Do you smoke? If yes, how often and how many years?</label>
+                <textarea id="smoking_history" name="smoking_history" rows="2" placeholder="Please specify smoking frequency, duration, and type (cigarettes, cigars, etc.)" value="{{ old('smoking_history') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="alcohol_consumption">Do you drink alcohol? If yes, how frequently?</label>
+                <textarea id="alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Please specify frequency and type of alcohol consumption" value="{{ old('alcohol_consumption') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="recreational_drugs">Do you use recreational drugs?</label>
+                <textarea id="recreational_drugs" name="recreational_drugs" rows="2" placeholder="Please specify any recreational drug use" value="{{ old('recreational_drugs') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="exercise_activity">How often do you exercise or engage in physical activity?</label>
+                <textarea id="exercise_activity" name="exercise_activity" rows="2" placeholder="Please describe your exercise routine and physical activity level" value="{{ old('exercise_activity') }}"></textarea>
+            </div>
+            <!-- END: Social History -->
+
+            <!-- START: General Health History -->
+            <div class="form-divider"></div>
+            <div class="section-header full-width">
+                <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">General Health History</h4>
+            </div>
+
+            <!-- Medical Conditions Category -->
+            <div class="form-group full-width">
+                <label style="font-weight: 600; color: #495057;">Medical Conditions</label>
+            </div>
+            
+            <div class="form-group full-width">
+                <label for="chronic_illnesses">Have you been diagnosed with any chronic illnesses?</label>
+                <textarea id="chronic_illnesses" name="chronic_illnesses" rows="2" placeholder="Please specify any chronic illnesses (diabetes, hypertension, heart disease, etc.)" value="{{ old('chronic_illnesses') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="hospitalization_history">Have you ever been hospitalized before? If yes, for what reason and when?</label>
+                <textarea id="hospitalization_history" name="hospitalization_history" rows="2" placeholder="Please specify reasons and dates of previous hospitalizations" value="{{ old('hospitalization_history') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="surgery_history">Have you ever undergone surgery? If yes, what type and when?</label>
+                <textarea id="surgery_history" name="surgery_history" rows="2" placeholder="Please specify types of surgeries and dates performed" value="{{ old('surgery_history') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="accident_injury_history">Do you have any history of accidents or injuries?</label>
+                <textarea id="accident_injury_history" name="accident_injury_history" rows="2" placeholder="Please describe any significant accidents or injuries" value="{{ old('accident_injury_history') }}"></textarea>
+            </div>
+
+            <!-- Medications Category -->
+            <div class="form-group full-width">
+                <label style="font-weight: 600; color: #495057;">Medications</label>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="current_medications">Are you currently taking any medications? If yes, please list them.</label>
+                <textarea id="current_medications" name="current_medications" rows="3" placeholder="Please list all current medications, dosages, and frequency" value="{{ old('current_medications') }}"></textarea>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="long_term_medications">Have you taken long-term medications in the past?</label>
+                <textarea id="long_term_medications" name="long_term_medications" rows="2" placeholder="Please specify any long-term medications you have taken previously" value="{{ old('long_term_medications') }}"></textarea>
+            </div>
+
+            <!-- Allergies Category -->
+            <div class="form-group full-width">
+                <label style="font-weight: 600; color: #495057;">Allergies</label>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="known_allergies">Do you have any known allergies? If yes, what reactions have you experienced?</label>
+                <textarea id="known_allergies" name="known_allergies" rows="2" placeholder="Please specify allergies (food, medications, environmental) and reactions" value="{{ old('known_allergies') }}"></textarea>
+            </div>
+
+            <!-- Family History Category -->
+            <div class="form-group full-width">
+                <label style="font-weight: 600; color: #495057;">Family History</label>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="family_history_chronic">Do you have any family history of chronic diseases?</label>
+                <textarea id="family_history_chronic" name="family_history_chronic" rows="2" placeholder="Please specify any family history of chronic diseases (heart disease, diabetes, cancer, etc.)" value="{{ old('family_history_chronic') }}"></textarea>
+            </div>
+            <!-- END: General Health History -->
+            
             <!-- START: Admission fields -->
             <div class="form-divider"></div>
 
@@ -115,9 +214,6 @@
                 <label for="admission-diagnosis-desc">Admission Diagnosis Description</label>
                 <input id="admission-diagnosis-desc" name="admission_diagnosis_description" type="text" placeholder="Description will appear here" readonly value="{{ old('admission_diagnosis_description') }}">
             </div>
-
-
-
 
             <div class="form-group">
                 <label for="doctor_name">Doctor</label>
@@ -165,9 +261,7 @@
             </div>
             <!-- END: Admission fields -->
             
-            
-            
-                        <div class="form-actions full-width">
+            <div class="form-actions full-width">
                 <button type="submit" class="btn submit-btn">Admit</button>
             </div>
         </div>
@@ -1065,6 +1159,67 @@ document.addEventListener('DOMContentLoaded', function() {
 #room-suggestions *,
 #icd10-suggestions * {
     contain: layout style !important;
+}
+
+/* Health History Section Styling */
+.section-header {
+    margin: 20px 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.section-header h4 {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.section-header h4:before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: #2c5f2d;
+    margin-right: 10px;
+}
+
+/* Category labels styling */
+.form-group label[style*="font-weight: 600"] {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border-left: 3px solid #2c5f2d;
+    margin-bottom: 15px !important;
+    display: block;
+    font-size: 14px;
+}
+
+/* Textarea styling for health history */
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 60px;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #2c5f2d;
+    box-shadow: 0 0 0 2px rgba(44, 95, 45, 0.1);
+}
+
+/* Form divider styling */
+.form-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #ddd, transparent);
+    margin: 30px 0 20px 0;
+    grid-column: 1 / -1;
 }
 </style>
 @endpush

@@ -530,6 +530,11 @@ function displayLabResultsHistory(tests, patient) {
         const results = test.results || '';
         const hasPdf = test.results_pdf_path ? true : false;
         
+        // Doctor's analysis data
+        const hasAnalysis = test.has_analysis || false;
+        const analysis = test.latest_analysis || null;
+        const hasAnalysisPdf = hasAnalysis && analysis && analysis.has_analysis_pdf;
+        
         const statusClass = status.toLowerCase().replace('_', '-');
         const priorityClass = priority.toLowerCase();
         
@@ -560,46 +565,78 @@ function displayLabResultsHistory(tests, patient) {
             `;
         }
         
+        // Add analysis PDF button if available
+        if (hasAnalysisPdf && status === 'completed') {
+            actionsHtml += `
+                <button type="button" class="btn btn-analysis-pdf" onclick="viewAnalysisPdf(${test.id})" style="background: #28a745; color: white; margin-left: 8px;">
+                    <i class="fas fa-stethoscope"></i> View Analysis PDF
+                </button>
+            `;
+        }
+        
         return `
-            <div class="lab-order-card" data-status="${status}">
+            <div class="lab-result-item status-${statusClass} priority-${priorityClass}">
                 <div class="lab-result-header">
-                    <h4 class="lab-result-title">${testName}</h4>
-                    <span class="lab-result-status-badge ${statusClass}">
-                        ${statusIcon} ${statusText}
-                    </span>
+                    <div class="lab-info">
+                        <h4 class="lab-test-name">LABORATORY: ${testName}</h4>
+                        <div class="lab-meta">
+                            <span class="status-badge status-${statusClass}">
+                                ${statusIcon}
+                                <span class="status-text">${statusText.toUpperCase()}</span>
+                            </span>
+                            <span class="priority-badge priority-${priorityClass}">
+                                <i class="fas fa-flag"></i>
+                                <span class="priority-text">Priority: ${priority.toUpperCase()}</span>
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="lab-result-meta">
-                    <div class="lab-result-meta-item">
-                        <i class="fas fa-user-md"></i>
-                        <span><strong>Requested by:</strong> ${requestedBy}</span>
+                <div class="lab-result-details">
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-user-md"></i> Requested by:</span>
+                        <span class="detail-value">${requestedBy}</span>
                     </div>
-                    <div class="lab-result-meta-item">
-                        <i class="fas fa-calendar"></i>
-                        <span><strong>Requested:</strong> ${requestedAt}</span>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-calendar-plus"></i> Requested:</span>
+                        <span class="detail-value">${requestedAt}</span>
                     </div>
                     ${completedAt ? `
-                        <div class="lab-result-meta-item">
-                            <i class="fas fa-check"></i>
-                            <span><strong>Completed:</strong> ${completedAt}</span>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-calendar-check"></i> Completed:</span>
+                            <span class="detail-value">${completedAt}</span>
                         </div>
                     ` : ''}
                     ${labTech ? `
-                        <div class="lab-result-meta-item">
-                            <i class="fas fa-user-cog"></i>
-                            <span><strong>Lab Tech:</strong> ${labTech}</span>
+                        <div class="detail-row">
+                            <span class="detail-label"><i class="fas fa-user-nurse"></i> Analyzed by:</span>
+                            <span class="detail-value">${labTech}</span>
                         </div>
                     ` : ''}
-                    <div class="lab-result-meta-item">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span><strong>Priority:</strong> <span class="lab-result-priority ${priorityClass}">${priority.toUpperCase()}</span></span>
-                    </div>
                 </div>
                 
-                ${results ? `
+                ${results && status === 'completed' ? `
                     <div class="lab-result-details">
-                        <h5><i class="fas fa-clipboard-list"></i> Results:</h5>
+                        <h5><i class="fas fa-clipboard-list"></i> Lab Results:</h5>
                         <p>${results}</p>
+                    </div>
+                ` : ''}
+                
+                ${hasAnalysis && analysis ? `
+                    <div class="lab-result-details" style="border-left: 4px solid #28a745;">
+                        <h5><i class="fas fa-stethoscope"></i> Doctor's Analysis:</h5>
+                        ${analysis.clinical_notes ? `
+                            <div style="margin-bottom: 10px;">
+                                <strong>Clinical Findings:</strong><br>
+                                <p style="margin: 4px 0;">${analysis.clinical_notes}</p>
+                            </div>
+                        ` : ''}
+                        ${analysis.recommendations ? `
+                            <div>
+                                <strong>Recommendations:</strong><br>
+                                <p style="margin: 4px 0;">${analysis.recommendations}</p>
+                            </div>
+                        ` : ''}
                     </div>
                 ` : ''}
                 
@@ -615,8 +652,6 @@ function displayLabResultsHistory(tests, patient) {
     // Display the results
     document.getElementById('labResultsList').innerHTML = labResultsHtml;
     document.getElementById('labResultsList').style.display = 'block';
-    
-    // Lab results loaded successfully
 }
 
 function updateLabResultsStats(total, completed, totalPrice) {
@@ -655,6 +690,17 @@ function formatDateTime(dateStr) {
 }
 
 // Simplified modal functions
+
+function viewLabResultPdf(labOrderId) {
+    // Open the lab result PDF in a new window/tab
+    window.open(`/nurse/results/${labOrderId}/pdf`, '_blank');
+}
+
+// Function to view analysis PDF (nurse route)
+function viewAnalysisPdf(labOrderId) {
+    // Open the analysis PDF in a new window/tab using nurse route
+    window.open(`/nurse/results/${labOrderId}/analysis-pdf`, '_blank');
+}
 
 // Close modal when clicking outside
 window.addEventListener('click', function(event) {

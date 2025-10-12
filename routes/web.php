@@ -324,6 +324,9 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     // Allow nurses to view lab result PDFs
     Route::get('/nurse/lab-orders/{orderId}/view-pdf', [LabOrderController::class, 'viewPdf'])->name('nurse.lab.viewPdf');
     
+    // Allow nurses to view analysis PDFs (same as doctors)
+    Route::get('/nurse/results/{labOrderId}/analysis-pdf', [LabOrderController::class, 'generateAnalysisPdf'])->name('nurse.results.analysis-pdf');
+    
     // Medicine request history for nurses
     Route::get('/nurse/medicine-request-history', [PharmacyController::class, 'nurseRequestHistory'])->name('nurse.medicine.request.history');
     Route::get('/nurse/pharmacy-requests/{id}', [PharmacyController::class, 'showRequest'])->name('nurse.pharmacy.requests.show');

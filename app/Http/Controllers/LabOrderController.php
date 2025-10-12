@@ -593,11 +593,11 @@ class LabOrderController extends Controller
     {
         try {
             // Get the lab order with analysis
-            $labOrder = LabOrder::with(['patient', 'labTech', 'analyses' => function($q) {
-                $q->where('doctor_id', auth()->id());
-            }])->findOrFail($labOrderId);
+            // Don't filter by doctor_id for nurses - they should see all analyses
+            $labOrder = LabOrder::with(['patient', 'labTech', 'analyses.doctor'])->findOrFail($labOrderId);
             
-            $analysis = $labOrder->analyses->first();
+            // Get the latest analysis (regardless of who created it)
+            $analysis = $labOrder->analyses->sortByDesc('created_at')->first();
             if (!$analysis) {
                 return response()->json(['success' => false, 'message' => 'No analysis found for this lab order'], 404);
             }
@@ -607,7 +607,7 @@ class LabOrderController extends Controller
                 'labOrder' => $labOrder,
                 'patient' => $labOrder->patient,
                 'analysis' => $analysis,
-                'doctor' => auth()->user(),
+                'doctor' => $analysis->doctor, // Use the doctor who created the analysis
                 'currentDate' => now()->format('F j, Y'),
                 'logoData' => $this->getLogoSafely()
             ];

@@ -8,12 +8,12 @@
         .header-container { width: 100%; margin-bottom: 20px; }
         .header-table { width: 100%; border-collapse: collapse; }
         .header-table td { padding: 8px; vertical-align: top; }
-        .logo-cell { width: 80px; text-align: center; border-right: 1px solid #000; }
-        .hospital-info { text-align: center; font-weight: bold; }
-        .hospital-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
-        .hospital-address { font-size: 10px; margin-bottom: 8px; }
-        .department-title { font-size: 14px; font-weight: 700; text-decoration: underline; margin-bottom: 2px; }
-        .section-title { font-size: 12px; font-weight: 600; }
+        .logo-cell { width: 120px; text-align: right; padding-right: 10px; }
+        .hospital-info { text-align: center; font-weight: bold; width: 100%; padding-left: 30px; margin-right: 100px; }
+        .hospital-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; text-align: center; }
+        .hospital-address { font-size: 10px; margin-bottom: 8px; text-align: center; }
+        .department-title { font-size: 14px; font-weight: 700; text-decoration: underline; margin-bottom: 2px; text-align: center; }
+        .section-title { font-size: 12px; font-weight: 600; text-align: center; }
         
         .patient-info { margin: 20px 0; }
         .info-table { width: 100%; border-collapse: collapse; }
@@ -108,7 +108,17 @@
             <tr>
                 <td class="col-address">
                     <span class="info-label">ADDRESS:</span>
-                    <span class="info-value">{{ $patient->address ?? '' }}</span>
+                    <span class="info-value">
+                        @php
+                            $addressParts = array_filter([
+                                $patient->barangay,
+                                $patient->city,
+                                $patient->province
+                            ]);
+                            $address = implode(', ', $addressParts);
+                        @endphp
+                        {{ $address }}
+                    </span>
                 </td>
                 <td class="col-date" colspan="2">
                     <span class="info-label">DATE:</span>
