@@ -137,9 +137,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('medicineRequestForm').addEventListener('submit', function(e){
         e.preventDefault();
         const pid = document.getElementById('medRequestPatientId').value;
+        const aid = document.getElementById('medRequestAdmissionId').value;
         if(!pid){ alert('Patient missing'); return; }
+        if(!aid){ alert('Admission missing'); return; }
+        
         const payload = new FormData();
         payload.append('patient_id', pid);
+        payload.append('admission_id', aid);
         payload.append('item_code', itemCode.value || '');
         payload.append('generic_name', medSearch.value);
         payload.append('brand_name', '');
@@ -149,6 +153,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const btn = this.querySelector('.submit-btn');
         const txt = btn.textContent; btn.textContent = 'Submitting...'; btn.disabled = true;
+
+        // Debug: Log the data being sent
+        console.log('Submitting medicine request:', {
+            patient_id: pid,
+            admission_id: aid,
+            item_code: itemCode.value || '',
+            generic_name: medSearch.value,
+            brand_name: '',
+            quantity: quantity.value,
+            unit_price: unitPrice.value || 0,
+            notes: notes.value || ''
+        });
 
         fetch('/nurse/pharmacy-orders', {
             method: 'POST',
@@ -161,7 +177,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 nurseSuccess('Medicine Requested', 'Request sent to Pharmacy');
                 closeMedicineRequestModal();
             } else {
-                nurseError('Request Failed', j.message || 'Unable to submit request');
+                // Show specific validation errors if available
+                let errorMessage = j.message || 'Unable to submit request';
+                if (j.errors) {
+                    const errorList = [];
+                    for (const field in j.errors) {
+                        if (Array.isArray(j.errors[field])) {
+                            errorList.push(...j.errors[field]);
+                        }
+                    }
+                    if (errorList.length > 0) {
+                        errorMessage = errorList.join(', ');
+                    }
+                }
+                console.error('Validation errors:', j.errors);
+                nurseError('Request Failed', errorMessage);
             }
         })
         .catch(e=>{ console.error('Submit error', e); nurseError('Request Failed', 'Network error'); })
