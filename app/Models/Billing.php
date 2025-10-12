@@ -111,11 +111,15 @@ class Billing extends Model
     // Calculate final net amount
     public function calculateNetAmount()
     {
-        $grossAmount = $this->total_amount;
+        $grossAmount = $this->total_amount ?? 0;
         $philhealthDeduction = $this->philhealth_deduction ?? $this->calculatePhilhealthDeduction();
         $seniorPwdDiscount = $this->senior_pwd_discount ?? $this->calculateSeniorPwdDiscount();
         
-        return $grossAmount - $philhealthDeduction - $seniorPwdDiscount;
+        $net = $grossAmount - $philhealthDeduction - $seniorPwdDiscount;
+
+        // Ensure net amount is not negative. Client-side clamping is helpful for UX,
+        // but enforce the non-negative rule server-side to prevent persisting negatives.
+        return max(0, $net);
     }
 
     // Recalculate and sync all totals from billing items

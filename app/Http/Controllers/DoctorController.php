@@ -15,7 +15,9 @@ class DoctorController extends Controller
     public function dashboard()
     {
         $doctorName = Auth::user()->name;
-        return view('doctor.doctor_home', compact('doctorName'));
+        // Provide the patients collection to the doctor dashboard (same as nurse dashboard)
+        $patients = Patient::orderBy('created_at', 'desc')->get();
+        return view('doctor.doctor_home', compact('doctorName', 'patients'));
     }
 
     /**
