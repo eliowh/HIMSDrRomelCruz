@@ -172,7 +172,7 @@ class LabOrderController extends Controller
         try {
             // Get all lab orders for the patient, ordered by latest first
             $query = LabOrder::where('patient_id', $patientId)
-                ->with(['requestedBy', 'labTech']);
+                ->with(['requestedBy', 'labTech', 'analyses.doctor']);
             
             // Filter by admission if admission_id is provided - STRICT filtering
             $admissionId = $request->query('admission_id');
@@ -183,7 +183,7 @@ class LabOrderController extends Controller
             
             $testHistory = $query->orderBy('requested_at', 'desc')->get();
             
-            // Add price information to each test (use stored price or fallback to lookup)
+            // Add price information and analysis data to each test
             $testHistoryWithPrices = $testHistory->map(function($test) {
                 $testData = $test->toArray();
                 
@@ -192,6 +192,22 @@ class LabOrderController extends Controller
                 $testData['price'] = $price;
                 $testData['procedure_price'] = $price;
                 $testData['cost'] = $price;
+                
+                // Add analysis information
+                $testData['has_analysis'] = $test->analyses->count() > 0;
+                $testData['latest_analysis'] = null;
+                
+                if ($test->analyses->count() > 0) {
+                    $latestAnalysis = $test->analyses->sortByDesc('created_at')->first();
+                    $testData['latest_analysis'] = [
+                        'id' => $latestAnalysis->id,
+                        'clinical_notes' => $latestAnalysis->clinical_notes,
+                        'recommendations' => $latestAnalysis->recommendations,
+                        'doctor_name' => $latestAnalysis->doctor->name ?? 'Unknown Doctor',
+                        'analyzed_at' => $latestAnalysis->created_at,
+                        'has_analysis_pdf' => true
+                    ];
+                }
                 
                 return $testData;
             });
@@ -500,5 +516,158 @@ class LabOrderController extends Controller
             // Silently fail and return null
             return null;
         }
+    }
+
+    /**
+     * Show lab requests for doctors (with doctor-specific status logic)
+     */
+    public function doctorResults(Request $request)
+    {
+        // Get status filter - default to 'pending_analysis'
+        $status = $request->input('status', 'pending_analysis');
+        
+        $query = LabOrder::with(['patient', 'requestedBy', 'labTech', 'analyses' => function($q) {
+                $q->where('doctor_id', auth()->id());
+            }]);
+            
+        // Filter by doctor-specific status
+        if ($status === 'pending') {
+            // Lab orders that haven't been completed by lab yet
+            $query->whereIn('status', ['pending', 'in_progress']);
+        } elseif ($status === 'pending_analysis') {
+            // Lab completed but doctor hasn't analyzed yet
+            $query->where('status', 'completed')
+                  ->whereNotNull('results_pdf_path')
+                  ->whereDoesntHave('analyses', function($q) {
+                      $q->where('doctor_id', auth()->id());
+                  });
+        } elseif ($status === 'completed') {
+            // Doctor has completed analysis
+            $query->where('status', 'completed')
+                  ->whereNotNull('results_pdf_path')
+                  ->whereHas('analyses', function($q) {
+                      $q->where('doctor_id', auth()->id());
+                  });
+        }
+        
+        $query->orderBy($status === 'completed' ? 'completed_at' : 'requested_at', 'desc');
+            
+        // Search functionality
+        $search = $request->input('search', '');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->whereHas('patient', function($patientQuery) use ($search) {
+                    $patientQuery->where('first_name', 'like', "%{$search}%")
+                               ->orWhere('last_name', 'like', "%{$search}%")
+                               ->orWhere('patient_no', 'like', "%{$search}%");
+                })
+                ->orWhere('test_requested', 'like', "%{$search}%")
+                ->orWhere('id', 'like', "%{$search}%");
+            });
+        }
+        
+        $results = $query->paginate(15);
+        
+        // Calculate status counts for tabs (doctor-specific)
+        $statusCounts = [
+            'pending' => LabOrder::whereIn('status', ['pending', 'in_progress'])->count(),
+            'pending_analysis' => LabOrder::where('status', 'completed')
+                ->whereNotNull('results_pdf_path')
+                ->whereDoesntHave('analyses', function($q) {
+                    $q->where('doctor_id', auth()->id());
+                })->count(),
+            'completed' => LabOrder::where('status', 'completed')
+                ->whereNotNull('results_pdf_path')
+                ->whereHas('analyses', function($q) {
+                    $q->where('doctor_id', auth()->id());
+                })->count(),
+        ];
+
+        return view('doctor.doctor_results', compact('results', 'search', 'status', 'statusCounts'));
+    }
+
+    /**
+     * Generate doctor's analysis PDF report
+     */
+    public function generateAnalysisPdf($labOrderId)
+    {
+        try {
+            // Get the lab order with analysis
+            // Don't filter by doctor_id for nurses - they should see all analyses
+            $labOrder = LabOrder::with(['patient', 'labTech', 'analyses.doctor'])->findOrFail($labOrderId);
+            
+            // Get the latest analysis (regardless of who created it)
+            $analysis = $labOrder->analyses->sortByDesc('created_at')->first();
+            if (!$analysis) {
+                return response()->json(['success' => false, 'message' => 'No analysis found for this lab order'], 404);
+            }
+
+            // Prepare data for PDF
+            $data = [
+                'labOrder' => $labOrder,
+                'patient' => $labOrder->patient,
+                'analysis' => $analysis,
+                'doctor' => $analysis->doctor, // Use the doctor who created the analysis
+                'currentDate' => now()->format('F j, Y'),
+                'logoData' => $this->getLogoSafely()
+            ];
+
+            // Generate PDF
+            $pdf = Pdf::loadView('doctor.templates.analysis_report', $data);
+            $pdf->setPaper('a4', 'portrait');
+
+            return $pdf->stream("Analysis_Report_Order_{$labOrderId}.pdf");
+
+        } catch (\Exception $e) {
+            \Log::error('Analysis PDF generation failed', [
+                'lab_order_id' => $labOrderId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'PDF generation failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save doctor's analysis for a lab result
+     */
+    public function saveAnalysis(Request $request)
+    {
+        $request->validate([
+            'lab_order_id' => 'required|exists:lab_orders,id',
+            'clinical_notes' => 'nullable|string|max:2000',
+            'recommendations' => 'nullable|string|max:2000'
+        ]);
+
+        // Check if analysis already exists for this lab order and doctor
+        $analysis = \App\Models\LabAnalysis::where('lab_order_id', $request->lab_order_id)
+                                          ->where('doctor_id', auth()->id())
+                                          ->first();
+
+        if ($analysis) {
+            // Update existing analysis
+            $analysis->update([
+                'clinical_notes' => $request->clinical_notes,
+                'recommendations' => $request->recommendations,
+                'analyzed_at' => now()
+            ]);
+        } else {
+            // Create new analysis
+            \App\Models\LabAnalysis::create([
+                'lab_order_id' => $request->lab_order_id,
+                'doctor_id' => auth()->id(),
+                'clinical_notes' => $request->clinical_notes,
+                'recommendations' => $request->recommendations,
+                'analyzed_at' => now()
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Analysis saved successfully'
+        ]);
     }
 }

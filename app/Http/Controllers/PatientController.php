@@ -86,6 +86,20 @@ class PatientController extends Controller
             'doctor_name' => 'nullable|string|max:191',
             'doctor_type' => 'nullable|string|max:100',
             'admission_diagnosis' => 'nullable|string|max:2000',
+            // health history fields
+            'chronic_illnesses' => 'nullable|string|max:2000',
+            'hospitalization_history' => 'nullable|string|max:2000',
+            'surgery_history' => 'nullable|string|max:2000',
+            'accident_injury_history' => 'nullable|string|max:2000',
+            'current_medications' => 'nullable|string|max:2000',
+            'long_term_medications' => 'nullable|string|max:2000',
+            'known_allergies' => 'nullable|string|max:2000',
+            'family_history_chronic' => 'nullable|string|max:2000',
+            // social history fields
+            'smoking_history' => 'nullable|string|max:1000',
+            'alcohol_consumption' => 'nullable|string|max:1000',
+            'recreational_drugs' => 'nullable|string|max:1000',
+            'exercise_activity' => 'nullable|string|max:1000',
         ]);
 
         // Separate patient data from admission data
@@ -93,6 +107,39 @@ class PatientController extends Controller
             'first_name', 'middle_name', 'last_name', 'sex', 'contact_number',
             'date_of_birth', 'province', 'city', 'barangay', 'nationality'
         ])->filter()->toArray();
+
+        // Prepare health history data
+        $generalHealthHistory = [
+            'medical_conditions' => [
+                'chronic_illnesses' => $data['chronic_illnesses'] ?? null,
+                'hospitalization_history' => $data['hospitalization_history'] ?? null,
+                'surgery_history' => $data['surgery_history'] ?? null,
+                'accident_injury_history' => $data['accident_injury_history'] ?? null,
+            ],
+            'medications' => [
+                'current_medications' => $data['current_medications'] ?? null,
+                'long_term_medications' => $data['long_term_medications'] ?? null,
+            ],
+            'allergies' => [
+                'known_allergies' => $data['known_allergies'] ?? null,
+            ],
+            'family_history' => [
+                'family_history_chronic' => $data['family_history_chronic'] ?? null,
+            ]
+        ];
+
+        $socialHistory = [
+            'lifestyle_habits' => [
+                'smoking_history' => $data['smoking_history'] ?? null,
+                'alcohol_consumption' => $data['alcohol_consumption'] ?? null,
+                'recreational_drugs' => $data['recreational_drugs'] ?? null,
+                'exercise_activity' => $data['exercise_activity'] ?? null,
+            ]
+        ];
+
+        // Add health history to patient data
+        $patientData['general_health_history'] = $generalHealthHistory;
+        $patientData['social_history'] = $socialHistory;
 
         $admissionData = collect($data)->only([
             'room_no', 'admission_type', 'doctor_name', 'doctor_type', 'admission_diagnosis'
@@ -142,6 +189,20 @@ class PatientController extends Controller
             'doctor_name' => 'nullable|string|max:191',
             'doctor_type' => 'nullable|string|max:100',
             'admission_diagnosis' => 'nullable|string|max:2000',
+            // health history fields
+            'chronic_illnesses' => 'nullable|string|max:2000',
+            'hospitalization_history' => 'nullable|string|max:2000',
+            'surgery_history' => 'nullable|string|max:2000',
+            'accident_injury_history' => 'nullable|string|max:2000',
+            'current_medications' => 'nullable|string|max:2000',
+            'long_term_medications' => 'nullable|string|max:2000',
+            'known_allergies' => 'nullable|string|max:2000',
+            'family_history_chronic' => 'nullable|string|max:2000',
+            // social history fields
+            'smoking_history' => 'nullable|string|max:1000',
+            'alcohol_consumption' => 'nullable|string|max:1000',
+            'recreational_drugs' => 'nullable|string|max:1000',
+            'exercise_activity' => 'nullable|string|max:1000',
         ]);
 
         // Separate patient data from admission data
@@ -149,6 +210,39 @@ class PatientController extends Controller
             'first_name', 'middle_name', 'last_name', 'sex', 'contact_number',
             'date_of_birth', 'province', 'city', 'barangay', 'nationality'
         ])->filter()->toArray();
+
+        // Prepare health history data
+        $generalHealthHistory = [
+            'medical_conditions' => [
+                'chronic_illnesses' => $data['chronic_illnesses'] ?? null,
+                'hospitalization_history' => $data['hospitalization_history'] ?? null,
+                'surgery_history' => $data['surgery_history'] ?? null,
+                'accident_injury_history' => $data['accident_injury_history'] ?? null,
+            ],
+            'medications' => [
+                'current_medications' => $data['current_medications'] ?? null,
+                'long_term_medications' => $data['long_term_medications'] ?? null,
+            ],
+            'allergies' => [
+                'known_allergies' => $data['known_allergies'] ?? null,
+            ],
+            'family_history' => [
+                'family_history_chronic' => $data['family_history_chronic'] ?? null,
+            ]
+        ];
+
+        $socialHistory = [
+            'lifestyle_habits' => [
+                'smoking_history' => $data['smoking_history'] ?? null,
+                'alcohol_consumption' => $data['alcohol_consumption'] ?? null,
+                'recreational_drugs' => $data['recreational_drugs'] ?? null,
+                'exercise_activity' => $data['exercise_activity'] ?? null,
+            ]
+        ];
+
+        // Add health history to patient data
+        $patientData['general_health_history'] = $generalHealthHistory;
+        $patientData['social_history'] = $socialHistory;
 
         $admissionData = collect($data)->only([
             'room_no', 'admission_type', 'doctor_name', 'doctor_type', 'admission_diagnosis'

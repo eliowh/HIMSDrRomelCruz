@@ -1,4 +1,4 @@
-@extends('layouts.doctor')
+@extends(auth()->user()->role === 'nurse' ? 'layouts.nurse' : 'layouts.doctor')
 
 @section('title', 'Chat - ' . $chatRoom->name)
 
@@ -10,7 +10,7 @@
     <!-- Chat Header -->
     <div class="chat-room-header">
         <div class="header-left">
-            <a href="{{ route('chat.index') }}" class="back-btn">
+            <a href="{{ auth()->user()->role === 'nurse' ? '/nurse/chat' : '/doctor/chat' }}" class="back-btn">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div class="room-info">
@@ -68,24 +68,59 @@
                 @endforeach
             </div>
 
-            @if($allUsers->count() > 0)
+            @php
+                // Get all users that can be added (excluding current user and existing participants)
+                $currentParticipantIds = $chatRoom->participants ?? [];
+                $availableUsers = \App\Models\User::whereNotIn('id', $currentParticipantIds)
+                    ->where('id', '!=', auth()->user()->id)
+                    ->whereIn('role', ['admin', 'doctor', 'nurse', 'lab_technician', 'pharmacy', 'cashier', 'inventory', 'billing'])
+                    ->select('id', 'name', 'role')
+                    ->orderBy('role')
+                    ->orderBy('name')
+                    ->get();
+                    
+                // Group them by role for categorized display
+                $groupedUsers = $availableUsers->groupBy('role');
+                $roleOrder = ['admin', 'doctor', 'nurse', 'lab_technician', 'pharmacy', 'cashier', 'inventory', 'billing'];
+                $roleLabels = [
+                    'admin' => '👑 Administrators',
+                    'doctor' => '👨‍⚕️ Doctors',
+                    'nurse' => '👩‍⚕️ Nurses', 
+                    'lab_technician' => '🔬 Lab Technicians',
+                    'pharmacy' => '💊 Pharmacy Staff',
+                    'cashier' => '💰 Cashiers',
+                    'inventory' => '📦 Inventory Staff',
+                    'billing' => '🧾 Billing Staff'
+                ];
+            @endphp
+            
+            @if($availableUsers->count() > 0)
                 <div class="add-participant-section">
-                    <h4><i class="fas fa-user-md"></i> Add Doctor</h4>
-                    <select id="memberSelect" class="form-control">
-                        <option value="">Select a doctor to add...</option>
-                        @foreach($allUsers as $userData)
-                            <option value="{{ $userData['id'] }}" data-role="{{ strtolower($userData['role']) }}">
-                                {{ $userData['name'] }}
-                            </option>
+                    <h4><i class="fas fa-user-plus"></i> Add Team Member</h4>
+                    <p class="available-count">{{ $availableUsers->count() }} team members available to add</p>
+                    
+                    <select id="memberSelect" class="form-control categorized-select">
+                        <option value="">Choose someone to add to this conversation...</option>
+                        @foreach($roleOrder as $role)
+                            @if(isset($groupedUsers[$role]) && $groupedUsers[$role]->count() > 0)
+                                <optgroup label="{{ $roleLabels[$role] ?? ucfirst($role) }}">
+                                    @foreach($groupedUsers[$role] as $user)
+                                        <option value="{{ $user->id }}" data-role="{{ $user->role }}">
+                                            {{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
                         @endforeach
                     </select>
+                    
                     <button class="btn btn-success btn-sm" onclick="addSelectedMember()">
-                        <i class="fas fa-user-plus"></i> Add Doctor
+                        <i class="fas fa-user-plus"></i> Add to Conversation
                     </button>
                 </div>
             @else
                 <div class="no-users-available" style="padding: 10px; color: #666;">
-                    <em>No other doctors available to add</em>
+                    <em>No other team members available to add</em>
                 </div>
             @endif
         </div>
@@ -112,7 +147,7 @@
                                             {{ $message->attachment_original_name }}
                                         </button>
                                     @else
-                                        <a href="{{ route('chat.downloadAttachment', $message->id) }}" 
+                                        <a href="{{ auth()->user()->role === 'nurse' ? '/nurse/chat/attachment/' . $message->id . '/download' : '/doctor/chat/attachment/' . $message->id . '/download' }}" 
                                            class="attachment-link" 
                                            target="_blank">
                                             {{ $message->attachment_original_name }}
@@ -190,6 +225,55 @@
 </div>
 
 <style>
+/* Add Participant Section Styling */
+.add-participant-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.add-participant-section h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+    font-size: 16px;
+}
+
+.available-count {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0 0 15px 0;
+}
+
+/* Categorized Dropdown Styles */
+.categorized-select {
+    font-family: inherit;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.categorized-select optgroup {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #dee2e6;
+    font-style: normal;
+}
+
+.categorized-select option {
+    padding: 8px 20px;
+    color: #212529;
+    font-weight: normal;
+    background-color: #ffffff;
+}
+
+.categorized-select option:hover,
+.categorized-select option:focus {
+    background-color: #e9ecef;
+}
+
 /* Remove Participant Modal Styles */
 .remove-modal-overlay {
     position: fixed;
@@ -334,6 +418,8 @@
 <script>
 const chatRoomId = {{ $chatRoom->id }};
 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const userRole = '{{ auth()->user()->role }}';
+const chatBaseUrl = userRole === 'nurse' ? '/nurse/chat' : '/doctor/chat';
 let lastMessageId = 0;
 let isRefreshing = false;
 let pendingRemoveUserId = null;
@@ -590,7 +676,7 @@ function sendMessage(event) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
-    fetch(`/doctor/chat/${chatRoomId}/message`, {
+    fetch(`${chatBaseUrl}/${chatRoomId}/message`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': csrfToken,
@@ -713,7 +799,7 @@ function addMessageToUI(message, formattedTime, isOwnMessage) {
             `;
         } else {
             linkHtml = `
-                <a href="/doctor/chat/attachment/${message.id}/download" 
+                <a href="${chatBaseUrl}/attachment/${message.id}/download" 
                    class="attachment-link" 
                    target="_blank">
                     ${message.attachment_original_name}
@@ -790,7 +876,7 @@ function getFileIcon(mimeType) {
 // Function to view chat attachment PDF (similar to lab result PDF viewer)
 function viewChatAttachmentPdf(messageId) {
     // Open the PDF in a new window/tab using the download route
-    window.open(`/doctor/chat/attachment/${messageId}/download`, '_blank');
+    window.open(`${chatBaseUrl}/attachment/${messageId}/download`, '_blank');
 }
 
 // Make the function available globally
@@ -801,12 +887,13 @@ function addSelectedMember() {
     const memberId = memberSelect.value;
     
     if (!memberId) {
-        alert('Please select a doctor to add');
+        alert('Please select a team member to add');
         return;
     }
     
     const selectedOption = memberSelect.options[memberSelect.selectedIndex];
     const memberRole = selectedOption.getAttribute('data-role');
+    const memberName = selectedOption.textContent.trim();
     
     // Disable the button and show loading state
     const addButton = document.querySelector('button[onclick="addSelectedMember()"]');
@@ -814,15 +901,22 @@ function addSelectedMember() {
     addButton.disabled = true;
     addButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
     
-    addParticipant(memberId, memberRole, function() {
-        // Re-enable button on completion
+    // Show confirmation with member name and role
+    if (confirm(`Add ${memberName} (${memberRole.charAt(0).toUpperCase() + memberRole.slice(1)}) to this conversation?`)) {
+        addParticipant(memberId, memberRole, function() {
+            // Re-enable button on completion
+            addButton.disabled = false;
+            addButton.innerHTML = originalText;
+        });
+    } else {
+        // Re-enable button if cancelled
         addButton.disabled = false;
         addButton.innerHTML = originalText;
-    });
+    }
 }
 
 function addParticipant(userId, userRole, callback) {
-    fetch(`/doctor/chat/${chatRoomId}/add-participant`, {
+    fetch(`${chatBaseUrl}/${chatRoomId}/add-participant`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -873,7 +967,7 @@ function removeParticipant(userId) {
 function performRemoveParticipant(userId) {
     console.log('Attempting to remove user ID:', userId); // Debug log
     
-    fetch(`/doctor/chat/${chatRoomId}/remove-participant`, {
+    fetch(`${chatBaseUrl}/${chatRoomId}/remove-participant`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -918,7 +1012,7 @@ function refreshMessages() {
     
     isRefreshing = true;
     
-    fetch(`/doctor/chat/${chatRoomId}/messages`)
+    fetch(`${chatBaseUrl}/${chatRoomId}/messages`)
     .then(response => {
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -968,7 +1062,7 @@ function updateMessagesUI(messages) {
                         `;
                     } else {
                         linkHtml = `
-                            <a href="/doctor/chat/attachment/${message.id}/download" 
+                            <a href="${chatBaseUrl}/attachment/${message.id}/download" 
                                class="attachment-link" 
                                target="_blank">
                                 ${message.attachment_original_name}

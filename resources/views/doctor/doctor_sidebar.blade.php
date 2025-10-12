@@ -26,6 +26,12 @@
                     <span class="icon">💬</span> <span class="text">Messages</span>
                 </a>
             </li>
+            <li>
+                <a href="/doctor/results"
+                   class="sidebar-btn{{ request()->is('doctor/results*') ? ' active' : '' }}">
+                    <span class="icon">🧪</span> <span class="text">Lab Requests</span>
+                </a>
+            </li>
          
             <li>
                 <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">

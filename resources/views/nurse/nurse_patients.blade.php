@@ -60,6 +60,8 @@
                                     'doctor_name' => $p->doctor_name,
                                     'doctor_type' => $p->doctor_type,
                                     'admission_diagnosis' => $p->admission_diagnosis,
+                                    'general_health_history' => $p->general_health_history,
+                                    'social_history' => $p->social_history,
                                     'created_at' => $p->created_at ? $p->created_at->format('Y-m-d H:i:s') : null
                                 ];
                             @endphp
@@ -139,6 +141,18 @@
                     </div>
                 </div>
                 
+                <!-- General Health History Section -->
+                <div class="details-section" id="health-history-section" style="display:none;">
+                    <h4 class="section-header">General Health History</h4>
+                    <div id="md-health-history">No health history information available</div>
+                </div>
+
+                <!-- Social History Section -->
+                <div class="details-section" id="social-history-section" style="display:none;">
+                    <h4 class="section-header">Social History</h4>
+                    <div id="md-social-history">No social history information available</div>
+                </div>
+
                 <!-- Medicine Details Section -->
                 <div class="details-section" id="medicine-section" style="display:none;">
                     <h4 class="section-header">Medicine Details</h4>
@@ -272,11 +286,151 @@ document.addEventListener('DOMContentLoaded', function () {
         
         document.getElementById('md-nationality').textContent = formatName(patient.nationality);
         
+        // Render health history
+        renderHealthHistory(patient);
+        
         // Load admission summary (this will auto-load admission-specific medicine and lab data)
         loadAdmissionSummary(patient.id);
         
         // Note: Medicine and lab results are now loaded admission-specifically 
         // by loadAdmissionSummary -> loadAdmissionSpecificData
+    }
+
+    // Function to render health history
+    function renderHealthHistory(patient) {
+        const healthHistorySection = document.getElementById('health-history-section');
+        const socialHistorySection = document.getElementById('social-history-section');
+        const healthHistoryDiv = document.getElementById('md-health-history');
+        const socialHistoryDiv = document.getElementById('md-social-history');
+        
+        // Render General Health History
+        if (patient.general_health_history) {
+            const healthHistory = patient.general_health_history;
+            let healthHistoryHtml = '';
+            
+            // Medical Conditions
+            if (healthHistory.medical_conditions) {
+                const medConditions = healthHistory.medical_conditions;
+                if (hasHealthData(medConditions)) {
+                    healthHistoryHtml += '<div class="health-category"><h5>Medical Conditions</h5>';
+                    if (medConditions.chronic_illnesses) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Chronic Illnesses:</strong> ${escapeHtml(medConditions.chronic_illnesses)}</div>`;
+                    }
+                    if (medConditions.hospitalization_history) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Hospitalization History:</strong> ${escapeHtml(medConditions.hospitalization_history)}</div>`;
+                    }
+                    if (medConditions.surgery_history) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Surgery History:</strong> ${escapeHtml(medConditions.surgery_history)}</div>`;
+                    }
+                    if (medConditions.accident_injury_history) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Accident/Injury History:</strong> ${escapeHtml(medConditions.accident_injury_history)}</div>`;
+                    }
+                    healthHistoryHtml += '</div>';
+                }
+            }
+            
+            // Medications
+            if (healthHistory.medications) {
+                const medications = healthHistory.medications;
+                if (hasHealthData(medications)) {
+                    healthHistoryHtml += '<div class="health-category"><h5>Medications</h5>';
+                    if (medications.current_medications) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Current Medications:</strong> ${escapeHtml(medications.current_medications)}</div>`;
+                    }
+                    if (medications.long_term_medications) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Long-term Medications:</strong> ${escapeHtml(medications.long_term_medications)}</div>`;
+                    }
+                    healthHistoryHtml += '</div>';
+                }
+            }
+            
+            // Allergies
+            if (healthHistory.allergies) {
+                const allergies = healthHistory.allergies;
+                if (hasHealthData(allergies)) {
+                    healthHistoryHtml += '<div class="health-category"><h5>Allergies</h5>';
+                    if (allergies.known_allergies) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Known Allergies:</strong> ${escapeHtml(allergies.known_allergies)}</div>`;
+                    }
+                    healthHistoryHtml += '</div>';
+                }
+            }
+            
+            // Family History
+            if (healthHistory.family_history) {
+                const familyHistory = healthHistory.family_history;
+                if (hasHealthData(familyHistory)) {
+                    healthHistoryHtml += '<div class="health-category"><h5>Family History</h5>';
+                    if (familyHistory.family_history_chronic) {
+                        healthHistoryHtml += `<div class="health-item"><strong>Family History of Chronic Diseases:</strong> ${escapeHtml(familyHistory.family_history_chronic)}</div>`;
+                    }
+                    healthHistoryHtml += '</div>';
+                }
+            }
+            
+            if (healthHistoryHtml) {
+                healthHistoryDiv.innerHTML = healthHistoryHtml;
+                healthHistorySection.style.display = 'block';
+            } else {
+                healthHistoryDiv.innerHTML = 'No health history information available';
+                healthHistorySection.style.display = 'block';
+            }
+        } else {
+            healthHistoryDiv.innerHTML = 'No health history information available';
+            healthHistorySection.style.display = 'block';
+        }
+        
+        // Render Social History
+        if (patient.social_history) {
+            const socialHistory = patient.social_history;
+            let socialHistoryHtml = '';
+            
+            // Lifestyle Habits
+            if (socialHistory.lifestyle_habits) {
+                const lifestyleHabits = socialHistory.lifestyle_habits;
+                if (hasHealthData(lifestyleHabits)) {
+                    socialHistoryHtml += '<div class="health-category"><h5>Lifestyle Habits</h5>';
+                    if (lifestyleHabits.smoking_history) {
+                        socialHistoryHtml += `<div class="health-item"><strong>Smoking History:</strong> ${escapeHtml(lifestyleHabits.smoking_history)}</div>`;
+                    }
+                    if (lifestyleHabits.alcohol_consumption) {
+                        socialHistoryHtml += `<div class="health-item"><strong>Alcohol Consumption:</strong> ${escapeHtml(lifestyleHabits.alcohol_consumption)}</div>`;
+                    }
+                    if (lifestyleHabits.recreational_drugs) {
+                        socialHistoryHtml += `<div class="health-item"><strong>Recreational Drugs:</strong> ${escapeHtml(lifestyleHabits.recreational_drugs)}</div>`;
+                    }
+                    if (lifestyleHabits.exercise_activity) {
+                        socialHistoryHtml += `<div class="health-item"><strong>Exercise/Physical Activity:</strong> ${escapeHtml(lifestyleHabits.exercise_activity)}</div>`;
+                    }
+                    socialHistoryHtml += '</div>';
+                }
+            }
+            
+            if (socialHistoryHtml) {
+                socialHistoryDiv.innerHTML = socialHistoryHtml;
+                socialHistorySection.style.display = 'block';
+            } else {
+                socialHistoryDiv.innerHTML = 'No social history information available';
+                socialHistorySection.style.display = 'block';
+            }
+        } else {
+            socialHistoryDiv.innerHTML = 'No social history information available';
+            socialHistorySection.style.display = 'block';
+        }
+    }
+    
+    // Helper function to check if health data object has any non-empty values
+    function hasHealthData(obj) {
+        if (!obj) return false;
+        return Object.values(obj).some(value => value && value.trim() !== '');
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     // Function to load and display patient medicines
@@ -1629,6 +1783,46 @@ function dischargePatient(admissionId, patientName, admissionNumber) {
 
 .error-admissions {
     color: #dc3545;
+}
+
+/* Health History Styling */
+.health-category {
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.health-category h5 {
+    background: #f8f9fa;
+    color: #495057;
+    margin: 0;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.health-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.health-item:last-child {
+    border-bottom: none;
+}
+
+.health-item strong {
+    color: #2c5f2d;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.health-item:nth-child(even) {
+    background-color: #fafafa;
 }
 </style>
 

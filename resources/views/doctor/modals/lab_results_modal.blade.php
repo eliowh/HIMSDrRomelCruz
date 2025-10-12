@@ -255,6 +255,16 @@
     background: #c82333;
 }
 
+.lab-result-actions .btn-analysis-pdf {
+    background: #28a745;
+    color: white;
+    border: none;
+}
+
+.lab-result-actions .btn-analysis-pdf:hover {
+    background: #218838;
+}
+
 
 
 .lab-results-error,
@@ -441,6 +451,10 @@ function displayLabResultsHistory(tests, patient) {
         const results = test.results || '';
         const hasPdf = test.results_pdf_path ? true : false;
         
+        // Analysis information
+        const hasAnalysis = test.has_analysis || false;
+        const analysis = test.latest_analysis || null;
+        
         const statusClass = status.toLowerCase().replace('_', '-');
         const priorityClass = priority.toLowerCase();
         
@@ -448,7 +462,16 @@ function displayLabResultsHistory(tests, patient) {
         if (hasPdf && status === 'completed') {
             actionsHtml = `
                 <button type="button" class="btn btn-pdf" onclick="viewLabResultPdf(${test.id})">
-                    <i class="fas fa-file-pdf"></i> View PDF
+                    <i class="fas fa-file-pdf"></i> View Lab PDF
+                </button>
+            `;
+        }
+        
+        // Add analysis PDF button if analysis exists
+        if (hasAnalysis && analysis && analysis.has_analysis_pdf) {
+            actionsHtml += `
+                <button type="button" class="btn btn-analysis-pdf" onclick="viewAnalysisPdf(${test.id})" style="background: #28a745; color: white; margin-left: 8px;">
+                    <i class="fas fa-file-medical"></i> View Analysis PDF
                 </button>
             `;
         }
@@ -485,12 +508,40 @@ function displayLabResultsHistory(tests, patient) {
                         <i class="fas fa-exclamation-circle"></i>
                         <span><strong>Priority:</strong> <span class="lab-result-priority ${priorityClass}">${priority.toUpperCase()}</span></span>
                     </div>
+                    ${hasAnalysis && analysis ? `
+                        <div class="lab-result-meta-item">
+                            <i class="fas fa-stethoscope"></i>
+                            <span><strong>Analyzed by:</strong> ${analysis.doctor_name}</span>
+                        </div>
+                        <div class="lab-result-meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span><strong>Analyzed:</strong> ${formatDateTime(analysis.analyzed_at)}</span>
+                        </div>
+                    ` : ''}
                 </div>
                 
                 ${results ? `
                     <div class="lab-result-details">
-                        <h5><i class="fas fa-clipboard-list"></i> Results:</h5>
+                        <h5><i class="fas fa-clipboard-list"></i> Lab Results:</h5>
                         <p>${results}</p>
+                    </div>
+                ` : ''}
+                
+                ${hasAnalysis && analysis ? `
+                    <div class="lab-result-details" style="border-left: 4px solid #28a745;">
+                        <h5><i class="fas fa-stethoscope"></i> Doctor's Analysis:</h5>
+                        ${analysis.clinical_notes ? `
+                            <div style="margin-bottom: 10px;">
+                                <strong>Clinical Findings:</strong><br>
+                                <p style="margin: 4px 0;">${analysis.clinical_notes}</p>
+                            </div>
+                        ` : ''}
+                        ${analysis.recommendations ? `
+                            <div>
+                                <strong>Recommendations:</strong><br>
+                                <p style="margin: 4px 0;">${analysis.recommendations}</p>
+                            </div>
+                        ` : ''}
                     </div>
                 ` : ''}
                 
@@ -536,6 +587,12 @@ function formatDateTime(dateStr) {
     } catch (e) {
         return dateStr.split('T')[0]; // fallback
     }
+}
+
+// Function to view analysis PDF
+function viewAnalysisPdf(labOrderId) {
+    // Open the analysis PDF in a new window/tab
+    window.open(`/doctor/results/${labOrderId}/analysis-pdf`, '_blank');
 }
 
 // Close modal when clicking outside

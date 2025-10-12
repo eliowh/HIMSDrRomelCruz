@@ -50,4 +50,9 @@ class LabOrder extends Model
     {
         return $this->belongsTo(User::class, 'lab_tech_id');
     }
+
+    public function analyses()
+    {
+        return $this->hasMany(LabAnalysis::class);
+    }
 }
