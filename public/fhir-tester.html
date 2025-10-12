@@ -96,17 +96,17 @@
         <!-- Observation Endpoint -->
         <div class="endpoint">
             <h3>🧪 Lab Observation</h3>
-            <div class="url">/api/fhir/Observation/3</div>
-            <button onclick="testEndpoint('/api/fhir/Observation/3', 'observation-3')">Get Observation 3</button>
-            <div id="observation-3-response" class="response" style="display:none;"></div>
+            <div class="url">/api/fhir/Observation/10</div>
+            <button onclick="testEndpoint('/api/fhir/Observation/10', 'observation-10')">Get Observation 10</button>
+            <div id="observation-10-response" class="response" style="display:none;"></div>
         </div>
 
         <!-- MedicationStatement Endpoint -->
         <div class="endpoint">
             <h3>💊 Medication Statement</h3>
-            <div class="url">/api/fhir/MedicationStatement/pm-2</div>
-            <button onclick="testEndpoint('/api/fhir/MedicationStatement/pm-2', 'medication-pm2')">Get Medication pm-2</button>
-            <div id="medication-pm2-response" class="response" style="display:none;"></div>
+            <div class="url">/api/fhir/MedicationStatement/pm-1</div>
+            <button onclick="testEndpoint('/api/fhir/MedicationStatement/pm-1', 'medication-pm1')">Get Medication pm-1</button>
+            <div id="medication-pm1-response" class="response" style="display:none;"></div>
         </div>
 
         <!-- Validation Endpoint -->
@@ -264,10 +264,10 @@
             await testEndpoint('/api/fhir/Encounter/1', 'encounter-1');
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            await testEndpoint('/api/fhir/Observation/3', 'observation-3');
+            await testEndpoint('/api/fhir/Observation/10', 'observation-10');
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            await testEndpoint('/api/fhir/MedicationStatement/pm-2', 'medication-pm2');
+            await testEndpoint('/api/fhir/MedicationStatement/pm-1', 'medication-pm1');
             await new Promise(resolve => setTimeout(resolve, 500));
             
             await testValidation();
