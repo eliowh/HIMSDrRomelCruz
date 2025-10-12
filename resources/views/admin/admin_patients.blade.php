@@ -61,9 +61,9 @@
                                 @endif
                             </th>
                             <th>DOB / Age</th>
-                            <th class="sortable" data-sort="room_no">
-                                Room
-                                @if(request('sort') == 'room_no')
+                            <th class="sortable" data-sort="contact_number">
+                                Contact Number
+                                @if(request('sort') == 'contact_number')
                                     <span class="sort-indicator {{ request('direction') == 'asc' ? 'asc' : 'desc' }}">
                                         {{ request('direction') == 'asc' ? '↑' : '↓' }}
                                     </span>
@@ -112,7 +112,7 @@
                                 {{ $dobStr }}<br>
                                 <small class="text-muted">{{ $age }}</small>
                             </td>
-                            <td>{{ $patient->room_no ?? 'N/A' }}</td>
+                            <td>{{ $patient->contact_number ?? '' }}</td>
                             <td>
                                 <span class="status-badge status-{{ strtolower($patient->status ?? 'active') }}">
                                     {{ ucfirst($patient->status ?? 'active') }}

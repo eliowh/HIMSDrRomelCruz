@@ -70,8 +70,8 @@
             <h4><i class="fas fa-address-card"></i> Contact Information</h4>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="phone_number">Phone Number</label>
-                    <input type="tel" id="phone_number" name="phone_number" value="{{ $patient->phone_number ?? '' }}" class="form-input" readonly>
+                    <label for="edit_contact_number">Contact Number</label>
+                    <input id="edit_contact_number" type="number" name="contact_number" placeholder="Enter contact number" min="1000000000" max="99999999999" maxlength="11" oninput="if(this.value.length > 11) this.value = this.value.slice(0, 11);" value="{{ $patient->contact_number ?? '' }}" class="form-input" readonly>
                 </div>
                 <div class="form-group">
                     <label for="email">Email</label>

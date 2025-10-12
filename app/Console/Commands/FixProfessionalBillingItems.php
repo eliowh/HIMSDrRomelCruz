@@ -42,14 +42,14 @@ class FixProfessionalBillingItems extends Command
                     // Professional fee is already in unit_price (COL 4)
                     $professionalFee = (float)$item->unit_price;
                     
-                    // Update the item with case rate and recalculate total
-                    $newTotal = $item->quantity * ($caseRate + $professionalFee);
-                    
+                    // Update the item with case rate. The billed total should only include professional fee (case rate is a coverage/discount)
+                    $newTotal = $item->quantity * $professionalFee;
+
                     $item->update([
                         'case_rate' => $caseRate,
                         'total_amount' => $newTotal
                     ]);
-                    
+
                     $this->line("Updated Item ID {$item->id} - Case Rate: ₱" . number_format($caseRate, 2) . ", Professional Fee: ₱" . number_format($professionalFee, 2) . ", New Total: ₱" . number_format($newTotal, 2));
                 }
             }
@@ -63,8 +63,14 @@ class FixProfessionalBillingItems extends Command
                 // Recalculate totals from items
                 $totalAmount = $billing->billingItems->sum('total_amount');
                 $professionalFees = $billing->billingItems->where('item_type', 'professional')->sum('total_amount');
-                
-                $philhealthDeduction = $billing->calculatePhilhealthDeduction();
+
+                // PhilHealth deduction should be derived from case_rate values and not from totals
+                $philhealthDeduction = 0;
+                if ($billing->is_philhealth_member) {
+                    foreach ($billing->billingItems->where('item_type', 'professional') as $bi) {
+                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    }
+                }
                 $seniorPwdDiscount = $billing->calculateSeniorPwdDiscount();
                 $netAmount = $totalAmount - $philhealthDeduction - $seniorPwdDiscount;
                 

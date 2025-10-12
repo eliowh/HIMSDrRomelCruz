@@ -577,6 +577,8 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     // AJAX endpoints for billing (MUST come before wildcard routes)
     Route::get('/billing/search-patients', [App\Http\Controllers\BillingController::class, 'searchPatients'])->name('billing.search.patients');
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
+    // Check patient's last billing philhealth status (auto-check on create)
+    Route::post('/billing/last-philhealth-status', [App\Http\Controllers\BillingController::class, 'lastPhilhealthStatus'])->name('billing.last.philhealth');
     Route::get('/billing/icd-rates', [App\Http\Controllers\BillingController::class, 'getIcdRates'])->name('billing.icd.rates');
     Route::get('/billing/patient-services/{patient_id}', [App\Http\Controllers\BillingController::class, 'getPatientServices'])->name('billing.patient.services');
     Route::get('/billing/patient-admissions/{patient_id}', [App\Http\Controllers\BillingController::class, 'getPatientAdmissions'])->name('billing.patient.admissions');

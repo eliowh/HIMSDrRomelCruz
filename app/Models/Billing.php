@@ -95,14 +95,13 @@ class Billing extends Model
             return 0;
         }
 
+        // PhilHealth deduction should be based on the ICD case rate only.
+        // Do NOT add case rates to the billed amounts — case rates act as the discount/coverage.
         $deduction = 0;
         foreach ($this->billingItems as $item) {
-            if ($item->icd_code) {
-                $icdRate = Icd10NamePriceRate::getByCode($item->icd_code);
-                if ($icdRate) {
-                    $coverage = ($icdRate->getPhilhealthCoveragePercentage() / 100) * $item->total_amount;
-                    $deduction += $coverage;
-                }
+            if ($item->item_type === 'professional' && $item->case_rate) {
+                $quantity = $item->quantity ?: 1;
+                $deduction += ($item->case_rate * $quantity);
             }
         }
 
@@ -112,11 +111,15 @@ class Billing extends Model
     // Calculate final net amount
     public function calculateNetAmount()
     {
-        $grossAmount = $this->total_amount;
+        $grossAmount = $this->total_amount ?? 0;
         $philhealthDeduction = $this->philhealth_deduction ?? $this->calculatePhilhealthDeduction();
         $seniorPwdDiscount = $this->senior_pwd_discount ?? $this->calculateSeniorPwdDiscount();
         
-        return $grossAmount - $philhealthDeduction - $seniorPwdDiscount;
+        $net = $grossAmount - $philhealthDeduction - $seniorPwdDiscount;
+
+        // Ensure net amount is not negative. Client-side clamping is helpful for UX,
+        // but enforce the non-negative rule server-side to prevent persisting negatives.
+        return max(0, $net);
     }
 
     // Recalculate and sync all totals from billing items
