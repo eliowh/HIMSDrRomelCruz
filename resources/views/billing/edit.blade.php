@@ -355,25 +355,28 @@ document.addEventListener('DOMContentLoaded', function() {
                            originalValues.medicineCharges + originalValues.labCharges + 
                            originalValues.otherCharges;
         
-        // Calculate PhilHealth deduction based on current checkbox status
+        // PhilHealth deduction is sum of case_rate values when the checkbox is checked.
         let newPhilhealthDeduction = 0;
         const isPhilhealthMemberChecked = document.getElementById('is_philhealth_member_edit').checked;
-        
         if (isPhilhealthMemberChecked) {
-            // If PhilHealth was originally applied, use the same percentage
+            // Sum case_rates from billing items (server-side values are authoritative)
+            @php
+                $caseRateTotal = $billing->billingItems->where('item_type', 'professional')->sum(function($it) { return $it->case_rate * ($it->quantity ?: 1); });
+            @endphp
+            // If original billing had case rates, keep same total case rate amount proportional to quantity (we'll use stored value)
+            // For the edit form we cannot recompute case rates client-side reliably, so fall back to the stored philhealth deduction if present
             if (originalValues.isPhilhealthMember && originalValues.philhealthDeduction > 0) {
-                const originalPhilhealthPercentage = originalValues.philhealthDeduction / (originalValues.roomCharges + originalValues.professionalFees + originalValues.medicineCharges + originalValues.labCharges + originalValues.otherCharges);
-                newPhilhealthDeduction = newSubtotal * originalPhilhealthPercentage;
+                newPhilhealthDeduction = originalValues.philhealthDeduction;
             } else {
-                // Apply standard PhilHealth deduction (typically 10-15% for most cases)
-                newPhilhealthDeduction = newSubtotal * 0.10; // 10% standard deduction
+                newPhilhealthDeduction = {{ $caseRateTotal ?? 0 }};
             }
         }
         
         // Calculate senior/PWD discount
         let newSeniorPwdDiscount = 0;
         if (isSenior || isPwd) {
-            newSeniorPwdDiscount = newSubtotal * 0.20; // 20% discount
+            // Senior/PWD discount applies after PhilHealth deduction
+            newSeniorPwdDiscount = (newSubtotal - newPhilhealthDeduction) * 0.20; // 20% discount
         }
         
         // Calculate new net amount
@@ -400,6 +403,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial calculation
     calculateUpdatedTotals();
+    // Also check patient's last philhealth status to prevent accidental unchecking
+    try {
+        const patientId = {{ $billing->patient_id ?? 'null' }};
+        if (patientId) {
+            fetch('{{ route("billing.last.philhealth") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ patient_id: patientId })
+            }).then(r => r.json()).then(data => {
+                const philCheckbox = document.getElementById('is_philhealth_member_edit');
+                if (!philCheckbox) return;
+                if (data.last_is_philhealth_member) {
+                    philCheckbox.checked = true;
+                    philCheckbox.disabled = true;
+                    calculateUpdatedTotals();
+                } else {
+                    philCheckbox.disabled = false;
+                }
+            }).catch(err => console.warn('Failed to fetch last philhealth status', err));
+        }
+    } catch (err) {
+        console.warn('Error checking last philhealth status', err);
+    }
 });
 </script>
 @endsection

@@ -104,17 +104,19 @@ class BillingController extends Controller
             $otherCharges = 0;
             
             foreach ($request->billing_items as $item) {
-                // For professional items, add both case rate and professional fee
+                // For professional items, DO NOT add case rate into the billed total.
+                // The case_rate represents the PhilHealth case rate (coverage) and functions as a discount.
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    $itemTotal = $item['quantity'] * ($caseRate + $professionalFee);
+                    // Only professional fee is added to billed totals
+                    $itemTotal = $item['quantity'] * $professionalFee;
                 } else {
                     $itemTotal = $item['quantity'] * $item['unit_price'];
                 }
-                
+
                 $totalAmount += $itemTotal;
-                
+
                 switch ($item['item_type']) {
                     case 'room':
                         $roomCharges += $itemTotal;
@@ -156,11 +158,12 @@ class BillingController extends Controller
             
             // Create billing items
             foreach ($request->billing_items as $item) {
-                // Calculate correct total amount based on item type
+                // Calculate correct total amount based on item type. Persist total_amount as what will be billed
+                // (case_rate is stored separately and not included in total_amount)
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    $itemTotalAmount = $item['quantity'] * ($caseRate + $professionalFee);
+                    $itemTotalAmount = $item['quantity'] * $professionalFee;
                 } else {
                     $itemTotalAmount = $item['quantity'] * $item['unit_price'];
                 }
@@ -183,9 +186,18 @@ class BillingController extends Controller
             $billing->load('billingItems');
             
             // Calculate deductions and discounts
-            $philhealthDeduction = $billing->calculatePhilhealthDeduction();
+            // PhilHealth deduction is based on sum of case_rate values for professional items when member checked
+            $philhealthDeduction = 0;
+            if ($billing->is_philhealth_member) {
+                foreach ($billing->billingItems as $bi) {
+                    if ($bi->item_type === 'professional' && $bi->case_rate) {
+                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    }
+                }
+            }
+
             $seniorPwdDiscount = $billing->calculateSeniorPwdDiscount();
-            $netAmount = $billing->calculateNetAmount();
+            $netAmount = $billing->total_amount - $philhealthDeduction - $seniorPwdDiscount;
             
             // Update billing with calculations
             $billing->update([
@@ -283,8 +295,9 @@ class BillingController extends Controller
                         // The case rate should remain the same, only professional fee portion changes
                         $caseRate = $item->case_rate ?? 0;
                         $newProfessionalFee = $request->professional_fees;
-                        $newTotalAmount = $caseRate + $newProfessionalFee;
-                        
+                        // total_amount should represent billed amount (professional fee * qty)
+                        $newTotalAmount = ($newProfessionalFee) * ($item->quantity ?: 1);
+
                         $item->update([
                             'unit_price' => $newProfessionalFee,
                             'total_amount' => $newTotalAmount
@@ -309,7 +322,16 @@ class BillingController extends Controller
             $tempBilling->is_senior_citizen = $request->boolean('is_senior_citizen');
             $tempBilling->is_pwd = $request->boolean('is_pwd');
             
-            $philhealthDeduction = $tempBilling->calculatePhilhealthDeduction();
+            // PhilHealth deduction based on case_rate only when checked
+            $philhealthDeduction = 0;
+            if ($tempBilling->is_philhealth_member) {
+                foreach ($billing->billingItems as $bi) {
+                    if ($bi->item_type === 'professional' && $bi->case_rate) {
+                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    }
+                }
+            }
+
             $seniorPwdDiscount = $tempBilling->calculateSeniorPwdDiscount();
             $netAmount = $totalAmount - $philhealthDeduction - $seniorPwdDiscount;
             
@@ -358,6 +380,29 @@ class BillingController extends Controller
                 'status' => $member->getFormattedMembershipStatus(),
                 'expiry_date' => $member->expiry_date->format('M d, Y')
             ] : null
+        ]);
+    }
+
+    /**
+     * Return the last known PhilHealth checkbox status from existing billings for this patient.
+     * If the patient has any previous billing with is_philhealth_member = true, return that fact so
+     * the frontend can auto-check/lock the checkbox to avoid accidental unchecking.
+     */
+    public function lastPhilhealthStatus(Request $request)
+    {
+        $patientId = $request->input('patient_id');
+        if (!$patientId) {
+            return response()->json(['error' => 'patient_id is required'], 400);
+        }
+
+        $lastBilling = Billing::where('patient_id', $patientId)
+                              ->orderBy('created_at', 'desc')
+                              ->first();
+
+        return response()->json([
+            'has_previous_billing' => (bool) $lastBilling,
+            'last_is_philhealth_member' => $lastBilling ? (bool) $lastBilling->is_philhealth_member : false,
+            'philhealth_deduction' => $lastBilling ? ($lastBilling->philhealth_deduction ?? 0) : 0
         ]);
     }
 

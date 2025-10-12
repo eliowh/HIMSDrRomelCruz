@@ -95,14 +95,13 @@ class Billing extends Model
             return 0;
         }
 
+        // PhilHealth deduction should be based on the ICD case rate only.
+        // Do NOT add case rates to the billed amounts — case rates act as the discount/coverage.
         $deduction = 0;
         foreach ($this->billingItems as $item) {
-            if ($item->icd_code) {
-                $icdRate = Icd10NamePriceRate::getByCode($item->icd_code);
-                if ($icdRate) {
-                    $coverage = ($icdRate->getPhilhealthCoveragePercentage() / 100) * $item->total_amount;
-                    $deduction += $coverage;
-                }
+            if ($item->item_type === 'professional' && $item->case_rate) {
+                $quantity = $item->quantity ?: 1;
+                $deduction += ($item->case_rate * $quantity);
             }
         }
 

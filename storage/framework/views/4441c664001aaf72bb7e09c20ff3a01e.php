@@ -1,32 +1,30 @@
-@extends('layouts.billing')
+<?php $__env->startSection('title', 'Create New Billing'); ?>
 
-@section('title', 'Create New Billing')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-plus-circle text-primary"></i> Create New Billing</h2>
-                <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">
+                <a href="<?php echo e(route('billing.dashboard')); ?>" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Billings
                 </a>
             </div>
 
-            @if($errors->any())
+            <?php if($errors->any()): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <strong>Please fix the following errors:</strong>
                     <ul class="mb-0 mt-2">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
+                        <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <li><?php echo e($error); ?></li>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </ul>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-            @endif
+            <?php endif; ?>
 
-            <form action="{{ route('billing.store') }}" method="POST" id="billingForm">
-                @csrf
+            <form action="<?php echo e(route('billing.store')); ?>" method="POST" id="billingForm">
+                <?php echo csrf_field(); ?>
                 
                 <!-- Patient Information -->
                 <div class="card shadow mb-4">
@@ -58,19 +56,19 @@
                                 <label class="form-label">Patient Status & Discounts</label>
                                 <div class="d-flex gap-3 align-items-center mt-2 flex-wrap">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="is_senior_citizen" id="is_senior_citizen" {{ old('is_senior_citizen') ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="checkbox" name="is_senior_citizen" id="is_senior_citizen" <?php echo e(old('is_senior_citizen') ? 'checked' : ''); ?>>
                                         <label class="form-check-label" for="is_senior_citizen">
                                             Senior Citizen (20% Discount)
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="is_pwd" id="is_pwd" {{ old('is_pwd') ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="checkbox" name="is_pwd" id="is_pwd" <?php echo e(old('is_pwd') ? 'checked' : ''); ?>>
                                         <label class="form-check-label" for="is_pwd">
                                             PWD (20% Discount)
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="is_philhealth_member" id="is_philhealth_member" {{ old('is_philhealth_member') ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="checkbox" name="is_philhealth_member" id="is_philhealth_member" <?php echo e(old('is_philhealth_member') ? 'checked' : ''); ?>>
                                         <label class="form-check-label" for="is_philhealth_member">
                                             PhilHealth Member
                                         </label>
@@ -157,13 +155,13 @@
                         <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Notes (Optional)</h6>
                     </div>
                     <div class="card-body">
-                        <textarea name="notes" class="form-control" rows="3" placeholder="Add any additional notes or comments...">{{ old('notes') }}</textarea>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Add any additional notes or comments..."><?php echo e(old('notes')); ?></textarea>
                     </div>
                 </div>
 
                 <!-- Submit Button -->
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="<?php echo e(route('billing.dashboard')); ?>" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Create Billing
                     </button>
@@ -175,9 +173,9 @@
 
 
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 let itemIndex = 0;
 let philhealthMember = null;
@@ -229,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function checkLastPhilhealthStatus(patientId) {
     if (!patientId) return;
-    fetch('{{ route("billing.last.philhealth") }}', {
+    fetch('<?php echo e(route("billing.last.philhealth")); ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -519,7 +517,7 @@ function selectPatient(patient) {
             philCheckbox.disabled = false;
         }
 
-        fetch('{{ route("billing.last.philhealth") }}', {
+        fetch('<?php echo e(route("billing.last.philhealth")); ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -759,7 +757,7 @@ async function checkPhilhealthStatus() {
     messageSpan.textContent = 'Checking PhilHealth status...';
     
     try {
-        const response = await fetch('{{ route("billing.check.philhealth") }}', {
+        const response = await fetch('<?php echo e(route("billing.check.philhealth")); ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -802,7 +800,7 @@ async function searchIcdCodes(event) {
     }
     
     try {
-        const response = await fetch(`{{ route('billing.icd.rates') }}?query=${encodeURIComponent(query)}`);
+        const response = await fetch(`<?php echo e(route('billing.icd.rates')); ?>?query=${encodeURIComponent(query)}`);
         const data = await response.json();
         
         let html = '';
@@ -866,18 +864,18 @@ document.addEventListener('click', function(e) {
 }
 </style>
 
-@include('billing.modals.notification_system')
+<?php echo $__env->make('billing.modals.notification_system', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
 <script>
 // Show notifications for session messages
 document.addEventListener('DOMContentLoaded', function() {
-    @if($errors->any())
+    <?php if($errors->any()): ?>
         let errorMessages = '';
-        @foreach($errors->all() as $error)
-            errorMessages += '{{ $error }}\n';
-        @endforeach
+        <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            errorMessages += '<?php echo e($error); ?>\n';
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         showBillingNotification('error', 'Validation Error', errorMessages);
-    @endif
+    <?php endif; ?>
 });
 
 // Add form submission handler for better UX
@@ -896,9 +894,9 @@ document.querySelector('form').addEventListener('submit', function(e) {
 // No need to define fallback functions here as the modal provides the real implementation
 </script>
 
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('styles')
+<?php $__env->startSection('styles'); ?>
 <style>
 /* Billing Card & Table Enhancements */
 .card.shadow {
@@ -919,4 +917,5 @@ document.querySelector('form').addEventListener('submit', function(e) {
     background: linear-gradient(135deg, #367F2B, #2d6624) !important;
 }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.billing', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\xampp\htdocs\DrRomelCruzHP\resources\views/billing/create.blade.php ENDPATH**/ ?>

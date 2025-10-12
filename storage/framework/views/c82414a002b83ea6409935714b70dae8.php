@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Billing Details - Cashier</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('css/cashiercss/cashier.css') }}">
+    <link rel="stylesheet" href="<?php echo e(asset('css/cashiercss/cashier.css')); ?>">
 </head>
 <body>
-    @include('cashier.cashier_header')
+    <?php echo $__env->make('cashier.cashier_header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
     <div class="cashier-layout">
-        @include('cashier.cashier_sidebar')
+        <?php echo $__env->make('cashier.cashier_sidebar', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         <main class="main-content">
             <div class="container-fluid mt-4">
@@ -26,7 +26,7 @@
                                 <nav aria-label="breadcrumb">
                                     <ol class="breadcrumb">
                                         <li class="breadcrumb-item"><a href="/cashier/billing" class="text-decoration-none">Payment Management</a></li>
-                                        <li class="breadcrumb-item active">{{ $billing->billing_number }}</li>
+                                        <li class="breadcrumb-item active"><?php echo e($billing->billing_number); ?></li>
                                     </ol>
                                 </nav>
                             </div>
@@ -48,18 +48,19 @@
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <p><strong>Patient Name:</strong> {{ $billing->patient->full_name ?? 'Unknown Patient' }}</p>
-                                                <p><strong>Patient No:</strong> {{ $billing->patient->patient_no ?? 'N/A' }}</p>
-                                                <p><strong>Date of Birth:</strong> {{ $billing->patient->date_of_birth ? $billing->patient->date_of_birth->format('M d, Y') : 'N/A' }}</p>
+                                                <p><strong>Patient Name:</strong> <?php echo e($billing->patient->full_name ?? 'Unknown Patient'); ?></p>
+                                                <p><strong>Patient No:</strong> <?php echo e($billing->patient->patient_no ?? 'N/A'); ?></p>
+                                                <p><strong>Date of Birth:</strong> <?php echo e($billing->patient->date_of_birth ? $billing->patient->date_of_birth->format('M d, Y') : 'N/A'); ?></p>
                                             </div>
                                             <div class="col-md-6">
                                                 <p><strong>Address:</strong> 
-                                                    {{ implode(', ', array_filter([$billing->patient->barangay ?? '', $billing->patient->city ?? '', $billing->patient->province ?? ''])) ?: 'N/A' }}
+                                                    <?php echo e(implode(', ', array_filter([$billing->patient->barangay ?? '', $billing->patient->city ?? '', $billing->patient->province ?? ''])) ?: 'N/A'); ?>
+
                                                 </p>
-                                                {{-- Prefer admission-specific room & doctor for historical accuracy; fall back to patient fields if missing --}}
-                                                <p><strong>Room No:</strong> {{ $billing->admission->room_no ?? $billing->patient->room_no ?? 'N/A' }}</p>
-                                                <p><strong>Doctor:</strong> {{ $billing->admission->doctor_name ?? $billing->patient->doctor_name ?? 'N/A' }}</p>
-                                                <p><strong>Admission Date:</strong> {{ $billing->admission && $billing->admission->admission_date ? $billing->admission->admission_date->format('M d, Y') : 'N/A' }}</p>
+                                                
+                                                <p><strong>Room No:</strong> <?php echo e($billing->admission->room_no ?? $billing->patient->room_no ?? 'N/A'); ?></p>
+                                                <p><strong>Doctor:</strong> <?php echo e($billing->admission->doctor_name ?? $billing->patient->doctor_name ?? 'N/A'); ?></p>
+                                                <p><strong>Admission Date:</strong> <?php echo e($billing->admission && $billing->admission->admission_date ? $billing->admission->admission_date->format('M d, Y') : 'N/A'); ?></p>
                                             </div>
                                         </div>
                                     </div>
@@ -81,46 +82,46 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @if($billing->room_charges > 0)
+                                                    <?php if($billing->room_charges > 0): ?>
                                                     <tr>
                                                         <td><span class="badge bg-secondary">Room</span></td>
                                                         <td>Room Charges</td>
-                                                        <td class="text-end">₱{{ number_format($billing->room_charges, 2) }}</td>
+                                                        <td class="text-end">₱<?php echo e(number_format($billing->room_charges, 2)); ?></td>
                                                     </tr>
-                                                    @endif
-                                                    @if($billing->professional_fees > 0)
+                                                    <?php endif; ?>
+                                                    <?php if($billing->professional_fees > 0): ?>
                                                     <tr>
                                                         <td><span class="badge bg-primary">Professional</span></td>
                                                         <td>Professional Fees</td>
-                                                        <td class="text-end">₱{{ number_format($billing->professional_fees, 2) }}</td>
+                                                        <td class="text-end">₱<?php echo e(number_format($billing->professional_fees, 2)); ?></td>
                                                     </tr>
-                                                    @endif
-                                                    @if($billing->medicine_charges > 0)
+                                                    <?php endif; ?>
+                                                    <?php if($billing->medicine_charges > 0): ?>
                                                     <tr>
                                                         <td><span class="badge bg-success">Medicine</span></td>
                                                         <td>Medicine Charges</td>
-                                                        <td class="text-end">₱{{ number_format($billing->medicine_charges, 2) }}</td>
+                                                        <td class="text-end">₱<?php echo e(number_format($billing->medicine_charges, 2)); ?></td>
                                                     </tr>
-                                                    @endif
-                                                    @if($billing->lab_charges > 0)
+                                                    <?php endif; ?>
+                                                    <?php if($billing->lab_charges > 0): ?>
                                                     <tr>
                                                         <td><span class="badge bg-warning text-dark">Laboratory</span></td>
                                                         <td>Laboratory Charges</td>
-                                                        <td class="text-end">₱{{ number_format($billing->lab_charges, 2) }}</td>
+                                                        <td class="text-end">₱<?php echo e(number_format($billing->lab_charges, 2)); ?></td>
                                                     </tr>
-                                                    @endif
-                                                    @if($billing->other_charges > 0)
+                                                    <?php endif; ?>
+                                                    <?php if($billing->other_charges > 0): ?>
                                                     <tr>
                                                         <td><span class="badge bg-info">Other</span></td>
                                                         <td>Other Charges</td>
-                                                        <td class="text-end">₱{{ number_format($billing->other_charges, 2) }}</td>
+                                                        <td class="text-end">₱<?php echo e(number_format($billing->other_charges, 2)); ?></td>
                                                     </tr>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </tbody>
                                                 <tfoot>
                                                     <tr class="table-active">
                                                         <th colspan="2">Total Amount</th>
-                                                        <th class="text-end">₱{{ number_format($billing->total_amount, 2) }}</th>
+                                                        <th class="text-end">₱<?php echo e(number_format($billing->total_amount, 2)); ?></th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -133,54 +134,55 @@
                             <div class="col-lg-4">
                                 <!-- Payment Status -->
                                 <div class="card shadow mb-4">
-                                    <div class="card-header {{ $billing->status === 'paid' ? 'bg-success' : 'bg-warning' }} text-{{ $billing->status === 'paid' ? 'white' : 'dark' }}">
+                                    <div class="card-header <?php echo e($billing->status === 'paid' ? 'bg-success' : 'bg-warning'); ?> text-<?php echo e($billing->status === 'paid' ? 'white' : 'dark'); ?>">
                                         <h6 class="mb-0">
-                                            <i class="fas fa-{{ $billing->status === 'paid' ? 'check-circle' : 'clock' }}"></i> 
+                                            <i class="fas fa-<?php echo e($billing->status === 'paid' ? 'check-circle' : 'clock'); ?>"></i> 
                                             Payment Status
                                         </h6>
                                     </div>
                                     <div class="card-body text-center">
-                                        @if($billing->status === 'paid')
+                                        <?php if($billing->status === 'paid'): ?>
                                             <h3 class="text-success"><i class="fas fa-check-circle"></i> PAID</h3>
-                                            @if($billing->payment_date)
+                                            <?php if($billing->payment_date): ?>
                                                 <p class="text-muted">
                                                     <strong>Payment Date:</strong><br>
-                                                    {{ $billing->payment_date->format('M d, Y h:i A') }}
+                                                    <?php echo e($billing->payment_date->format('M d, Y h:i A')); ?>
+
                                                 </p>
                                                 <p class="text-muted">
-                                                    <small>{{ $billing->payment_date->diffForHumans() }}</small>
+                                                    <small><?php echo e($billing->payment_date->diffForHumans()); ?></small>
                                                 </p>
-                                            @endif
+                                            <?php endif; ?>
                                             
-                                            @if($billing->payment_amount && $billing->change_amount !== null)
+                                            <?php if($billing->payment_amount && $billing->change_amount !== null): ?>
                                             <div class="mt-3 p-3 bg-light rounded">
                                                 <div class="row text-start">
                                                     <div class="col-sm-6">
                                                         <strong class="text-info">
                                                             <i class="fas fa-money-bill-wave"></i> Amount Received:
                                                         </strong><br>
-                                                        <span class="fs-5 text-success">₱{{ number_format($billing->payment_amount, 2) }}</span>
+                                                        <span class="fs-5 text-success">₱<?php echo e(number_format($billing->payment_amount, 2)); ?></span>
                                                     </div>
                                                     <div class="col-sm-6">
                                                         <strong class="text-warning">
                                                             <i class="fas fa-exchange-alt"></i> Change Given:
                                                         </strong><br>
-                                                        <span class="fs-5 text-danger">₱{{ number_format($billing->change_amount, 2) }}</span>
+                                                        <span class="fs-5 text-danger">₱<?php echo e(number_format($billing->change_amount, 2)); ?></span>
                                                     </div>
                                                 </div>
-                                                @if($billing->processedBy)
+                                                <?php if($billing->processedBy): ?>
                                                 <div class="mt-2 text-start">
                                                     <small class="text-muted">
-                                                        <i class="fas fa-user"></i> Processed by: <strong>{{ $billing->processedBy->name }}</strong>
+                                                        <i class="fas fa-user"></i> Processed by: <strong><?php echo e($billing->processedBy->name); ?></strong>
                                                     </small>
                                                 </div>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
-                                            @endif
-                                        @else
+                                            <?php endif; ?>
+                                        <?php else: ?>
                                             <h3 class="text-warning"><i class="fas fa-clock"></i> PENDING</h3>
                                             <p class="text-muted">Awaiting payment processing</p>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
@@ -193,65 +195,65 @@
                                         <div class="mb-3">
                                             <div class="row mb-2">
                                                 <div class="col">Subtotal:</div>
-                                                <div class="col-auto">₱{{ number_format($billing->total_amount ?? 0, 2) }}</div>
+                                                <div class="col-auto">₱<?php echo e(number_format($billing->total_amount ?? 0, 2)); ?></div>
                                             </div>
                                             
-                                            @if($billing->is_philhealth_member && $billing->philhealth_deduction > 0)
+                                            <?php if($billing->is_philhealth_member && $billing->philhealth_deduction > 0): ?>
                                                 <div class="row mb-2 text-success">
                                                     <div class="col">PhilHealth Deduction:</div>
-                                                    <div class="col-auto">-₱{{ number_format($billing->philhealth_deduction ?? 0, 2) }}</div>
+                                                    <div class="col-auto">-₱<?php echo e(number_format($billing->philhealth_deduction ?? 0, 2)); ?></div>
                                                 </div>
-                                            @endif
+                                            <?php endif; ?>
 
-                                            @if($billing->senior_pwd_discount > 0)
+                                            <?php if($billing->senior_pwd_discount > 0): ?>
                                                 <div class="row mb-2 text-success">
                                                     <div class="col">
-                                                        @if($billing->is_senior_citizen && $billing->is_pwd)
+                                                        <?php if($billing->is_senior_citizen && $billing->is_pwd): ?>
                                                             Senior & PWD Discount:
-                                                        @elseif($billing->is_senior_citizen)
+                                                        <?php elseif($billing->is_senior_citizen): ?>
                                                             Senior Citizen Discount:
-                                                        @else
+                                                        <?php else: ?>
                                                             PWD Discount:
-                                                        @endif
+                                                        <?php endif; ?>
                                                     </div>
-                                                    <div class="col-auto">-₱{{ number_format($billing->senior_pwd_discount ?? 0, 2) }}</div>
+                                                    <div class="col-auto">-₱<?php echo e(number_format($billing->senior_pwd_discount ?? 0, 2)); ?></div>
                                                 </div>
-                                            @endif
+                                            <?php endif; ?>
                                             
                                             <hr>
                                             
                                             <div class="row">
                                                 <div class="col"><h5><strong>Net Amount:</strong></h5></div>
-                                                <div class="col-auto"><h5 class="text-primary"><strong>₱{{ number_format($billing->net_amount ?? 0, 2) }}</strong></h5></div>
+                                                <div class="col-auto"><h5 class="text-primary"><strong>₱<?php echo e(number_format($billing->net_amount ?? 0, 2)); ?></strong></h5></div>
                                             </div>
                                             
-                                            @if($billing->status === 'paid' && $billing->payment_amount)
+                                            <?php if($billing->status === 'paid' && $billing->payment_amount): ?>
                                             <hr class="my-3">
                                             <h6 class="text-success mb-2"><i class="fas fa-money-check-alt"></i> Payment Transaction</h6>
                                             <div class="row mb-1">
                                                 <div class="col text-success"><strong>Amount Paid:</strong></div>
-                                                <div class="col-auto text-success"><strong>₱{{ number_format($billing->payment_amount, 2) }}</strong></div>
+                                                <div class="col-auto text-success"><strong>₱<?php echo e(number_format($billing->payment_amount, 2)); ?></strong></div>
                                             </div>
-                                            @if($billing->change_amount > 0)
+                                            <?php if($billing->change_amount > 0): ?>
                                             <div class="row">
                                                 <div class="col text-warning"><strong>Change Returned:</strong></div>
-                                                <div class="col-auto text-warning"><strong>₱{{ number_format($billing->change_amount, 2) }}</strong></div>
+                                                <div class="col-auto text-warning"><strong>₱<?php echo e(number_format($billing->change_amount, 2)); ?></strong></div>
                                             </div>
-                                            @endif
-                                            @endif
+                                            <?php endif; ?>
+                                            <?php endif; ?>
                                         </div>
 
                                         <!-- Savings Summary -->
-                                        @if($billing->philhealth_deduction > 0 || $billing->senior_pwd_discount > 0)
+                                        <?php if($billing->philhealth_deduction > 0 || $billing->senior_pwd_discount > 0): ?>
                                             <div class="alert alert-success">
                                                 <h6 class="mb-2"><i class="fas fa-piggy-bank"></i> Total Savings</h6>
-                                                <h5 class="mb-0 text-success">₱{{ number_format($billing->philhealth_deduction + $billing->senior_pwd_discount, 2) }}</h5>
+                                                <h5 class="mb-0 text-success">₱<?php echo e(number_format($billing->philhealth_deduction + $billing->senior_pwd_discount, 2)); ?></h5>
                                                 <small class="text-muted">
-                                                    {{ number_format((($billing->philhealth_deduction + $billing->senior_pwd_discount) / $billing->total_amount) * 100, 1) }}% 
+                                                    <?php echo e(number_format((($billing->philhealth_deduction + $billing->senior_pwd_discount) / $billing->total_amount) * 100, 1)); ?>% 
                                                     of total charges
                                                 </small>
                                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
@@ -262,22 +264,22 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="d-grid gap-2">
-                                            @if($billing->status === 'pending')
+                                            <?php if($billing->status === 'pending'): ?>
                                                 <button type="button" 
                                                         class="btn btn-success mark-as-paid-btn" 
-                                                        data-billing-id="{{ $billing->id }}"
-                                                        data-billing-number="{{ $billing->billing_number }}">
+                                                        data-billing-id="<?php echo e($billing->id); ?>"
+                                                        data-billing-number="<?php echo e($billing->billing_number); ?>">
                                                     <i class="fas fa-check-circle"></i> Mark as Paid
                                                 </button>
-                                            @elseif($billing->status === 'paid')
+                                            <?php elseif($billing->status === 'paid'): ?>
                                                 <!-- Receipt Actions for Paid Billings -->
                                                 <div class="d-grid gap-2">
-                                                    <a href="{{ route('cashier.billing.receipt', $billing->id) }}" 
+                                                    <a href="<?php echo e(route('cashier.billing.receipt', $billing->id)); ?>" 
                                                        target="_blank" 
                                                        class="btn btn-primary">
                                                         <i class="fas fa-print"></i> Print Receipt
                                                     </a>
-                                                    <a href="{{ route('cashier.billing.receipt.download', $billing->id) }}" 
+                                                    <a href="<?php echo e(route('cashier.billing.receipt.download', $billing->id)); ?>" 
                                                        class="btn btn-success">
                                                         <i class="fas fa-download"></i> Download Receipt
                                                     </a>
@@ -286,7 +288,7 @@
                                                 <div class="alert alert-success">
                                                     <i class="fas fa-check-circle"></i> Payment has been finalized and cannot be reverted for security reasons.
                                                 </div>
-                                            @endif
+                                            <?php endif; ?>
                                             <a href="/cashier/billing" class="btn btn-outline-primary">
                                                 <i class="fas fa-list"></i> Back to Billing List
                                             </a>
@@ -301,7 +303,7 @@
         </main>
     </div>
 
-    @include('cashier.modals.notification_system')
+    <?php echo $__env->make('cashier.modals.notification_system', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -592,4 +594,4 @@
     }
     </style>
 </body>
-</html>
+</html><?php /**PATH D:\xampp\htdocs\DrRomelCruzHP\resources\views/cashier/cashier_billing_view.blade.php ENDPATH**/ ?>
