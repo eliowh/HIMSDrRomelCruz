@@ -121,6 +121,50 @@ class FhirPatient extends AbstractFhirResource
     {
         $extensions = [];
 
+        // General health history (from migration: general_health_history JSON)
+        if (!empty($model->general_health_history) && is_array($model->general_health_history)) {
+            $ghExtensions = [];
+            foreach ($model->general_health_history as $item) {
+                // Accept either simple strings or structured arrays
+                if (is_array($item)) {
+                    $text = $item['text'] ?? json_encode($item);
+                } else {
+                    $text = (string) $item;
+                }
+
+                $ghExtensions[] = [
+                    'url' => 'condition',
+                    'valueString' => $text
+                ];
+            }
+
+            $extensions[] = [
+                'url' => $this->baseUrl . '/StructureDefinition/general-health-history',
+                'extension' => $ghExtensions
+            ];
+        }
+
+        // Social history (from migration: social_history JSON)
+        if (!empty($model->social_history) && is_array($model->social_history)) {
+            $shExtensions = [];
+            foreach ($model->social_history as $item) {
+                if (is_array($item)) {
+                    $text = $item['text'] ?? json_encode($item);
+                } else {
+                    $text = (string) $item;
+                }
+
+                $shExtensions[] = [
+                    'url' => 'entry',
+                    'valueString' => $text
+                ];
+            }
+
+            $extensions[] = [
+                'url' => $this->baseUrl . '/StructureDefinition/social-history',
+                'extension' => $shExtensions
+            ];
+        }
         // Age information
         if ($model->age_years !== null || $model->age_months !== null || $model->age_days !== null) {
             $extensions[] = [

@@ -34,6 +34,7 @@ class FhirService
             Patient::class => new FhirPatient(),
             Admission::class => new FhirEncounter(),
             LabOrder::class => new FhirObservation(),
+            \App\Services\FHIR\Resources\FhirDiagnosticReport::class => new \App\Services\FHIR\Resources\FhirDiagnosticReport(),
             PatientMedicine::class => new FhirMedicationStatement(),
             PharmacyRequest::class => new FhirMedicationStatement(),
         ];
@@ -222,6 +223,23 @@ class FhirService
                 'fullUrl' => "{$this->baseUrl}/Observation/{$labOrder->id}",
                 'resource' => $this->transformToFhir($labOrder)
             ];
+        }
+
+        // Add DiagnosticReports when analyses exist or results present
+        foreach ($patient->labOrders as $labOrder) {
+            // include DiagnosticReport if there are analyses or completed results
+            if ($labOrder->analyses()->exists() || ($labOrder->results && $labOrder->status === 'completed')) {
+                try {
+                    // use DiagnosticReport transformer by instantiating model wrapper
+                    $diagResource = (new \App\Services\FHIR\Resources\FhirDiagnosticReport())->transform($labOrder);
+                    $entries[] = [
+                        'fullUrl' => "{$this->baseUrl}/DiagnosticReport/{$labOrder->id}",
+                        'resource' => $diagResource
+                    ];
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to transform LabOrder to DiagnosticReport: ' . $e->getMessage(), ['lab_order_id' => $labOrder->id]);
+                }
+            }
         }
 
         // Add medication statements (patient medicines)
@@ -430,6 +448,12 @@ class FhirService
                         ],
                         [
                             'type' => 'Observation',
+                            'interaction' => [
+                                ['code' => 'read']
+                            ]
+                        ],
+                        [
+                            'type' => 'DiagnosticReport',
                             'interaction' => [
                                 ['code' => 'read']
                             ]
