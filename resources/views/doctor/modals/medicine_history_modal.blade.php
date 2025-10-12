@@ -330,13 +330,15 @@
 let currentMedicinePatientId = null;
 let currentMedicinePatientName = '';
 let currentMedicinePatientNo = '';
+let currentMedicineAdmissionId = null;
 
-function openMedicineHistoryModal(patientId, patientName, patientNo) {
-    console.log('Opening medicine history modal for patient:', patientId, patientName, patientNo); // Debug log
+function openMedicineHistoryModal(patientId, patientName, patientNo, admissionId = null) {
+    console.log('Opening medicine history modal for patient:', patientId, patientName, patientNo, 'admissionId:', admissionId); // Debug log
     
     currentMedicinePatientId = patientId;
     currentMedicinePatientName = patientName;
     currentMedicinePatientNo = patientNo;
+    currentMedicineAdmissionId = admissionId;
     
     // Set patient info
     document.getElementById('medicine-history-patient-name').textContent = patientName;
@@ -352,8 +354,8 @@ function openMedicineHistoryModal(patientId, patientName, patientNo) {
         console.error('Medicine history modal element not found!');
     }
     
-    // Load medicine history
-    loadMedicineHistory(patientId);
+    // Load medicine history (pass admissionId if available)
+    loadMedicineHistory(patientId, admissionId);
 }
 
 // Make the function globally accessible
@@ -371,17 +373,21 @@ function closeMedicineHistoryModal() {
     currentMedicinePatientId = null;
     currentMedicinePatientName = '';
     currentMedicinePatientNo = '';
+    currentMedicineAdmissionId = null;
 }
 
 // Make the function globally accessible
 window.closeMedicineHistoryModal = closeMedicineHistoryModal;
 
-function loadMedicineHistory(patientId) {
+function loadMedicineHistory(patientId, admissionId = null) {
     // Show loading state
     showMedicineHistoryLoading();
     
+    // Build API URL with optional admission filter
+    const apiUrl = admissionId ? `/doctor/api/patients/${patientId}/medicines?admission_id=${admissionId}` : `/doctor/api/patients/${patientId}/medicines`;
+
     // Fetch complete medicine history
-    fetch(`/doctor/api/patients/${patientId}/medicines`)
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);

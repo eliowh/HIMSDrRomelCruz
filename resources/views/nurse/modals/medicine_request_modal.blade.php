@@ -199,11 +199,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Block submission if admission_id not set (safety)
+document.getElementById('medicineRequestForm').addEventListener('submit', function(e){
+    const admissionId = document.getElementById('medRequestAdmissionId').value;
+    if (!admissionId) {
+        e.preventDefault();
+        nurseError('No Active Admission', 'This patient has no active admission. Please verify before requesting medicine.');
+        return false;
+    }
+});
+
 function openMedicineRequestModal(patientId, patientName, patientNo){
     window.isModalOpen = true;
+    // Reset form first to ensure a clean state
+    document.getElementById('medicineRequestForm').reset();
+
     document.getElementById('medRequestPatientId').value = patientId;
     document.getElementById('medRequestPatientInfo').textContent = `${patientName} (ID: ${patientNo})`;
-    
+
     // Get the active admission ID for this patient
     fetch(`/api/patients/${patientId}/active-admission`)
         .then(response => response.json())
@@ -229,7 +242,6 @@ function openMedicineRequestModal(patientId, patientName, patientNo){
             return;
         });
     
-    document.getElementById('medicineRequestForm').reset();
     document.getElementById('medicineRequestModal').classList.add('show');
 }
 

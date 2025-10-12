@@ -1,0 +1,10 @@
+/* doctor_dashboard.css
+   Imports nurse dashboard styles so doctor dashboard looks identical.
+   This file is intentionally a thin wrapper so we can tweak doctor-specific overrides later.
+*/
+@import url('/css/nursecss/nurse.css');
+@import url('/css/nursecss/dashboard_enhancements.css');
+
+/* Example override slot for doctor-specific fine tuning:
+.nurse-layout .stat-card { border-color: transparent; }
+*/

@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     
                     medicinesDiv.innerHTML = `
                         <div class="view-more-medicines">
-                            <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openMedicineHistoryModal(${patientId}, '${patientName}', '${patientNo}')">
+                            <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openMedicineHistoryModal(${patientId}, '${patientName}', '${patientNo}', ${admissionId || 'null'})">
                                 <i class="fas fa-pills"></i> 
                                 View Medicine Summary (${data.medicines.length} total)
                             </button>

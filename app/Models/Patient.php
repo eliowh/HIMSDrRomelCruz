@@ -307,7 +307,11 @@ class Patient extends Model
 
     public function getAdmissionDiagnosisAttribute()
     {
-        return $this->currentAdmission?->admission_diagnosis;
+        $admission = $this->currentAdmission;
+        if (!$admission) return null;
+
+        // Prefer doctor's finalized diagnosis when available, fall back to initial admission diagnosis
+        return $admission->final_diagnosis ?: $admission->admission_diagnosis;
     }
 
     public function getStatusAttribute()

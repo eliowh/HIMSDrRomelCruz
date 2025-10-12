@@ -56,8 +56,10 @@
                                                 <p><strong>Address:</strong> 
                                                     {{ implode(', ', array_filter([$billing->patient->barangay ?? '', $billing->patient->city ?? '', $billing->patient->province ?? ''])) ?: 'N/A' }}
                                                 </p>
-                                                <p><strong>Room No:</strong> {{ $billing->patient->room_no ?? 'N/A' }}</p>
-                                                <p><strong>Doctor:</strong> {{ $billing->patient->doctor_name ?? 'N/A' }}</p>
+                                                {{-- Prefer admission-specific room & doctor for historical accuracy; fall back to patient fields if missing --}}
+                                                <p><strong>Room No:</strong> {{ $billing->admission->room_no ?? $billing->patient->room_no ?? 'N/A' }}</p>
+                                                <p><strong>Doctor:</strong> {{ $billing->admission->doctor_name ?? $billing->patient->doctor_name ?? 'N/A' }}</p>
+                                                <p><strong>Admission Date:</strong> {{ $billing->admission && $billing->admission->admission_date ? $billing->admission->admission_date->format('M d, Y') : 'N/A' }}</p>
                                             </div>
                                         </div>
                                     </div>

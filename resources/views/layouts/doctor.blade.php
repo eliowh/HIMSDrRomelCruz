@@ -10,12 +10,14 @@
     {{-- main styles used by doctor pages --}}
     <link rel="stylesheet" href="{{ asset('css/doctorcss/doctor.css') }}">
     <link rel="stylesheet" href="{{ asset('css/doctorcss/doctor_patients.css') }}">
+    {{-- per-page styles can be pushed by views (e.g. doctor_home) --}}
+    @stack('styles')
 </head>
 <body>
     {{-- Add top navigation/header (DR. Romel Cruz Hospital + user info) --}}
     @includeIf('doctor.doctor_header')
 
-    <div class="doctor-layout">
+    <div class="doctor-layout nurse-layout">
         {{-- include sidebar/header when available, fail silently if not --}}
         @includeIf('doctor.doctor_sidebar')
         <div class="main-content">

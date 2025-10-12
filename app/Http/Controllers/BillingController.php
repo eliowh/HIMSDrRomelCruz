@@ -38,12 +38,22 @@ class BillingController extends Controller
             $query->where('status', $request->get('status'));
         }
         
+        // Compute summary statistics (use clones to avoid modifying the base query)
+        $totalBillings = (clone $query)->count();
+        $paidBillsCount = (clone $query)->where('status', 'paid')->count();
+        $pendingBillsCount = (clone $query)->where('status', 'pending')->count();
+        // PhilHealth members: count distinct patients who have billings matching the current filter and flagged as philhealth
+        $philhealthMembersCount = (clone $query)
+                                    ->where('is_philhealth_member', true)
+                                    ->distinct()
+                                    ->count('patient_id');
+
         $billings = $query->orderBy('created_at', 'desc')->paginate(20);
-        
+
         // Append search parameters to pagination links
         $billings->appends($request->only(['search', 'status']));
-        
-        return view('billing.index', compact('billings'));
+
+        return view('billing.index', compact('billings', 'totalBillings', 'paidBillsCount', 'pendingBillsCount', 'philhealthMembersCount'));
     }
 
     public function create()
@@ -85,11 +95,20 @@ class BillingController extends Controller
             
             // Check PhilHealth membership - prioritize user input over automatic lookup
             $isPhilhealthMember = $request->boolean('is_philhealth_member');
-            
+
             // If checkbox is not checked, fall back to automatic lookup
             if (!$isPhilhealthMember) {
                 $philhealthMember = PhilhealthMember::findByPatient($patient);
                 $isPhilhealthMember = $philhealthMember && $philhealthMember->isEligibleForCoverage();
+            }
+
+            // Server-side enforcement: if any previous billing for this patient used PhilHealth,
+            // force the flag to true to prevent accidental or malicious unchecking from the client.
+            $hadPreviousPhilhealth = Billing::where('patient_id', $patient->id)
+                                            ->where('is_philhealth_member', true)
+                                            ->exists();
+            if ($hadPreviousPhilhealth) {
+                $isPhilhealthMember = true;
             }
             
             // Generate billing number
@@ -104,17 +123,19 @@ class BillingController extends Controller
             $otherCharges = 0;
             
             foreach ($request->billing_items as $item) {
-                // For professional items, add both case rate and professional fee
+                // For professional items, DO NOT add case rate into the billed total.
+                // The case_rate represents the PhilHealth case rate (coverage) and functions as a discount.
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    $itemTotal = $item['quantity'] * ($caseRate + $professionalFee);
+                    // Only professional fee is added to billed totals
+                    $itemTotal = $item['quantity'] * $professionalFee;
                 } else {
                     $itemTotal = $item['quantity'] * $item['unit_price'];
                 }
-                
+
                 $totalAmount += $itemTotal;
-                
+
                 switch ($item['item_type']) {
                     case 'room':
                         $roomCharges += $itemTotal;
@@ -156,11 +177,12 @@ class BillingController extends Controller
             
             // Create billing items
             foreach ($request->billing_items as $item) {
-                // Calculate correct total amount based on item type
+                // Calculate correct total amount based on item type. Persist total_amount as what will be billed
+                // (case_rate is stored separately and not included in total_amount)
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    $itemTotalAmount = $item['quantity'] * ($caseRate + $professionalFee);
+                    $itemTotalAmount = $item['quantity'] * $professionalFee;
                 } else {
                     $itemTotalAmount = $item['quantity'] * $item['unit_price'];
                 }
@@ -183,9 +205,18 @@ class BillingController extends Controller
             $billing->load('billingItems');
             
             // Calculate deductions and discounts
-            $philhealthDeduction = $billing->calculatePhilhealthDeduction();
+            // PhilHealth deduction is based on sum of case_rate values for professional items when member checked
+            $philhealthDeduction = 0;
+            if ($billing->is_philhealth_member) {
+                foreach ($billing->billingItems as $bi) {
+                    if ($bi->item_type === 'professional' && $bi->case_rate) {
+                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    }
+                }
+            }
+
             $seniorPwdDiscount = $billing->calculateSeniorPwdDiscount();
-            $netAmount = $billing->calculateNetAmount();
+            $netAmount = $billing->total_amount - $philhealthDeduction - $seniorPwdDiscount;
             
             // Update billing with calculations
             $billing->update([
@@ -283,8 +314,9 @@ class BillingController extends Controller
                         // The case rate should remain the same, only professional fee portion changes
                         $caseRate = $item->case_rate ?? 0;
                         $newProfessionalFee = $request->professional_fees;
-                        $newTotalAmount = $caseRate + $newProfessionalFee;
-                        
+                        // total_amount should represent billed amount (professional fee * qty)
+                        $newTotalAmount = ($newProfessionalFee) * ($item->quantity ?: 1);
+
                         $item->update([
                             'unit_price' => $newProfessionalFee,
                             'total_amount' => $newTotalAmount
@@ -309,7 +341,31 @@ class BillingController extends Controller
             $tempBilling->is_senior_citizen = $request->boolean('is_senior_citizen');
             $tempBilling->is_pwd = $request->boolean('is_pwd');
             
-            $philhealthDeduction = $tempBilling->calculatePhilhealthDeduction();
+            // Determine final philhealth flag with server-side enforcement
+            $requestedPhilhealth = $request->boolean('is_philhealth_member');
+            $hasPreviousPhilhealth = Billing::where('patient_id', $billing->patient_id)
+                                            ->where('is_philhealth_member', true)
+                                            ->where('id', '!=', $billing->id)
+                                            ->exists();
+
+            if ($hasPreviousPhilhealth) {
+                $finalIsPhilhealth = true;
+            } else {
+                $finalIsPhilhealth = $requestedPhilhealth;
+            }
+
+            $tempBilling->is_philhealth_member = $finalIsPhilhealth;
+
+            // PhilHealth deduction based on case_rate only when checked
+            $philhealthDeduction = 0;
+            if ($tempBilling->is_philhealth_member) {
+                foreach ($billing->billingItems as $bi) {
+                    if ($bi->item_type === 'professional' && $bi->case_rate) {
+                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    }
+                }
+            }
+
             $seniorPwdDiscount = $tempBilling->calculateSeniorPwdDiscount();
             $netAmount = $totalAmount - $philhealthDeduction - $seniorPwdDiscount;
             
@@ -325,7 +381,7 @@ class BillingController extends Controller
                 'philhealth_deduction' => $philhealthDeduction,
                 'senior_pwd_discount' => $seniorPwdDiscount,
                 'net_amount' => $netAmount,
-                'is_philhealth_member' => $request->boolean('is_philhealth_member'),
+                'is_philhealth_member' => $finalIsPhilhealth,
                 'is_senior_citizen' => $request->boolean('is_senior_citizen'),
                 'is_pwd' => $request->boolean('is_pwd'),
                 // status updates are managed via payment flow and not editable here
@@ -358,6 +414,29 @@ class BillingController extends Controller
                 'status' => $member->getFormattedMembershipStatus(),
                 'expiry_date' => $member->expiry_date->format('M d, Y')
             ] : null
+        ]);
+    }
+
+    /**
+     * Return the last known PhilHealth checkbox status from existing billings for this patient.
+     * If the patient has any previous billing with is_philhealth_member = true, return that fact so
+     * the frontend can auto-check/lock the checkbox to avoid accidental unchecking.
+     */
+    public function lastPhilhealthStatus(Request $request)
+    {
+        $patientId = $request->input('patient_id');
+        if (!$patientId) {
+            return response()->json(['error' => 'patient_id is required'], 400);
+        }
+
+        $lastBilling = Billing::where('patient_id', $patientId)
+                              ->orderBy('created_at', 'desc')
+                              ->first();
+
+        return response()->json([
+            'has_previous_billing' => (bool) $lastBilling,
+            'last_is_philhealth_member' => $lastBilling ? (bool) $lastBilling->is_philhealth_member : false,
+            'philhealth_deduction' => $lastBilling ? ($lastBilling->philhealth_deduction ?? 0) : 0
         ]);
     }
 
@@ -438,20 +517,23 @@ class BillingController extends Controller
                     'unit_price' => $roomPrice,
                 ];
                 
-                // Get ICD-10 service from admission if available
+                // Get ICD-10 service from admission if available. Prefer final_diagnosis when present
+                // (doctor-finalized). If missing, fall back to the initial admission_diagnosis set by the nurse.
                 $icdServices = [];
                 try {
-                    if ($admission->admission_diagnosis) {
+                    $diagnosis = $admission->final_diagnosis ?: $admission->admission_diagnosis;
+
+                    if ($diagnosis) {
                         // Try to get ICD rates from database first
                         $icdRate = \DB::table('icd10namepricerate')
-                            ->where('COL 1', $admission->admission_diagnosis)
+                            ->where('COL 1', $diagnosis)
                             ->first();
-                        
+
                         if ($icdRate) {
                             $icdServices[] = [
                                 'type' => 'professional',
-                                'description' => $icdRate->{'COL 2'} ?? $admission->admission_diagnosis, // Description from COL 2
-                                'icd_code' => $admission->admission_diagnosis,
+                                'description' => $icdRate->{'COL 2'} ?? $diagnosis, // Description from COL 2
+                                'icd_code' => $diagnosis,
                                 'source' => 'admission',
                                 'quantity' => 1,
                                 'case_rate' => $icdRate->{'COL 3'} ?? 2340, // Case rate from COL 3
@@ -461,8 +543,8 @@ class BillingController extends Controller
                             // Fallback with corrected values (case_rate should be lower, professional_fee higher)
                             $icdServices[] = [
                                 'type' => 'professional',
-                                'description' => $admission->admission_diagnosis,
-                                'icd_code' => $admission->admission_diagnosis,
+                                'description' => $diagnosis,
+                                'icd_code' => $diagnosis,
                                 'source' => 'admission',
                                 'quantity' => 1,
                                 'case_rate' => 2340, // Case rate (lower amount)
@@ -471,7 +553,7 @@ class BillingController extends Controller
                         }
                     }
                 } catch (\Exception $e) {
-                    \Log::warning('ICD service lookup failed', ['error' => $e->getMessage(), 'diagnosis' => $admission->admission_diagnosis]);
+                    \Log::warning('ICD service lookup failed', ['error' => $e->getMessage(), 'diagnosis' => ($diagnosis ?? $admission->admission_diagnosis)]);
                     // Continue without ICD services
                 }
                 
@@ -529,7 +611,8 @@ class BillingController extends Controller
                     'id' => $patient->id,
                     'name' => $patient->display_name,
                     'patient_no' => $patient->patient_no,
-                    'admission_diagnosis' => $patient->admission_diagnosis
+                    // Return the effective diagnosis used for billing (final_diagnosis if present)
+                    'admission_diagnosis' => ($diagnosis ?? $patient->admission_diagnosis)
                 ],
                 'services' => $billableServices
             ]);

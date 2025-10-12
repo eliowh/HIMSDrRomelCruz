@@ -219,7 +219,37 @@ document.addEventListener('DOMContentLoaded', function() {
             loadPatientServices(selectedAdmission);
         }
     });
+
+    // If patient prefilled (editing or return), check last philhealth status
+    const prefillPatientId = document.getElementById('patient_id').value;
+    if (prefillPatientId) {
+        checkLastPhilhealthStatus(prefillPatientId);
+    }
 });
+
+function checkLastPhilhealthStatus(patientId) {
+    if (!patientId) return;
+    fetch('{{ route("billing.last.philhealth") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ patient_id: patientId })
+    }).then(r => r.json()).then(data => {
+        const philCheckbox = document.getElementById('is_philhealth_member');
+        if (!philCheckbox) return;
+        if (data.last_is_philhealth_member) {
+            philCheckbox.checked = true;
+            philCheckbox.disabled = true;
+            updatePhilhealthStatus();
+        } else {
+            philCheckbox.disabled = false;
+        }
+    }).catch(err => {
+        console.warn('Failed to fetch last philhealth status', err);
+    });
+}
 
 async function loadPatientServices(admissionId = null) {
     const patientId = document.getElementById('patient_id').value;
@@ -351,7 +381,8 @@ function displayPatientServices(services) {
                         <label class="form-label">Total</label>
                         <div class="form-control-plaintext fw-bold" id="service-total-${index}">
                             ${service.type === 'professional' ? 
-                                '₱' + ((parsePrice(service.case_rate) + parsePrice(service.unit_price)) * parseFloat(service.quantity || 1)).toFixed(2) :
+                                // Display billed total (professional fee * qty). Case rate is shown separately and not added to billed total
+                                '₱' + (parsePrice(service.unit_price) * parseFloat(service.quantity || 1)).toFixed(2) :
                                 '₱' + (parsePrice(service.unit_price) * parseFloat(service.quantity || 1)).toFixed(2)
                             }
                         </div>
@@ -378,8 +409,8 @@ function updateServicePrice(input, index) {
     if (caseRateInput) {
         // Professional service: add case rate + professional fee
         const caseRate = parsePrice(caseRateInput.value);
-        const totalPrice = caseRate + newPrice;
-        total = totalPrice * quantity;
+        // The billed total should only include the professional fee. Case rate is a separate coverage/discount.
+        total = newPrice * quantity;
     } else {
         // Other services: just use unit price
         total = newPrice * quantity;
@@ -478,6 +509,40 @@ function selectPatient(patient) {
     
     // Update PhilHealth status display
     updatePhilhealthStatus();
+
+    // Auto-check PhilHealth checkbox if the patient's last billing had PhilHealth applied
+    try {
+        const philCheckbox = document.getElementById('is_philhealth_member');
+        // Reset checkbox state for the newly selected patient to avoid carrying over previous state
+        if (philCheckbox) {
+            philCheckbox.checked = false;
+            philCheckbox.disabled = false;
+        }
+
+        fetch('{{ route("billing.last.philhealth") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ patient_id: patient.id })
+        }).then(r => r.json()).then(data => {
+            if (!philCheckbox) return;
+            if (data.last_is_philhealth_member) {
+                philCheckbox.checked = true;
+                philCheckbox.disabled = true; // prevent unchecking if historically a PhilHealth billing
+            } else {
+                philCheckbox.checked = false;
+                philCheckbox.disabled = false;
+            }
+            // Update PhilHealth status display after adjusting checkbox
+            updatePhilhealthStatus();
+        }).catch(err => {
+            console.warn('Failed to fetch last philhealth status', err);
+        });
+    } catch (err) {
+        console.warn('Error checking last philhealth status', err);
+    }
     
     // Load patient admissions
     loadPatientAdmissions(patient.id);
@@ -631,11 +696,9 @@ function calculateTotals() {
             let serviceTotal = 0;
             
             if (caseRateInput && professionalFeeInput) {
-                // Professional service: add case rate + professional fee
-                const caseRate = parsePrice(caseRateInput.value);
+                // Professional service: billed total should only include the professional fee.
                 const professionalFee = parsePrice(professionalFeeInput.value);
-                const totalPrice = caseRate + professionalFee;
-                serviceTotal = quantity * totalPrice;
+                serviceTotal = quantity * professionalFee;
             } else {
                 // Other services: just use unit price
                 const unitPrice = professionalFeeInput ? parsePrice(professionalFeeInput.value) : 0;
@@ -646,16 +709,24 @@ function calculateTotals() {
         });
     }
     
-    // PhilHealth deduction
+    // PhilHealth deduction: sum of case_rate for professional items when PhilHealth member is checked
     let philhealthDeduction = 0;
     if (document.getElementById('is_philhealth_member').checked) {
-        philhealthDeduction = parseFloat(subtotal) * 0.15; // Assume 15% coverage
+        services.forEach((service) => {
+            const caseRateInput = service.querySelector('.case-rate-input');
+            const qtyInput = service.querySelector('.quantity-input');
+            const qty = qtyInput ? parseFloat(qtyInput.value) || 1 : 1;
+            if (caseRateInput) {
+                philhealthDeduction += parsePrice(caseRateInput.value) * qty;
+            }
+        });
     }
     
     // Senior/PWD discount
     let seniorPwdDiscount = 0;
     if (document.getElementById('is_senior_citizen').checked || document.getElementById('is_pwd').checked) {
-        seniorPwdDiscount = parseFloat(parseFloat(subtotal) - parseFloat(philhealthDeduction)) * 0.20;
+        // Senior/PWD discount applies on the billed subtotal after PhilHealth deduction is applied
+        seniorPwdDiscount = (parseFloat(subtotal) - parseFloat(philhealthDeduction)) * 0.20;
     }
     
     const netAmount = Math.max(0, parseFloat(subtotal) - parseFloat(philhealthDeduction) - parseFloat(seniorPwdDiscount));

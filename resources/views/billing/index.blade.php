@@ -210,7 +210,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h5>Total Billings</h5>
-                                    <h3>{{ $billings->total() }}</h3>
+                                    <h3>{{ $totalBillings ?? $billings->total() }}</h3>
                                 </div>
                                 <i class="fas fa-file-invoice-dollar fa-2x opacity-75"></i>
                             </div>
@@ -223,7 +223,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h5>Paid Bills</h5>
-                                    <h3>{{ $billings->where('status', 'paid')->count() }}</h3>
+                                    <h3>{{ $paidBillsCount ?? $billings->where('status', 'paid')->count() }}</h3>
                                 </div>
                                 <i class="fas fa-check-circle fa-2x opacity-75"></i>
                             </div>
@@ -236,7 +236,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h5>Pending Bills</h5>
-                                    <h3>{{ $billings->where('status', 'pending')->count() }}</h3>
+                                    <h3>{{ $pendingBillsCount ?? $billings->where('status', 'pending')->count() }}</h3>
                                 </div>
                                 <i class="fas fa-clock fa-2x opacity-75"></i>
                             </div>
@@ -249,7 +249,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h5>PhilHealth Members</h5>
-                                    <h3>{{ $billings->where('is_philhealth_member', true)->count() }}</h3>
+                                    <h3>{{ $philhealthMembersCount ?? $billings->where('is_philhealth_member', true)->count() }}</h3>
                                 </div>
                                 <i class="fas fa-shield-alt fa-2x opacity-75"></i>
                             </div>
