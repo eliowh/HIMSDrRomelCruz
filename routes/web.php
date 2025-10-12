@@ -473,6 +473,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/reports/{report}', [ReportController::class, 'destroy'])->name('admin.reports.destroy');
     Route::get('/admin/reports/{report}/export', [ReportController::class, 'export'])->name('admin.reports.export');
     
+    // FHIR Export Routes
+    Route::get('/admin/fhir', [AdminController::class, 'fhir'])->name('admin.fhir');
+    Route::get('/admin/fhir/export/patients', [AdminController::class, 'exportPatientFhir'])->name('admin.export.patients.fhir');
+    Route::get('/admin/fhir/export/patient', [AdminController::class, 'exportPatientFhir'])->name('admin.export.patient.fhir');
+    Route::get('/admin/fhir/export/encounters', [AdminController::class, 'exportEncountersFhir'])->name('admin.export.encounters.fhir');
+    Route::get('/admin/fhir/export/observations', [AdminController::class, 'exportObservationsFhir'])->name('admin.export.observations.fhir');
+    Route::get('/admin/fhir/export/medications', [AdminController::class, 'exportMedicationsFhir'])->name('admin.export.medications.fhir');
+    Route::get('/admin/fhir/capability', [AdminController::class, 'getFhirCapability'])->name('admin.fhir.capability');
+    
     // ICD-10 Data Import
     Route::post('/admin/icd10/import', [AdminController::class, 'importIcd10'])->name('admin.icd10.import');
 });

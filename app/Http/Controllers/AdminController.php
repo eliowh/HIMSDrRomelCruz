@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\Icd10Import;
+use App\Services\FHIR\FhirService;
 
 class AdminController extends Controller
 {
@@ -1072,5 +1073,266 @@ class AdminController extends Controller
 ';
         
         return $html;
+    }
+
+    /**
+     * Show FHIR export interface
+     */
+    public function fhir()
+    {
+        // Verify admin access
+        $this->verifyAdminAccess();
+
+        // Get counts for the interface
+        $stats = [
+            'total_patients' => Patient::count(),
+            'total_admissions' => \App\Models\Admission::count(),
+            'total_lab_orders' => \App\Models\LabOrder::count(),
+            'total_medications' => \App\Models\PatientMedicine::count() + \App\Models\PharmacyRequest::count(),
+        ];
+
+        return view('admin.admin_fhir', compact('stats'));
+    }
+
+    /**
+     * Export patient data as FHIR JSON
+     */
+    public function exportPatientFhir(Request $request, $patientId = null)
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            
+            // Check if patient_no is provided in request (from form)
+            $patientNo = $request->get('patient_no');
+            
+            if ($patientNo) {
+                // Find patient by patient number
+                $patient = Patient::where('patient_no', $patientNo)->first();
+                
+                if (!$patient) {
+                    return back()->with('error', "Patient with number {$patientNo} not found.");
+                }
+                
+                // Export specific patient by their database ID
+                $bundle = $fhirService->getPatientBundle($patient->id);
+                $filename = "patient_{$patientNo}_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            } elseif ($patientId) {
+                // Export specific patient by ID (from route parameter)
+                $bundle = $fhirService->getPatientBundle($patientId);
+                $filename = "patient_{$patientId}_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            } else {
+                // Export all patients (limited to avoid memory issues)
+                $patients = Patient::with(['admissions', 'labOrders', 'medicines', 'pharmacyRequests'])
+                    ->limit(50) // Limit to prevent memory issues
+                    ->get();
+                
+                $bundle = [
+                    'resourceType' => 'Bundle',
+                    'id' => 'bulk-export-' . uniqid(),
+                    'meta' => [
+                        'lastUpdated' => now()->toISOString()
+                    ],
+                    'type' => 'collection',
+                    'total' => 0,
+                    'entry' => []
+                ];
+
+                foreach ($patients as $patient) {
+                    $patientBundle = $fhirService->getPatientBundle($patient->id);
+                    $bundle['entry'] = array_merge($bundle['entry'], $patientBundle['entry']);
+                }
+
+                $bundle['total'] = count($bundle['entry']);
+                $filename = "all_patients_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            }
+
+            // Return as downloadable JSON file
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Export Error', [
+                'patient_id' => $patientId,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting FHIR data: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export all encounters as FHIR JSON
+     */
+    public function exportEncountersFhir()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            $admissions = \App\Models\Admission::with('patient')->limit(100)->get();
+            
+            $bundle = [
+                'resourceType' => 'Bundle',
+                'id' => 'encounters-export-' . uniqid(),
+                'meta' => [
+                    'lastUpdated' => now()->toISOString()
+                ],
+                'type' => 'collection',
+                'total' => $admissions->count(),
+                'entry' => []
+            ];
+
+            foreach ($admissions as $admission) {
+                $encounter = $fhirService->transformToFhir($admission);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/Encounter/{$admission->id}",
+                    'resource' => $encounter
+                ];
+            }
+
+            $filename = "encounters_fhir_" . date('Y-m-d_H-i-s') . '.json';
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Encounters Export Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting encounters: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export lab observations as FHIR JSON
+     */
+    public function exportObservationsFhir()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            $labOrders = \App\Models\LabOrder::with(['patient', 'labTech'])->limit(100)->get();
+            
+            $bundle = [
+                'resourceType' => 'Bundle',
+                'id' => 'observations-export-' . uniqid(),
+                'meta' => [
+                    'lastUpdated' => now()->toISOString()
+                ],
+                'type' => 'collection',
+                'total' => $labOrders->count(),
+                'entry' => []
+            ];
+
+            foreach ($labOrders as $labOrder) {
+                $observation = $fhirService->transformToFhir($labOrder);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/Observation/{$labOrder->id}",
+                    'resource' => $observation
+                ];
+            }
+
+            $filename = "observations_fhir_" . date('Y-m-d_H-i-s') . '.json';
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Observations Export Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting observations: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export medication statements as FHIR JSON
+     */
+    public function exportMedicationsFhir()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            
+            // Get both patient medicines and pharmacy requests
+            $patientMedicines = \App\Models\PatientMedicine::with('patient')->limit(50)->get();
+            $pharmacyRequests = \App\Models\PharmacyRequest::with('patient')->limit(50)->get();
+            
+            $bundle = [
+                'resourceType' => 'Bundle',
+                'id' => 'medications-export-' . uniqid(),
+                'meta' => [
+                    'lastUpdated' => now()->toISOString()
+                ],
+                'type' => 'collection',
+                'total' => $patientMedicines->count() + $pharmacyRequests->count(),
+                'entry' => []
+            ];
+
+            // Add patient medicines
+            foreach ($patientMedicines as $medicine) {
+                $medicationStatement = $fhirService->transformToFhir($medicine);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/MedicationStatement/pm-{$medicine->id}",
+                    'resource' => $medicationStatement
+                ];
+            }
+
+            // Add pharmacy requests
+            foreach ($pharmacyRequests as $pharmacy) {
+                $medicationStatement = $fhirService->transformToFhir($pharmacy);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/MedicationStatement/pr-{$pharmacy->id}",
+                    'resource' => $medicationStatement
+                ];
+            }
+
+            $filename = "medications_fhir_" . date('Y-m-d_H-i-s') . '.json';
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Medications Export Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting medications: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get FHIR capability statement
+     */
+    public function getFhirCapability()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            $capability = $fhirService->getCapabilityStatement();
+
+            return response()->json($capability, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="fhir_capability_' . date('Y-m-d_H-i-s') . '.json"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error getting FHIR capability: ' . $e->getMessage());
+        }
     }
 }

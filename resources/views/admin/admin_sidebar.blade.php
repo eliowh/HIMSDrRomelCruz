@@ -45,6 +45,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ asset('/admin/fhir') }}"
+                   class="sidebar-btn{{ request()->is('admin/fhir') ? ' active' : '' }}">
+                    <span class="icon">🔗</span> <span class="text">FHIR Export</span>
+                </a>
+            </li>
+            <li>
                 <form action="/logout" method="POST" id="logout-form" class="logout-form">
                     @csrf
                     <button type="button" class="sidebar-btn" onclick="confirmLogout('logout-form')">

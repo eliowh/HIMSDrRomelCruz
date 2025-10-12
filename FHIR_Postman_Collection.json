@@ -1,0 +1,195 @@
+{
+  "info": {
+    "name": "Dr. Romel Cruz FHIR API",
+    "description": "Complete FHIR R4 API collection for hospital data interoperability",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://romelcruz.up.railway.app",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "FHIR Metadata",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/metadata",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "metadata"]
+        },
+        "description": "Get FHIR server capability statement"
+      }
+    },
+    {
+      "name": "Search Patients",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/Patient",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "Patient"]
+        },
+        "description": "Search all patients"
+      }
+    },
+    {
+      "name": "Get Patient by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/Patient/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "Patient", "1"]
+        },
+        "description": "Get specific patient by database ID"
+      }
+    },
+    {
+      "name": "Patient Everything Bundle",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/Patient/1/$everything",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "Patient", "1", "$everything"]
+        },
+        "description": "Get patient with all related resources (encounters, observations, medications)"
+      }
+    },
+    {
+      "name": "Get Encounter",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/Encounter/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "Encounter", "1"]
+        },
+        "description": "Get hospital encounter (admission) by ID"
+      }
+    },
+    {
+      "name": "Get Lab Observation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/Observation/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "Observation", "1"]
+        },
+        "description": "Get laboratory test result by ID"
+      }
+    },
+    {
+      "name": "Get Medication Statement",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/fhir/MedicationStatement/pm-1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "MedicationStatement", "pm-1"]
+        },
+        "description": "Get medication statement by type and ID (pm-X or pr-X)"
+      }
+    },
+    {
+      "name": "Validate FHIR Resource - Valid Patient",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/fhir+json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceType\": \"Patient\",\n  \"id\": \"test-patient-123\",\n  \"name\": [\n    {\n      \"family\": \"Doe\",\n      \"given\": [\"John\"]\n    }\n  ],\n  \"gender\": \"male\",\n  \"birthDate\": \"1990-01-01\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/fhir/$validate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "$validate"]
+        },
+        "description": "Validate a valid FHIR Patient resource"
+      }
+    },
+    {
+      "name": "Validate FHIR Resource - Invalid Patient",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/fhir+json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/fhir+json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceType\": \"Patient\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/fhir/$validate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "fhir", "$validate"]
+        },
+        "description": "Validate an invalid FHIR Patient resource (missing required fields)"
+      }
+    }
+  ]
+}

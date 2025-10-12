@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHIR API Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .endpoint { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+        .endpoint h3 { margin: 0 0 10px 0; color: #333; }
+        .url { font-family: monospace; background: #e8e8e8; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        button { background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .response { margin: 10px 0; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #333; }
+        .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat { text-align: center; padding: 10px; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
+        .test-all { text-align: center; margin: 20px 0; }
+        .test-all button { background: #28a745; font-size: 16px; padding: 12px 24px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 FHIR API Tester</h1>
+            <p>Test your Hospital Information Management System FHIR endpoints</p>
+        </div>
+
+        <div class="test-all">
+            <button onclick="testAllEndpoints()">🚀 Test All Endpoints</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number" id="totalTests">8</div>
+                <div>Total Tests</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="passedTests">0</div>
+                <div>Passed</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="failedTests">0</div>
+                <div>Failed</div>
+            </div>
+        </div>
+
+        <!-- Metadata Endpoint -->
+        <div class="endpoint">
+            <h3>📋 FHIR Capability Statement</h3>
+            <div class="url">/api/fhir/metadata</div>
+            <button onclick="testEndpoint('/api/fhir/metadata', 'metadata')">Test Metadata</button>
+            <div id="metadata-response" class="response" style="display:none;"></div>
+        </div>
+
+        <!-- Patient Endpoints -->
+        <div class="endpoint">
+            <h3>👤 Patient Search</h3>
+            <div class="url">/api/fhir/Patient</div>
+            <button onclick="testEndpoint('/api/fhir/Patient', 'patient-search')">Search All Patients</button>
+            <button onclick="testEndpoint('/api/fhir/Patient?name=Juan', 'patient-search-name')">Search by Name</button>
+            <button onclick="testEndpoint('/api/fhir/Patient?_count=3', 'patient-search-limit')">Search (Limit 3)</button>
+            <div id="patient-search-response" class="response" style="display:none;"></div>
+            <div id="patient-search-name-response" class="response" style="display:none;"></div>
+            <div id="patient-search-limit-response" class="response" style="display:none;"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>👤 Specific Patient</h3>
+            <div class="url">/api/fhir/Patient/1</div>
+            <button onclick="testEndpoint('/api/fhir/Patient/1', 'patient-1')">Get Patient 1</button>
+            <div id="patient-1-response" class="response" style="display:none;"></div>
+        </div>
+
+        <div class="endpoint">
+            <h3>📦 Patient Everything Bundle</h3>
+            <div class="url">/api/fhir/Patient/1/$everything</div>
+            <button onclick="testEndpoint('/api/fhir/Patient/1/$everything', 'patient-everything')">Get Patient Bundle</button>
+            <div id="patient-everything-response" class="response" style="display:none;"></div>
+        </div>
+
+        <!-- Encounter Endpoint -->
+        <div class="endpoint">
+            <h3>🏥 Hospital Encounter</h3>
+            <div class="url">/api/fhir/Encounter/1</div>
+            <button onclick="testEndpoint('/api/fhir/Encounter/1', 'encounter-1')">Get Encounter 1</button>
+            <div id="encounter-1-response" class="response" style="display:none;"></div>
+        </div>
+
+        <!-- Observation Endpoint -->
+        <div class="endpoint">
+            <h3>🧪 Lab Observation</h3>
+            <div class="url">/api/fhir/Observation/3</div>
+            <button onclick="testEndpoint('/api/fhir/Observation/3', 'observation-3')">Get Observation 3</button>
+            <div id="observation-3-response" class="response" style="display:none;"></div>
+        </div>
+
+        <!-- MedicationStatement Endpoint -->
+        <div class="endpoint">
+            <h3>💊 Medication Statement</h3>
+            <div class="url">/api/fhir/MedicationStatement/pm-2</div>
+            <button onclick="testEndpoint('/api/fhir/MedicationStatement/pm-2', 'medication-pm2')">Get Medication pm-2</button>
+            <div id="medication-pm2-response" class="response" style="display:none;"></div>
+        </div>
+
+        <!-- Validation Endpoint -->
+        <div class="endpoint">
+            <h3>✅ Resource Validation</h3>
+            <div class="url">POST /api/fhir/$validate</div>
+            <button onclick="testValidation()">Test Validation</button>
+            <div id="validation-response" class="response" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let passedCount = 0;
+        let failedCount = 0;
+
+        function updateStats() {
+            document.getElementById('passedTests').textContent = passedCount;
+            document.getElementById('failedTests').textContent = failedCount;
+        }
+
+        async function testEndpoint(endpoint, responseId) {
+            const responseDiv = document.getElementById(responseId + '-response');
+            responseDiv.style.display = 'block';
+            responseDiv.className = 'response loading';
+            responseDiv.innerHTML = '🔄 Testing endpoint...';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/fhir+json',
+                        'Content-Type': 'application/fhir+json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    let summary = '';
+                    
+                    switch (data.resourceType) {
+                        case 'CapabilityStatement':
+                            summary = `✅ FHIR ${data.fhirVersion} Server - ${data.name}`;
+                            break;
+                        case 'Patient':
+                            const name = data.name?.[0]?.text || 'Unknown';
+                            const gender = data.gender || 'not specified';
+                            summary = `✅ Patient: ${name} (${gender})`;
+                            break;
+                        case 'Bundle':
+                            summary = `✅ Bundle: ${data.type} with ${data.total} entries`;
+                            break;
+                        case 'Encounter':
+                            summary = `✅ Encounter: ${data.status} - ${data.class?.display || 'Unknown type'}`;
+                            break;
+                        case 'Observation':
+                            const test = data.code?.text || 'Unknown test';
+                            summary = `✅ Observation: ${test} (${data.status})`;
+                            break;
+                        case 'MedicationStatement':
+                            const medication = data.medicationCodeableConcept?.text || 'Unknown medication';
+                            summary = `✅ Medication: ${medication} (${data.status})`;
+                            break;
+                        case 'OperationOutcome':
+                            summary = `✅ Operation: ${data.issue?.[0]?.details?.text || 'Success'}`;
+                            break;
+                        default:
+                            summary = `✅ Success: ${data.resourceType}`;
+                    }
+                    
+                    responseDiv.innerHTML = summary + '<br><br>' + 
+                        '<strong>Raw Response:</strong><br>' + 
+                        '<pre>' + JSON.stringify(data, null, 2).substring(0, 1000) + 
+                        (JSON.stringify(data, null, 2).length > 1000 ? '...' : '') + '</pre>';
+                    
+                    passedCount++;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.innerHTML = `❌ Error: ${error.message}`;
+                failedCount++;
+            }
+            
+            updateStats();
+        }
+
+        async function testValidation() {
+            const responseDiv = document.getElementById('validation-response');
+            responseDiv.style.display = 'block';
+            responseDiv.className = 'response loading';
+            responseDiv.innerHTML = '🔄 Testing validation...';
+
+            const testResource = {
+                "resourceType": "Patient",
+                "id": "test-patient-123",
+                "name": [{"text": "Test Patient"}]
+            };
+
+            try {
+                const response = await fetch('/api/fhir/$validate', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/fhir+json',
+                        'Content-Type': 'application/fhir+json'
+                    },
+                    body: JSON.stringify(testResource)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.resourceType === 'OperationOutcome') {
+                    responseDiv.className = 'response success';
+                    const severity = data.issue?.[0]?.severity || 'unknown';
+                    const message = data.issue?.[0]?.details?.text || 'No message';
+                    responseDiv.innerHTML = `✅ Validation Response: ${severity} - ${message}<br><br>` +
+                        '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    passedCount++;
+                } else {
+                    throw new Error(`Expected OperationOutcome, got ${data.resourceType || 'unknown'}`);
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.innerHTML = `❌ Validation Error: ${error.message}`;
+                failedCount++;
+            }
+            
+            updateStats();
+        }
+
+        async function testAllEndpoints() {
+            // Reset counters
+            passedCount = 0;
+            failedCount = 0;
+            
+            // Test all endpoints
+            await testEndpoint('/api/fhir/metadata', 'metadata');
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between tests
+            
+            await testEndpoint('/api/fhir/Patient', 'patient-search');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testEndpoint('/api/fhir/Patient/1', 'patient-1');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testEndpoint('/api/fhir/Patient/1/$everything', 'patient-everything');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testEndpoint('/api/fhir/Encounter/1', 'encounter-1');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testEndpoint('/api/fhir/Observation/3', 'observation-3');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testEndpoint('/api/fhir/MedicationStatement/pm-2', 'medication-pm2');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testValidation();
+            
+            // Show summary
+            alert(`Testing Complete!\nPassed: ${passedCount}\nFailed: ${failedCount}`);
+        }
+    </script>
+</body>
+</html>
