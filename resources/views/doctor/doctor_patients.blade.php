@@ -51,6 +51,194 @@
     cursor: not-allowed;
     transform: none !important;
 }
+
+/* Expanded container and optimized layout - no horizontal scroll */
+.patients-grid {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 20px;
+    align-items: start;
+    padding: 16px;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Wider table container */
+.nurse-card {
+    max-width: none;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Table wrapper to prevent horizontal scroll */
+.table-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Optimized table columns for better information display */
+.patients-table {
+    width: 100%;
+    min-width: 800px;
+    table-layout: auto;
+}
+
+.patients-table .col-no {
+    width: 80px;
+    min-width: 80px;
+}
+
+.patients-table .col-name {
+    width: 170px;
+    min-width: 170px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 20px;
+}
+
+.patients-table .col-dob {
+    width: 130px;
+    min-width: 130px;
+    padding-left: 15px;
+}
+
+.patients-table .col-location {
+    width: 200px;
+    min-width: 180px;
+    word-wrap: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    max-height: 2.6em;
+}
+
+.patients-table .col-natl {
+    width: 80px;
+    min-width: 80px;
+}
+
+.patients-table .col-actions {
+    width: 160px;
+    min-width: 160px;
+}
+
+/* Better text wrapping for patient names */
+.col-name {
+    font-weight: 600;
+    color: #2c5f2d;
+}
+
+/* Enhanced location display */
+.col-location {
+    font-size: 0.95rem;
+    color: #495057;
+}
+
+/* Responsive adjustments - prevent horizontal scroll */
+@media (max-width: 1400px) {
+    .patients-grid {
+        grid-template-columns: 1fr 400px;
+        gap: 18px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .patients-grid {
+        grid-template-columns: 1fr 380px;
+        gap: 16px;
+        padding: 12px;
+    }
+    
+    .patients-table .col-location {
+        width: 180px;
+        min-width: 160px;
+    }
+    
+    .patients-table .col-name {
+        width: 150px;
+        min-width: 150px;
+        padding-right: 15px;
+    }
+    
+    .patients-table .col-dob {
+        width: 120px;
+        min-width: 120px;
+        padding-left: 12px;
+    }
+    
+    .patients-table .col-actions {
+        width: 140px;
+        min-width: 140px;
+    }
+    
+    .patients-table {
+        min-width: 720px;
+    }
+}
+
+@media (max-width: 960px) {
+    .patients-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 10px;
+    }
+    
+    .details-column {
+        order: 2;
+    }
+    
+    .list-column {
+        order: 1;
+    }
+    
+    .patients-table {
+        min-width: 680px;
+    }
+    
+    .patients-table .col-actions {
+        width: 120px;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    .patients-grid {
+        padding: 8px;
+    }
+    
+    .table-wrap {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .patients-table {
+        min-width: 600px;
+    }
+    
+    .patients-table .col-location {
+        width: 150px;
+        min-width: 130px;
+    }
+    
+    .patients-table .col-name {
+        width: 120px;
+        min-width: 120px;
+    }
+    
+    .patients-table .col-actions {
+        width: 100px;
+        min-width: 100px;
+    }
+    
+    .col-actions .btn {
+        padding: 6px 8px;
+        font-size: 0.85rem;
+    }
+}
 </style>
 <div class="patients-grid">
     <div class="list-column">
@@ -116,7 +304,10 @@
                                 <td class="col-location">{{ $p->barangay ? $p->barangay.',' : '' }} {{ $p->city }}, {{ $p->province }}</td>
                                 <td class="col-natl">{{ $p->nationality }}</td>
                                 <td class="col-actions">
-                                    <button type="button" class="btn view-btn js-open-patient">View</button>
+                                    <div style="display:flex;gap:8px;">
+                                        <button type="button" class="btn view-btn js-open-patient">View</button>
+                                        <button type="button" class="btn view-btn finalize-btn" onclick="handleRowFinalizeClick(this)">Finalize</button>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -193,101 +384,113 @@
 @include('doctor.modals.medicine_history_modal')
 @include('doctor.modals.lab_results_modal')
 @include('doctor.modals.notification_system')
+@include('doctor.modals.finalize_diagnosis_modal')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 @push('scripts')
 <style>
-/* Admission Summary Styles */
+/* Admission Summary Styles (original design) */
+.admission-count {
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 14px;
+}
+
 .admissions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
     max-height: 400px;
     overflow-y: auto;
 }
 
-.admission-card {
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 16px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+.admission-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    background: #fafafa;
+    transition: all 0.2s ease;
 }
 
-.admission-card:hover {
-    border-color: #007bff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.admission-card.selected-admission {
-    border-color: #007bff;
-    background: #f8f9ff;
-    box-shadow: 0 4px 12px rgba(0,123,255,0.2);
-}
-
-.admission-card.active-admission {
-    border-color: #28a745;
-}
-
-.admission-card.active-admission.selected-admission {
+.admission-item.active-admission {
     border-color: #28a745;
     background: #f8fff9;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);
 }
 
 .admission-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 6px 6px 0 0;
 }
 
-.admission-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.admission-item.active-admission .admission-header {
+    background: #e8f5e8;
+    border-bottom-color: #28a745;
 }
 
-.active-badge {
-    background: #28a745;
-    color: white;
-    padding: 2px 8px;
+.admission-title {
+    font-weight: bold;
+    font-size: 13px;
+    color: #333;
+}
+
+.badge {
+    padding: 4px 8px;
     border-radius: 12px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: bold;
     text-transform: uppercase;
 }
 
-.admission-date {
-    color: #6c757d;
-    font-size: 14px;
+.badge-success {
+    background: #28a745;
+    color: white;
+}
+
+.badge-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.clickable-admission {
+    transition: all 0.2s ease;
+}
+
+.clickable-admission:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+}
+
+.selected-admission {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
 }
 
 .admission-details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
 }
 
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: #495057;
+.admission-info, .admission-diagnosis, .admission-dates {
+    margin-bottom: 6px;
+    line-height: 1.4;
 }
 
-.detail-item i {
-    color: #007bff;
-    width: 16px;
+.admission-info strong,
+.admission-diagnosis strong,
+.admission-dates strong {
+    color: #555;
 }
 
-.loading-admissions, .no-admissions, .error-admissions {
+.no-admissions, .error-admissions, .admission-loading {
     text-align: center;
     padding: 20px;
-    color: #6c757d;
+    color: #666;
     font-style: italic;
 }
 
@@ -583,47 +786,65 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Function to render admission summary
+    // Function to render admission summary (matching nurse layout exactly)
     function renderAdmissionSummary(admissions, patientId) {
         const summaryContent = document.getElementById('admission-summary-content');
-        
-        let html = '<div class="admissions-list">';
-        
+        if (!summaryContent) return;
+
+        let admissionsHtml = '';
         admissions.forEach((admission, index) => {
             const isActive = admission.status === 'active';
-            const isSelected = index === 0; // Select first (most recent) admission by default
-            
-            html += `
-                <div class="admission-card ${isActive ? 'active-admission' : ''} ${isSelected ? 'selected-admission' : ''}" 
+            const statusBadge = isActive ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-secondary">Discharged</span>';
+
+            admissionsHtml += `
+                <div class="admission-item ${isActive ? 'active-admission' : ''} clickable-admission" 
                      data-admission-id="${admission.id}" 
-                     onclick="selectAdmission(${admission.id}, ${patientId}, this)">
+                     onclick="selectAdmission(${admission.id}, ${patientId}, this)"
+                     style="cursor: pointer;">
                     <div class="admission-header">
-                        <div class="admission-info">
-                            <strong>${admission.admission_type || 'N/A'} - Room ${admission.room_no || 'N/A'}</strong>
-                            ${isActive ? '<span class="active-badge">Active</span>' : ''}
-                        </div>
-                        <div class="admission-date">${formatDate(admission.admission_date)}</div>
+                        <span class="admission-title">Admission #${admission.admission_number || admission.id}</span>
+                        ${statusBadge}
                     </div>
                     <div class="admission-details">
-                        <div class="detail-item">
-                            <i class="fas fa-user-md"></i>
-                            <span>${admission.doctor_name || 'N/A'} (${admission.doctor_type || 'N/A'})</span>
+                        <div class="admission-info">
+                            <strong>Room:</strong> ${admission.room_no || 'N/A'} | 
+                            <strong>Type:</strong> ${admission.admission_type || 'N/A'} | 
+                            <strong>Doctor:</strong> ${admission.doctor_name || 'N/A'}
                         </div>
-                        <div class="detail-item">
-                            <i class="fas fa-notes-medical"></i>
-                            <span>${admission.admission_diagnosis || 'No diagnosis'}</span>
+                        <div class="admission-diagnosis">
+                            <strong>Diagnosis:</strong> ${admission.admission_diagnosis || 'N/A'}
+                            ${admission.final_diagnosis ? `<br><strong>Final Diagnosis:</strong> <span style="color: #28a745; font-weight: 600;">${admission.final_diagnosis}</span>` : ''}
+                        </div>
+                        <div class="admission-dates">
+                            <strong>Admitted:</strong> ${formatDateTime(admission.admission_date)} 
+                            ${admission.discharge_date ? `| <strong>Discharged:</strong> ${formatDateTime(admission.discharge_date)}` : ''}
                         </div>
                     </div>
                 </div>
             `;
         });
-        
-        html += '</div>';
-        summaryContent.innerHTML = html;
-        
-        // Auto-select first admission and load its data
-        if (admissions.length > 0) {
-            selectAdmission(admissions[0].id, patientId, null, true);
+
+        const hasActive = admissions.some(a => a.status === 'active');
+        const newAdmissionButton = !hasActive ? `
+            <div class="new-admission-section">
+                <button type="button" class="btn btn-success btn-sm new-admission-btn" onclick="openNewAdmissionModal(${patientId})">
+                    <i class="fas fa-plus"></i> New Admission
+                </button>
+            </div>
+        ` : '';
+
+        summaryContent.innerHTML = `
+            <div class="admission-count">Total Admissions: ${admissions.length}</div>
+            ${newAdmissionButton}
+            <div class="admissions-list">${admissionsHtml}</div>
+        `;
+
+        // Auto-load active admission if present or most recent
+        const activeAdmission = admissions.find(a => a.status === 'active');
+        if (activeAdmission) {
+            setTimeout(() => selectAdmission(activeAdmission.id, patientId, null, true), 100);
+        } else if (admissions.length > 0) {
+            setTimeout(() => selectAdmission(admissions[0].id, patientId, null, true), 100);
         }
     }
 
@@ -1199,6 +1420,32 @@ window.onclick = function(event) {
     if (event.target === editModal) {
         closeModal();
     }
+}
+
+// Handle clicking finalize on a patient row. It fetches active admission and opens modal.
+function handleRowFinalizeClick(button) {
+    try {
+        const row = button.closest('.patient-row');
+        if (!row) { alert('No patient row found'); return; }
+        const patient = JSON.parse(row.getAttribute('data-patient'));
+        if (!patient || !patient.id) { alert('Patient data missing'); return; }
+        // fetch active admission for this patient
+        fetch(`/doctor/api/patients/${patient.id}/active-admission`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.admission) {
+                    const admission = data.admission;
+                    // Open finalize modal with admission id
+                    if (typeof window.openFinalizeModal === 'function') {
+                        window.openFinalizeModal(admission.id);
+                    } else {
+                        alert('Finalize modal not available');
+                    }
+                } else {
+                    alert(data.message || 'No active admission found for this patient');
+                }
+            }).catch(e => { console.error('Error fetching active admission', e); alert('Failed to fetch active admission'); });
+    } catch (e) { console.error(e); alert('Failed to open finalize modal'); }
 }
 </script>
 @endpush

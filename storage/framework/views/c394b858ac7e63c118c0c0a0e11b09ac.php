@@ -1,32 +1,30 @@
-@extends('layouts.app')
+<?php $__env->startSection('title','Patients'); ?>
 
-@section('title','Patients')
+<?php $__env->startSection('content'); ?>
+<?php $patients = $patients ?? collect(); $q = $q ?? ''; ?>
 
-@section('content')
-@php $patients = $patients ?? collect(); $q = $q ?? ''; @endphp
-
-    <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_patients.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
+    <link rel="stylesheet" href="<?php echo e(asset('css/nursecss/nurse_patients.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset('css/pagination.css')); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('css/nursecss/edit_patient_modal.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/nursecss/two_column_form.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/nursecss/suggestion_dropdowns.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
+    <link rel="stylesheet" href="<?php echo e(asset('css/nursecss/edit_patient_modal.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset('css/nursecss/two_column_form.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset('css/nursecss/suggestion_dropdowns.css')); ?>">
+    <link rel="stylesheet" href="<?php echo e(asset('css/pharmacycss/pharmacy.css')); ?>">
 <div class="patients-grid">
     <div class="list-column">
         <div class="nurse-card">
             <div class="patients-header">
                 <h3>Patients</h3>
                 <form method="GET" class="patients-search">
-                    <input type="search" name="q" value="{{ $q }}" placeholder="Search..." class="search-input">
+                    <input type="search" name="q" value="<?php echo e($q); ?>" placeholder="Search..." class="search-input">
                 </form>
             </div>
 
-            @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
+            <?php if(session('success')): ?>
+                <div class="alert alert-success"><?php echo e(session('success')); ?></div>
+            <?php endif; ?>
 
-            @if($patients->count())
+            <?php if($patients->count()): ?>
                 <div class="table-wrap">
                     <table class="patients-table" id="patientsTable">
                         <thead>
@@ -40,8 +38,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                        @foreach($patients as $p)
-                            @php
+                        <?php $__currentLoopData = $patients; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
                                 $patientData = [
                                     'id' => $p->id,
                                     'patient_no' => $p->patient_no,
@@ -62,25 +60,25 @@
                                     'admission_diagnosis' => $p->admission_diagnosis,
                                     'created_at' => $p->created_at ? $p->created_at->format('Y-m-d H:i:s') : null
                                 ];
-                            @endphp
-                            <tr class="patient-row" data-patient="{{ json_encode($patientData) }}">
-                                <td class="col-no">{{ $p->patient_no }}</td>
-                                <td class="col-name">{{ $p->last_name }}, {{ $p->first_name }}{{ $p->middle_name ? ' '.$p->middle_name : '' }}</td>
+                            ?>
+                            <tr class="patient-row" data-patient="<?php echo e(json_encode($patientData)); ?>">
+                                <td class="col-no"><?php echo e($p->patient_no); ?></td>
+                                <td class="col-name"><?php echo e($p->last_name); ?>, <?php echo e($p->first_name); ?><?php echo e($p->middle_name ? ' '.$p->middle_name : ''); ?></td>
                                 <td class="col-dob">
-                                    {{ $p->date_of_birth ? $p->date_of_birth->format('Y-m-d') : '-' }}<br>
-                                    @php
+                                    <?php echo e($p->date_of_birth ? $p->date_of_birth->format('Y-m-d') : '-'); ?><br>
+                                    <?php
                                         $ageYears = $p->date_of_birth ? intval($p->date_of_birth->diffInYears(now())) : null;
-                                    @endphp
-                                    <small class="text-muted">{{ $ageYears !== null ? $ageYears.' years' : '-' }}</small>
+                                    ?>
+                                    <small class="text-muted"><?php echo e($ageYears !== null ? $ageYears.' years' : '-'); ?></small>
                                 </td>
-                                <td class="col-location">{{ $p->barangay ? $p->barangay.',' : '' }} {{ $p->city }}, {{ $p->province }}</td>
-                                <td class="col-natl">{{ $p->nationality }}</td>
+                                <td class="col-location"><?php echo e($p->barangay ? $p->barangay.',' : ''); ?> <?php echo e($p->city); ?>, <?php echo e($p->province); ?></td>
+                                <td class="col-natl"><?php echo e($p->nationality); ?></td>
                                 <td class="col-actions">
                                     <button type="button" class="btn btn-primary btn-sm view-btn js-open-patient"><i class="fas fa-eye"></i> View</button>
-                                    <button type="button" class="btn btn-info btn-sm request-btn" onclick="openLabRequestModal({{ $p->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $p->patient_no }}')"><i class="fas fa-flask"></i> Request Lab</button>
-                                    <button type="button" class="btn btn-warning btn-sm request-btn" onclick="openMedicineRequestModal({{ $p->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $p->patient_no }}')"><i class="fas fa-pills"></i> Request Medicine</button>
+                                    <button type="button" class="btn btn-info btn-sm request-btn" onclick="openLabRequestModal(<?php echo e($p->id); ?>, '<?php echo e($p->first_name); ?> <?php echo e($p->last_name); ?>', '<?php echo e($p->patient_no); ?>')"><i class="fas fa-flask"></i> Request Lab</button>
+                                    <button type="button" class="btn btn-warning btn-sm request-btn" onclick="openMedicineRequestModal(<?php echo e($p->id); ?>, '<?php echo e($p->first_name); ?> <?php echo e($p->last_name); ?>', '<?php echo e($p->patient_no); ?>')"><i class="fas fa-pills"></i> Request Medicine</button>
                                     
-                                    @php
+                                    <?php
                                         // Check if patient has active admission with paid billing
                                         $activeAdmission = $p->admissions()->where('status', 'active')->first();
                                         $canDischarge = false;
@@ -88,24 +86,24 @@
                                             $paidBilling = $activeAdmission->billings()->where('status', 'paid')->first();
                                             $canDischarge = $paidBilling !== null;
                                         }
-                                    @endphp
+                                    ?>
                                     
-                                    @if($canDischarge)
+                                    <?php if($canDischarge): ?>
                                         <button type="button" class="btn btn-success btn-sm discharge-btn" 
-                                                onclick="dischargePatient({{ $activeAdmission->id }}, '{{ $p->first_name }} {{ $p->last_name }}', '{{ $activeAdmission->admission_number }}')"
+                                                onclick="dischargePatient(<?php echo e($activeAdmission->id); ?>, '<?php echo e($p->first_name); ?> <?php echo e($p->last_name); ?>', '<?php echo e($activeAdmission->admission_number); ?>')"
                                                 title="Discharge Patient (Billing Cleared)">
                                             <i class="fas fa-sign-out-alt"></i> Discharge
                                         </button>
-                                    @endif
+                                    <?php endif; ?>
                                 </td>
                             </tr>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </tbody>
                     </table>
                 </div>                
-            @else
+            <?php else: ?>
                 <div class="alert alert-info">No patients found.</div>
-            @endif
+            <?php endif; ?>
         </div>        
     </div>
 
@@ -159,19 +157,20 @@
     </div>
 </div>
 <div class="pagination-wrapper">
-    {{ $patients->links('components.custom-pagination') }}
+    <?php echo e($patients->links('components.custom-pagination')); ?>
+
 </div>
 
-@include('nurse.modals.lab_request_modal')
-@include('nurse.modals.medicine_request_modal')
-@include('nurse.modals.edit_patient_modal')
-@include('nurse.modals.medicine_history_modal')
-@include('nurse.modals.lab_results_modal')
-@include('nurse.modals.new_admission_modal')
+<?php echo $__env->make('nurse.modals.lab_request_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php echo $__env->make('nurse.modals.medicine_request_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php echo $__env->make('nurse.modals.edit_patient_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php echo $__env->make('nurse.modals.medicine_history_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php echo $__env->make('nurse.modals.lab_results_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php echo $__env->make('nurse.modals.new_admission_modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // helper to read CSRF token from meta tag or hidden input
@@ -1632,8 +1631,9 @@ function dischargePatient(admissionId, patientName, admissionNumber) {
 }
 </style>
 
-@endpush
+<?php $__env->stopPush(); ?>
 
-@include('nurse.modals.notification_system')
+<?php echo $__env->make('nurse.modals.notification_system', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\xamppLatest\htdocs\HIMSDrRomelCruz\resources\views/nurse/nurse_patients.blade.php ENDPATH**/ ?>

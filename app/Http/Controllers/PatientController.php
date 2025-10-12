@@ -392,4 +392,30 @@ class PatientController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Finalize an admission with final diagnosis (doctor action)
+     */
+    public function finalizeAdmission(Request $request, $admissionId)
+    {
+        try {
+            $validated = $request->validate([
+                'final_diagnosis' => 'required|string|max:2000',
+                'final_diagnosis_description' => 'nullable|string|max:2000',
+            ]);
+
+            $admission = Admission::findOrFail($admissionId);
+
+            $admission->update([
+                'final_diagnosis' => $validated['final_diagnosis'],
+                'final_diagnosis_description' => $validated['final_diagnosis_description'] ?? null,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Final diagnosis saved']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to finalize admission: ' . $e->getMessage()], 500);
+        }
+    }
 }

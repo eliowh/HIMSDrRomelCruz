@@ -18,6 +18,8 @@ class Admission extends Model
         'doctor_name',
         'doctor_type',
         'admission_diagnosis',
+        'final_diagnosis',
+        'final_diagnosis_description',
         'admission_date',
         'discharge_date',
         'status',
