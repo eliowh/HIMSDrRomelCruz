@@ -475,6 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </div>
                                     <div class="admission-diagnosis">
                                         <strong>Diagnosis:</strong> ${admission.admission_diagnosis || 'N/A'}
+                                        ${admission.final_diagnosis ? `<br><strong>Final Diagnosis:</strong> <span style="color: #28a745; font-weight: 600;">${admission.final_diagnosis}</span>` : ''}
                                     </div>
                                     <div class="admission-dates">
                                         <strong>Admitted:</strong> ${formatDateTime(admission.admission_date)} 
