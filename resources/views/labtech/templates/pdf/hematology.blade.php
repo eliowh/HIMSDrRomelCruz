@@ -107,14 +107,11 @@
     <div class="footer">
         <table style="width:100%; border-collapse:collapse;">
             <tr class="sign-row">
-                <td style="border:1px solid #000; border-right:none; width:20%;"></td>
-                <td style="border:1px solid #000; border-right:none; width:20%;"></td>
-                <td style="border:1px solid #000; border-right:none; width:20%;"></td>
-                <td style="border:1px solid #000; border-right:none; width:20%;"></td>
+                <td style="border:1px solid #000; border-right:none; width:80%;"></td>
                 <td style="border:1px solid #000; width:20%; vertical-align:bottom; text-align:center; font-size:10px; padding-bottom:4px;">
-                    <div style="border-top:1px solid #000; width:100%; padding-top:4px; font-weight:600;">{{ isset($currentUser) && $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? 'Medical Technologist') }}</div>
-                    <div style="font-size:9px;">License No.: {{ $signature['license_no'] ?? '' }}</div>
-                    <div style="font-size:10px; font-weight:700; margin-top:4px;">{{ strtoupper($signature['designation'] ?? 'MEDICAL TECHNOLOGIST') }}</div>
+                    <div style="border-top:1px solid #000; width:100%; padding-top:4px; font-weight:600;">{{ $currentUser->name ?? 'Lab Technician' }}</div>
+                    <div style="font-size:9px;">License No.: {{ $currentUser->license_number ?? 'N/A' }}</div>
+                    <div style="font-size:10px; font-weight:700; margin-top:4px;">{{ strtoupper($currentUser->role === 'lab_technician' ? 'MEDICAL TECHNOLOGIST' : ($currentUser->role ?? 'LAB STAFF')) }}</div>
                 </td>
             </tr>
         </table>
