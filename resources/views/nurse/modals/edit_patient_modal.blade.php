@@ -43,12 +43,16 @@
                     
                     <div class="form-group">
                         <label for="edit_province">Province</label>
-                        <input id="edit_province" name="province" placeholder="Enter province" />
+                        <select id="edit_province" name="province" data-selected="">
+                            <option value="" disabled selected>-- Loading provinces... --</option>
+                        </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="edit_city">City</label>
-                        <input id="edit_city" name="city" placeholder="Enter city" />
+                        <select id="edit_city" name="city" data-selected="">
+                            <option value="" disabled selected>-- Select province first --</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -135,6 +139,78 @@
                         </select>
                     </div>
                     
+                    <!-- Health History Section -->
+                    <div class="form-divider"></div>
+                    <div class="section-header full-width">
+                        <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">General Health History</h4>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_chronic_illnesses">Chronic Illnesses</label>
+                        <textarea id="edit_chronic_illnesses" name="chronic_illnesses" rows="2" placeholder="Chronic illnesses (diabetes, hypertension, etc.)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_hospitalization_history">Hospitalization History</label>
+                        <textarea id="edit_hospitalization_history" name="hospitalization_history" rows="2" placeholder="Previous hospitalizations (reason and dates)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_surgery_history">Surgery History</label>
+                        <textarea id="edit_surgery_history" name="surgery_history" rows="2" placeholder="Previous surgeries (type and dates)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_accident_injury_history">Accident/Injury History</label>
+                        <textarea id="edit_accident_injury_history" name="accident_injury_history" rows="2" placeholder="Significant accidents or injuries"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_current_medications">Current Medications</label>
+                        <textarea id="edit_current_medications" name="current_medications" rows="2" placeholder="Current medications, dosages, and frequency"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_long_term_medications">Long-term Medications</label>
+                        <textarea id="edit_long_term_medications" name="long_term_medications" rows="2" placeholder="Previous long-term medications"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_known_allergies">Known Allergies</label>
+                        <textarea id="edit_known_allergies" name="known_allergies" rows="2" placeholder="Allergies and reactions"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_family_history_chronic">Family History of Chronic Diseases</label>
+                        <textarea id="edit_family_history_chronic" name="family_history_chronic" rows="2" placeholder="Family history of chronic diseases"></textarea>
+                    </div>
+
+                    <!-- Social History Section -->
+                    <div class="form-divider"></div>
+                    <div class="section-header full-width">
+                        <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">Social History</h4>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_smoking_history">Smoking History</label>
+                        <textarea id="edit_smoking_history" name="smoking_history" rows="2" placeholder="Smoking frequency, duration, and type"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_alcohol_consumption">Alcohol Consumption</label>
+                        <textarea id="edit_alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Frequency and type of alcohol consumption"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_recreational_drugs">Recreational Drugs</label>
+                        <textarea id="edit_recreational_drugs" name="recreational_drugs" rows="2" placeholder="Recreational drug use"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_exercise_activity">Exercise/Physical Activity</label>
+                        <textarea id="edit_exercise_activity" name="exercise_activity" rows="2" placeholder="Exercise routine and physical activity level"></textarea>
+                    </div>
+
                     <div class="form-actions full-width">
                         <button type="button" class="btn cancel-btn modal-close">Cancel</button>
                         <button id="savePatientBtn" type="button" class="btn submit-btn">Save Changes</button>
@@ -757,6 +833,229 @@ document.addEventListener('DOMContentLoaded', function() {
         window.initializeDoctorField = initializeDoctorField;
     })();
 
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Populate edit modal province/city selects using the same proxy endpoints
+    const API_BASE = '/api/locations';
+    const provinceSel = document.getElementById('edit_province');
+    const citySel = document.getElementById('edit_city');
+
+    function clearSelect(sel) {
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+    }
+
+    function addOption(sel, value, text, isSelected, dataCode) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        if (isSelected) opt.selected = true;
+        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+        sel.appendChild(opt);
+    }
+
+    function normalize(s) {
+        if (!s) return '';
+        return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w\s]/g, '').toLowerCase().trim();
+    }
+
+    // capture any prefilled values (safeSetValue may have set .value before options are added)
+    const preSelectedProvinceValue = document.getElementById('edit_province')?.value || '';
+    let preSelectedCityValue = document.getElementById('edit_city')?.value || '';
+
+    let provincesList = [];
+    fetch(API_BASE + '/provinces')
+        .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+        .then(list => {
+            provincesList = Array.isArray(list) ? list : [];
+            clearSelect(provinceSel);
+            addOption(provinceSel, '', '-- Select Province --', false, '');
+            provincesList.forEach(p => {
+                const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
+                const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
+                if (!name) return;
+                addOption(provinceSel, name, name, false, code);
+            });
+
+            // If safeSetValue already set a province value (string), try to preselect and load cities
+            const preProv = provinceSel.getAttribute('data-selected') || '';
+            const preFromField = preSelectedProvinceValue || document.getElementById('edit_province')?.value || '';
+            if (preFromField) {
+                // try to find a matching option directly
+                console.debug('Edit modal: detected prefilled province value ->', preFromField);
+                let opt = Array.from(provinceSel.options).find(o => o.value === preFromField);
+                let code = opt ? opt.dataset.code : '';
+                if (!opt && provincesList.length) {
+                    const normTarget = normalize(preFromField);
+                    const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                    if (found) {
+                        // find option that matches found.name (case-insensitive normalize)
+                        opt = Array.from(provinceSel.options).find(o => normalize(o.value) === normalize(found.name || found.province_name || found.provDesc || found.prov_name || found.province || '')) || null;
+                        code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                    }
+                }
+                if (opt) opt.selected = true;
+                if (preFromField) {
+                    console.debug('Edit modal: preselecting province, resolved code ->', code);
+                    const resolvedOpt = Array.from(provinceSel.options).find(o => o.value === preFromField) || Array.from(provinceSel.options).find(o => o.dataset && o.dataset.code === code);
+                    if (resolvedOpt) provinceSel.value = resolvedOpt.value;
+                    provinceSel.dispatchEvent(new Event('change', { bubbles: true }));
+                    loadCitiesForProvince(preFromField, code);
+                }
+            }
+        })
+        .catch(err => {
+            console.warn('Failed to load provinces for edit modal', err);
+            clearSelect(provinceSel);
+            addOption(provinceSel, '', '-- Unable to load provinces --', false, '');
+        });
+
+    function loadCitiesForProvince(provinceName, provinceCode) {
+        clearSelect(citySel);
+        addOption(citySel, '', '-- Loading cities... --', false, '');
+
+        const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
+        fetch(citiesUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No cities'))
+            .then(list => {
+                clearSelect(citySel);
+                addOption(citySel, '', '-- Select City --', false, '');
+
+                let matched = [];
+                if (provinceCode) {
+                    matched = list.filter(c => {
+                        const ccode = c.provinceCode || c.provCode || c.province_code || c.provinceId || c.province_id || c.prov_code || c.province || c.psgc10DigitCode || c.psgc10digitcode || c.code || c.id || '';
+                        return ccode && (ccode.toString() === provinceCode.toString());
+                    });
+                }
+
+                if (!matched.length && provinceName) {
+                    const normTarget = normalize(provinceName);
+                    matched = list.filter(c => {
+                        const prov = (c.province_name || c.provDesc || c.prov_name || c.province || c.region || '') + '';
+                        const cname = (c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '') + '';
+                        return normalize(prov) === normTarget || normalize(prov).includes(normTarget) || normalize(cname).includes(normTarget);
+                    });
+                }
+
+                if (!matched.length && provinceName) {
+                    const normTarget = normalize(provinceName);
+                    matched = list.filter(c => normalize(c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '').includes(normTarget));
+                }
+
+                if (!matched.length) {
+                    clearSelect(citySel);
+                    addOption(citySel, '', '-- No cities found for selected province --', false, '');
+                    return;
+                }
+
+                matched.forEach(c => {
+                    const cname = c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '';
+                    if (!cname) return;
+                    const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
+                    addOption(citySel, cname, cname, isSelected, c.code || c.city_code || c.id || '');
+                    // if matched one is selected, clear preSelectedCityValue so we don't select multiple
+                    if (isSelected) preSelectedCityValue = '';
+                });
+                // Force selection after options are added — retry briefly if options aren't present yet
+                function attemptSelectCity(target, attemptsLeft = 3) {
+                    if (!target) return;
+                    const direct = Array.from(citySel.options).find(o => o.value === target);
+                    if (direct) {
+                        citySel.value = direct.value;
+                        citySel.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
+                    const normTarget = normalize(target);
+                    const foundOpt = Array.from(citySel.options).find(o => normalize(o.value) === normTarget || normalize(o.textContent) === normTarget);
+                    if (foundOpt) {
+                        citySel.value = foundOpt.value;
+                        citySel.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
+                    if (attemptsLeft > 0) {
+                        const delay = attemptsLeft === 3 ? 50 : attemptsLeft === 2 ? 150 : 300;
+                        setTimeout(() => attemptSelectCity(target, attemptsLeft - 1), delay);
+                    }
+                }
+                if (preSelectedCityValue) attemptSelectCity(preSelectedCityValue);
+            })
+            .catch(err => {
+                console.warn('Failed to load cities for edit modal', err);
+                clearSelect(citySel);
+                addOption(citySel, '', '-- Unable to load cities --', false, '');
+            });
+    }
+
+    provinceSel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const provName = selOpt ? selOpt.value : '';
+        const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (provName) loadCitiesForProvince(provName, provCode);
+        else {
+            clearSelect(citySel);
+            addOption(citySel, '', '-- Select province first --', false, '');
+        }
+    });
+
+    // When the modal opens (class 'open' added), ensure preselection triggers city loading
+    const modalEl = document.getElementById('editModal');
+    if (modalEl) {
+        const openObserver = new MutationObserver(() => {
+            if (modalEl.classList.contains('open') || modalEl.classList.contains('show')) {
+                // give other scripts a moment to set values
+                setTimeout(() => {
+                    try {
+                        const sel = document.getElementById('edit_province');
+                        const city = document.getElementById('edit_city');
+                        if (!sel) return;
+                        const currentVal = sel.value || '';
+                        // if a province value exists but city select still has only the default option, load cities
+                        const cityOptionsCount = city ? city.options.length : 0;
+                        if (currentVal && cityOptionsCount <= 1) {
+                            // find code if available
+                            let opt = Array.from(sel.options).find(o => o.value === currentVal);
+                            let code = opt ? opt.dataset.code : '';
+                            if (!code) {
+                                // try normalize lookup in provincesList
+                                const normTarget = normalize(currentVal);
+                                const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                                if (found) code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                            }
+                            loadCitiesForProvince(currentVal, code);
+                        }
+                    } catch (e) {
+                        console.warn('Preselection observer failed', e);
+                    }
+                }, 60);
+            }
+        });
+        openObserver.observe(modalEl, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // When the modal fields are populated via safeSetValue, the inputs were previously inputs; we need to
+    // watch for changes to the province field value and trigger city loading if needed (for preselection flow).
+    const provinceObserverTarget = document.getElementById('edit_province');
+    if (provinceObserverTarget) {
+        // Observe attribute changes (value) and when value changes, attempt to preselect matching option & load cities
+        const mo = new MutationObserver(() => {
+            const val = provinceObserverTarget.value || '';
+            if (!val) return;
+            const opt = Array.from(provinceSel.options).find(o => o.value === val);
+            let code = opt ? opt.dataset.code : '';
+            if (!code && provincesList.length) {
+                const normTarget = normalize(val);
+                const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                if (found) code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+            }
+            if (opt) opt.selected = true;
+            if (val) loadCitiesForProvince(val, code);
+        });
+        // observe value attribute changes
+        mo.observe(provinceObserverTarget, { attributes: true, attributeFilter: ['value'] });
+    }
 });
 </script>
 

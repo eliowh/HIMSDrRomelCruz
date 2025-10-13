@@ -972,6 +972,8 @@ document.addEventListener('DOMContentLoaded', function () {
             safeSetValue('edit_city', patient.city);
             safeSetValue('edit_barangay', patient.barangay);
             safeSetValue('edit_nationality', patient.nationality);
+            // Populate the newly added health and social history fields
+            try { populateHealthHistoryFields(patient); } catch(e){ console.warn('populateHealthHistoryFields failed', e); }
             
             // Fetch current active admission data instead of using patient data
             fetchCurrentAdmissionForEdit(patient.id);
@@ -982,6 +984,48 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error('Error in openEditModal:', error);
             nurseError('Modal Error', 'Failed to open edit modal: ' + error.message);
+        }
+    }
+
+    // Function to populate health history fields in nurse edit modal (mirrors doctor modal)
+    function populateHealthHistoryFields(patient) {
+        if (!patient) return;
+        // General Health History
+        if (patient.general_health_history) {
+            const healthHistory = patient.general_health_history;
+
+            // Medical Conditions
+            if (healthHistory.medical_conditions) {
+                safeSetValue('edit_chronic_illnesses', healthHistory.medical_conditions.chronic_illnesses || '');
+                safeSetValue('edit_hospitalization_history', healthHistory.medical_conditions.hospitalization_history || '');
+                safeSetValue('edit_surgery_history', healthHistory.medical_conditions.surgery_history || '');
+                safeSetValue('edit_accident_injury_history', healthHistory.medical_conditions.accident_injury_history || '');
+            }
+
+            // Medications
+            if (healthHistory.medications) {
+                safeSetValue('edit_current_medications', healthHistory.medications.current_medications || '');
+                safeSetValue('edit_long_term_medications', healthHistory.medications.long_term_medications || '');
+            }
+
+            // Allergies
+            if (healthHistory.allergies) {
+                safeSetValue('edit_known_allergies', healthHistory.allergies.known_allergies || '');
+            }
+
+            // Family History
+            if (healthHistory.family_history) {
+                safeSetValue('edit_family_history_chronic', healthHistory.family_history.family_history_chronic || '');
+            }
+        }
+
+        // Social History
+        if (patient.social_history && patient.social_history.lifestyle_habits) {
+            const lifestyleHabits = patient.social_history.lifestyle_habits;
+            safeSetValue('edit_smoking_history', lifestyleHabits.smoking_history || '');
+            safeSetValue('edit_alcohol_consumption', lifestyleHabits.alcohol_consumption || '');
+            safeSetValue('edit_recreational_drugs', lifestyleHabits.recreational_drugs || '');
+            safeSetValue('edit_exercise_activity', lifestyleHabits.exercise_activity || '');
         }
     }
 

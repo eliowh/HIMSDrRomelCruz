@@ -92,3 +92,11 @@ Route::prefix('fhir')->middleware('fhir')->group(function () {
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// Location proxy endpoints to avoid CORS with public PSGC API
+use App\Http\Controllers\Api\LocationController;
+
+Route::prefix('locations')->group(function () {
+    Route::get('provinces', [LocationController::class, 'provinces']);
+    Route::get('cities', [LocationController::class, 'cities']);
+});

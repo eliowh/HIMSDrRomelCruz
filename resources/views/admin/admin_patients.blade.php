@@ -326,6 +326,8 @@
             
             if (result.success) {
                 document.getElementById('patientDetailsContent').innerHTML = result.html;
+                // initialize province/city selects if present in the returned HTML
+                try { if (typeof initAdminProvinceCitySelects === 'function') initAdminProvinceCitySelects(); } catch(e) { console.warn('initAdminProvinceCitySelects error', e); }
                 openPatientDetailsModal();
             } else {
                 console.error('Server error:', result);
@@ -490,5 +492,164 @@
     </script>
 
     @include('admin.modals.notification_system')
+    
+    <script>
+    // Initialize province/city selects inside admin patient details HTML (invoked after content is injected)
+    function initAdminProvinceCitySelects() {
+        try {
+            const API_BASE = '/api/locations';
+
+            // helper: find element within patientDetailsContent and replace an <input> with a <select> if needed
+            function ensureSelect(id) {
+                const container = document.getElementById('patientDetailsContent');
+                if (!container) return null;
+                let el = container.querySelector('#' + id);
+                if (!el) return null;
+                if (el.tagName && el.tagName.toLowerCase() === 'select') return el;
+                // create select preserving id/name/class and current value
+                const sel = document.createElement('select');
+                sel.id = el.id || id;
+                if (el.name) sel.name = el.name;
+                // preserve any classes for styling
+                sel.className = el.className || '';
+                // carry over current value into data-selected attribute so population can preselect
+                const currentVal = el.value || el.getAttribute('data-selected') || '';
+                if (currentVal) sel.setAttribute('data-selected', currentVal);
+                // replace input with select in DOM
+                el.parentNode.replaceChild(sel, el);
+                console.debug('Replaced input #' + id + ' with select, preserved value:', currentVal);
+                return sel;
+            }
+
+            // more robust finder: search for any input/textarea whose id or name contains the keyword
+            function ensureSelectForKeyword(keyword) {
+                const container = document.getElementById('patientDetailsContent');
+                if (!container) return null;
+                const inputs = Array.from(container.querySelectorAll('input,textarea,select'));
+                for (const el of inputs) {
+                    const id = (el.id || '').toLowerCase();
+                    const name = (el.name || '').toLowerCase();
+                    if (id.includes(keyword) || name.includes(keyword)) {
+                        if (el.tagName && el.tagName.toLowerCase() === 'select') return el;
+                        const sel = document.createElement('select');
+                        sel.id = el.id || (keyword === 'province' ? 'province' : 'city');
+                        if (el.name) sel.name = el.name;
+                        sel.className = el.className || '';
+                        const currentVal = el.value || el.getAttribute('data-selected') || '';
+                        if (currentVal) sel.setAttribute('data-selected', currentVal);
+                        el.parentNode.replaceChild(sel, el);
+                        console.debug('Replaced input (keyword=' + keyword + ') element with select, id:', sel.id, 'preserved value:', currentVal);
+                        return sel;
+                    }
+                }
+                return null;
+            }
+
+            const provinceSel = ensureSelect('province') || ensureSelect('edit_province') || ensureSelectForKeyword('province');
+            const citySel = ensureSelect('city') || ensureSelect('edit_city') || ensureSelectForKeyword('city');
+            if (!provinceSel || !citySel) return; // nothing to do
+
+            function clearSelect(sel) { while (sel.firstChild) sel.removeChild(sel.firstChild); }
+            function addOption(sel, value, text, isSelected, dataCode) {
+                const opt = document.createElement('option'); opt.value = value; opt.textContent = text; if (isSelected) opt.selected = true; if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode; sel.appendChild(opt);
+            }
+            function normalize(s) { if (!s) return ''; return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w\s]/g, '').toLowerCase().trim(); }
+
+            const preSelectedProvinceValue = provinceSel.value || provinceSel.getAttribute('data-selected') || '';
+            let preSelectedCityValue = citySel.value || citySel.getAttribute('data-selected') || '';
+
+            let provincesList = [];
+            fetch(API_BASE + '/provinces')
+                .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+                .then(list => {
+                    provincesList = Array.isArray(list) ? list : [];
+                    clearSelect(provinceSel);
+                    addOption(provinceSel, '', '-- Select Province --', false, '');
+                    provincesList.forEach(p => {
+                        const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
+                        const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
+                        if (!name) return;
+                        addOption(provinceSel, name, name, false, code);
+                    });
+
+                    const preFromField = preSelectedProvinceValue || '';
+                    if (preFromField) {
+                        let opt = Array.from(provinceSel.options).find(o => o.value === preFromField);
+                        let code = opt ? opt.dataset.code : '';
+                        if (!opt && provincesList.length) {
+                            const normTarget = normalize(preFromField);
+                            const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                            if (found) {
+                                opt = Array.from(provinceSel.options).find(o => normalize(o.value) === normalize(found.name || found.province_name || found.provDesc || found.prov_name || found.province || '')) || null;
+                                code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                            }
+                        }
+                        if (opt) opt.selected = true;
+                        if (preFromField) loadCitiesForProvince(preFromField, code);
+                    }
+                })
+                .catch(err => { console.warn('Failed to load provinces for admin modal', err); clearSelect(provinceSel); addOption(provinceSel, '', '-- Unable to load provinces --', false, ''); });
+
+            function loadCitiesForProvince(provinceName, provinceCode) {
+                clearSelect(citySel); addOption(citySel, '', '-- Loading cities... --', false, '');
+                const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
+                fetch(citiesUrl)
+                    .then(r => r.ok ? r.json() : Promise.reject('No cities'))
+                    .then(list => {
+                        clearSelect(citySel); addOption(citySel, '', '-- Select City --', false, '');
+                        let matched = [];
+                        if (provinceCode) {
+                            matched = list.filter(c => {
+                                const ccode = c.provinceCode || c.provCode || c.province_code || c.provinceId || c.province_id || c.prov_code || c.province || c.psgc10DigitCode || c.psgc10digitcode || c.code || c.id || '';
+                                return ccode && (ccode.toString() === provinceCode.toString());
+                            });
+                        }
+                        if (!matched.length && provinceName) {
+                            const normTarget = normalize(provinceName);
+                            matched = list.filter(c => {
+                                const prov = (c.province_name || c.provDesc || c.prov_name || c.province || c.region || '') + '';
+                                const cname = (c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '') + '';
+                                return normalize(prov) === normTarget || normalize(prov).includes(normTarget) || normalize(cname).includes(normTarget);
+                            });
+                        }
+                        if (!matched.length && provinceName) {
+                            const normTarget = normalize(provinceName);
+                            matched = list.filter(c => normalize(c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '').includes(normTarget));
+                        }
+                        if (!matched.length) { clearSelect(citySel); addOption(citySel, '', '-- No cities found for selected province --', false, ''); return; }
+                        matched.forEach(c => {
+                            const cname = c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '';
+                            if (!cname) return;
+                            const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
+                            addOption(citySel, cname, cname, isSelected, c.code || c.city_code || c.id || '');
+                            if (isSelected) preSelectedCityValue = '';
+                        });
+                    })
+                    .catch(err => { console.warn('Failed to load cities for admin modal', err); clearSelect(citySel); addOption(citySel, '', '-- Unable to load cities --', false, ''); });
+            }
+
+            provinceSel?.addEventListener('change', function () {
+                const selOpt = this.options[this.selectedIndex];
+                const provName = selOpt ? selOpt.value : '';
+                const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+                if (provName) loadCitiesForProvince(provName, provCode);
+                else { clearSelect(citySel); addOption(citySel, '', '-- Select province first --', false, ''); }
+            });
+
+            // Also attempt to trigger city load if modal is already open and province has value
+            const modal = document.getElementById('patientDetailsModal');
+            if (modal && (modal.style.display === 'flex' || modal.style.display === 'block')) {
+                const currentVal = provinceSel.value || '';
+                if (currentVal && (citySel.options.length <= 1)) {
+                    const opt = Array.from(provinceSel.options).find(o => normalize(o.value) === normalize(currentVal) || (o.dataset && o.dataset.code && o.dataset.code === currentVal));
+                    const code = opt ? opt.dataset.code : '';
+                    loadCitiesForProvince(currentVal, code);
+                }
+            }
+        } catch (e) {
+            console.warn('initAdminProvinceCitySelects caught', e);
+        }
+    }
+    </script>
 </body>
 </html>

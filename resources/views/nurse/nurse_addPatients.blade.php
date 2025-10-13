@@ -68,13 +68,164 @@
 
             <div class="form-group">
                 <label for="province">Province</label>
-                <input id="province" type="text" name="province" placeholder="Enter province" value="{{ old('province') }}">
+                <select id="province" name="province" data-selected="{{ old('province') }}">
+                    <option value="" disabled selected>-- Loading provinces... --</option>
+                </select>
             </div>
 
             <div class="form-group">
                 <label for="city">City</label>
-                <input id="city" type="text" name="city" placeholder="Enter city" value="{{ old('city') }}">
+                <select id="city" name="city" data-selected="{{ old('city') }}">
+                    <option value="" disabled selected>-- Select province first --</option>
+                </select>
             </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Use local proxy endpoints to avoid CORS issues
+                    const API_BASE = '/api/locations';
+                    const provinceSel = document.getElementById('province');
+                    const citySel = document.getElementById('city');
+                    const selectedProvince = provinceSel.getAttribute('data-selected') || '';
+                    const selectedCity = citySel.getAttribute('data-selected') || '';
+
+                    function clearSelect(sel) {
+                        while (sel.firstChild) sel.removeChild(sel.firstChild);
+                    }
+
+                    function addOption(sel, value, text, isSelected, dataCode) {
+                        const opt = document.createElement('option');
+                        opt.value = value;
+                        opt.textContent = text;
+                        if (isSelected) opt.selected = true;
+                        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+                        sel.appendChild(opt);
+                    }
+
+                    // load provinces and store codes in data-code while keeping option value as the province name
+                    let provincesList = [];
+                    fetch(API_BASE + '/provinces')
+                        .then(r => {
+                            console.log('Provinces fetch status', r.status);
+                            return r.ok ? r.json() : Promise.reject('No provinces.json');
+                        })
+                        .then(list => {
+                            console.log('Provinces received:', Array.isArray(list) ? list.length : typeof list);
+                            provincesList = Array.isArray(list) ? list : [];
+                            clearSelect(provinceSel);
+                            addOption(provinceSel, '', '-- Select Province --', false, '');
+                            provincesList.forEach(p => {
+                                const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
+                                const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
+                                if (!name) return;
+                                const isSelected = selectedProvince && (selectedProvince === name);
+                                addOption(provinceSel, name, name, isSelected, code);
+                            });
+
+                            if (selectedProvince) {
+                                // try to find the province option that matches the selected name and get its code
+                                const opt = Array.from(provinceSel.options).find(o => o.value === selectedProvince);
+                                let code = opt ? opt.dataset.code : '';
+                                // if code is empty, try to derive from provincesList by normalized name
+                                if (!code && provincesList.length) {
+                                    const normTarget = normalize(selectedProvince);
+                                    const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                                    if (found) code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                                    }
+                                    // set province select value explicitly and trigger change so cities load immediately
+                                    const resolvedOpt = Array.from(provinceSel.options).find(o => o.value === selectedProvince) || Array.from(provinceSel.options).find(o => o.dataset && o.dataset.code === code);
+                                    if (resolvedOpt) provinceSel.value = resolvedOpt.value;
+                                    provinceSel.dispatchEvent(new Event('change', { bubbles: true }));
+                                    loadCitiesForProvince(selectedProvince, code);
+                            }
+                        })
+                        .catch(err => {
+                            console.warn('Failed to load provinces from PSGC API', err);
+                            clearSelect(provinceSel);
+                            addOption(provinceSel, '', '-- Unable to load provinces --', false, '');
+                        });
+
+                    function normalize(s) {
+                        if (!s) return '';
+                        return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w\s]/g, '').toLowerCase().trim();
+                    }
+
+                    function loadCitiesForProvince(provinceName, provinceCode) {
+                        clearSelect(citySel);
+                        addOption(citySel, '', '-- Loading cities... --', false, '');
+
+                        // pass province_code if available for better matching
+                        const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
+                        fetch(citiesUrl)
+                            .then(r => {
+                                console.log('Cities fetch url:', citiesUrl, 'status', r.status);
+                                return r.ok ? r.json() : Promise.reject('No cities.json');
+                            })
+                            .then(list => {
+                                console.log('Cities received:', Array.isArray(list) ? list.length : typeof list);
+                                clearSelect(citySel);
+                                addOption(citySel, '', '-- Select City --', false, '');
+
+                                let matched = [];
+
+                                // helper to get province-like string from city entry
+                                const cityProvinceOf = c => (c.province_name || c.provDesc || c.prov_name || c.province || c.region || '').toString();
+
+                                if (provinceCode) {
+                                    matched = list.filter(c => {
+                                        // include various possible province-code fields from PSGC JSON
+                                        const ccode = c.provinceCode || c.provCode || c.province_code || c.provinceId || c.province_id || c.prov_code || c.province || c.psgc10DigitCode || c.psgc10digitcode || c.code || c.id || '';
+                                        return ccode && (ccode.toString() === provinceCode.toString());
+                                    });
+                                }
+
+                                if (!matched.length && provinceName) {
+                                    const normTarget = normalize(provinceName);
+                                    matched = list.filter(c => {
+                                        const prov = cityProvinceOf(c);
+                                        return normalize(prov) === normTarget || normalize(prov).includes(normTarget) || normalize((c.name||c.city_name||c.citymunDesc||c.municipality||c.city||'')).includes(normTarget);
+                                    });
+                                }
+
+                                // last resort: fuzzy match using substring normalization on city name
+                                if (!matched.length && provinceName) {
+                                    const normTarget = normalize(provinceName);
+                                    matched = list.filter(c => normalize(c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '').includes(normTarget));
+                                }
+
+                                console.log('Matched cities count:', matched.length);
+                                if (!matched.length) {
+                                    clearSelect(citySel);
+                                    addOption(citySel, '', '-- No cities found for selected province --', false, '');
+                                    return;
+                                }
+
+                                matched.forEach(c => {
+                                    const cname = c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '';
+                                    if (!cname) return;
+                                    const isSelected = selectedCity && (selectedCity === cname);
+                                    addOption(citySel, cname, cname, isSelected, c.code || c.city_code || c.id || '');
+                                });
+                            })
+                            .catch(err => {
+                                console.warn('Failed to load cities from PSGC API', err);
+                                clearSelect(citySel);
+                                addOption(citySel, '', '-- Unable to load cities --', false, '');
+                            });
+                    }
+
+                    provinceSel.addEventListener('change', function () {
+                        const selOpt = this.options[this.selectedIndex];
+                        const provName = selOpt ? selOpt.value : '';
+                        const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+                        if (provName) loadCitiesForProvince(provName, provCode);
+                        else {
+                            clearSelect(citySel);
+                            addOption(citySel, '', '-- Select province first --', false, '');
+                        }
+                    });
+                });
+            </script>
 
             <div class="form-group">
                 <label for="barangay">Barangay</label>
