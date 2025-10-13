@@ -48,28 +48,50 @@ class ChatController extends Controller
             abort(403, 'You do not have access to this chat room.');
         }
 
+        // Additional check for doctor-only group chats
+        if ($chatRoom->room_type === 'doctor_group_consultation' && $user->role !== 'doctor') {
+            abort(403, 'Only doctors can access doctor group consultations.');
+        }
+
         // Mark messages as read for current user
         $chatRoom->messages()
             ->where('user_id', '!=', $user->id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        // Get all roles for the add participant dropdown (excluding current participants)
-        // Support all healthcare roles in group chats
-        $allUsers = User::whereNotIn('id', $chatRoom->participants ?? [])
-            ->where('id', '!=', $user->id) // Don't include current user
-            ->whereIn('role', ['doctor', 'nurse', 'admin', 'lab_technician', 'cashier', 'inventory', 'pharmacy', 'billing']) // All healthcare roles
-            ->select('id', 'name', 'role')
-            ->orderBy('role')
-            ->orderBy('name')
-            ->get()
-            ->map(function ($userData) {
-                return [
-                    'id' => $userData->id,
-                    'name' => $userData->name,
-                    'role' => $userData->role // Keep original role for grouping
-                ];
-            });
+        // Get users for the add participant dropdown based on chat room type
+        if ($chatRoom->room_type === 'doctor_group_consultation') {
+            // For doctor group chats, only show other doctors
+            $allUsers = User::whereNotIn('id', $chatRoom->participants ?? [])
+                ->where('id', '!=', $user->id) // Don't include current user
+                ->where('role', 'doctor') // Only doctors
+                ->select('id', 'name', 'role')
+                ->orderBy('name')
+                ->get()
+                ->map(function ($userData) {
+                    return [
+                        'id' => $userData->id,
+                        'name' => $userData->name,
+                        'role' => $userData->role
+                    ];
+                });
+        } else {
+            // For regular patient chats, show all healthcare roles
+            $allUsers = User::whereNotIn('id', $chatRoom->participants ?? [])
+                ->where('id', '!=', $user->id) // Don't include current user
+                ->whereIn('role', ['doctor', 'nurse', 'admin', 'lab_technician', 'cashier', 'inventory', 'pharmacy', 'billing']) // All healthcare roles
+                ->select('id', 'name', 'role')
+                ->orderBy('role')
+                ->orderBy('name')
+                ->get()
+                ->map(function ($userData) {
+                    return [
+                        'id' => $userData->id,
+                        'name' => $userData->name,
+                        'role' => $userData->role // Keep original role for grouping
+                    ];
+                });
+        }
 
         // Get doctors specifically for backwards compatibility
         $doctors = $allUsers; // Same as allUsers since we're only fetching doctors
@@ -82,34 +104,155 @@ class ChatController extends Controller
      */
     public function createOrGetForPatient(Request $request)
     {
-        $request->validate([
-            'patient_id' => 'required|exists:patients,id'
-        ]);
+        try {
+            Log::info('Chat creation request received', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
 
-        $user = Auth::user();
-        $patient = Patient::findOrFail($request->patient_id);
+            $request->validate([
+                'patient_id' => 'required|exists:patients,id'
+            ]);
 
-        // Check if a chat room already exists for this patient
-        $existingRoom = ChatRoom::where('patient_id', $patient->id)
-            ->where('is_active', true)
-            ->first();
+            $user = Auth::user();
+            $patient = Patient::findOrFail($request->patient_id);
 
-        if ($existingRoom) {
-            // Add current user as participant if not already
-            if (!$existingRoom->hasParticipant($user->id)) {
-                $existingRoom->addParticipant($user->id);
+            Log::info('Patient found for chat creation', [
+                'patient_id' => $patient->id,
+                'patient_no' => $patient->patient_no,
+                'user_id' => $user->id,
+                'user_role' => $user->role
+            ]);
+
+            // Check if a chat room already exists for this patient
+            $existingRoom = ChatRoom::where('patient_id', $patient->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($existingRoom) {
+                Log::info('Existing chat room found', ['room_id' => $existingRoom->id]);
+                // For doctors: allow access to any patient chat
+                // For non-doctors: only allow access if they're already a participant or if it's a simple patient chat
+                if ($user->role === 'doctor' || $existingRoom->hasParticipant($user->id) || $existingRoom->room_type !== 'doctor_group_consultation') {
+                    if (!$existingRoom->hasParticipant($user->id)) {
+                        $existingRoom->addParticipant($user->id);
+                    }
+                    $chatRoom = $existingRoom;
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have access to this patient chat. Only doctors can access doctor group chats.'
+                    ], 403);
+                }
+            } else {
+                Log::info('Creating new chat room for patient', [
+                    'patient_id' => $patient->id,
+                    'user_role' => $user->role
+                ]);
+                
+                // Create appropriate chat room based on user role
+                if ($user->role === 'doctor') {
+                    // Doctors get doctor-only group chats
+                    $chatRoom = $this->createDoctorGroupChatForPatient($patient, $user);
+                } else {
+                    // Non-doctors get simple patient consultation chats
+                    $chatRoom = ChatRoom::createForPatient($patient, $patient->doctor_name);
+                }
+                
+                Log::info('Chat room created successfully', ['room_id' => $chatRoom->id]);
             }
-            $chatRoom = $existingRoom;
-        } else {
-            // Create new chat room
-            $chatRoom = ChatRoom::createForPatient($patient, $patient->doctor_name);
-        }
 
-        return response()->json([
-            'success' => true,
-            'chat_room_id' => $chatRoom->id,
-            'redirect_url' => route('chat.show', $chatRoom->id)
-        ]);
+            // Determine the correct route based on user role
+            $routeName = $user->role === 'nurse' ? 'nurse.chat.show' : 'chat.show';
+
+            return response()->json([
+                'success' => true,
+                'chat_room_id' => $chatRoom->id,
+                'redirect_url' => route($routeName, $chatRoom->id)
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error in chat creation', [
+                'errors' => $e->validator->errors()->toArray()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error creating chat room for patient', [
+                'user_id' => auth()->id(),
+                'patient_id' => $request->patient_id ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create chat room: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a doctor-only group chat for a patient
+     */
+    private function createDoctorGroupChatForPatient($patient, $creatingDoctor)
+    {
+        try {
+            Log::info('Creating doctor group chat', [
+                'patient_id' => $patient->id,
+                'creating_doctor_id' => $creatingDoctor->id,
+                'creating_doctor_name' => $creatingDoctor->name
+            ]);
+            
+            // Only add the creating doctor initially - other doctors can be added manually
+            $participants = [$creatingDoctor->id];
+
+            $chatRoom = ChatRoom::create([
+                'name' => "Patient {$patient->patient_no} - {$patient->display_name} (Doctors Only)",
+                'description' => "Doctor consultation for patient {$patient->patient_no}",
+                'patient_id' => $patient->id,
+                'patient_no' => $patient->patient_no,
+                'room_type' => 'doctor_group_consultation',
+                'participants' => $participants,
+                'created_by' => $creatingDoctor->id,
+                'is_active' => true,
+                'last_activity' => now(),
+            ]);
+
+            Log::info('Chat room created, creating system message', [
+                'chat_room_id' => $chatRoom->id,
+                'doctor_id' => $creatingDoctor->id
+            ]);
+
+            // Validate the doctor object before creating message
+            if (!$creatingDoctor || !$creatingDoctor->id) {
+                Log::error('Invalid creating doctor object', [
+                    'doctor_object' => $creatingDoctor,
+                    'doctor_id' => $creatingDoctor ? $creatingDoctor->id : 'null'
+                ]);
+                throw new \Exception('Invalid creating doctor object');
+            }
+
+            // Send a system message
+            ChatMessage::create([
+                'chat_room_id' => $chatRoom->id,
+                'user_id' => $creatingDoctor->id, // Use creating doctor's ID instead of null
+                'message' => "Dr. {$creatingDoctor->name} created a doctor consultation for patient {$patient->display_name} (#{$patient->patient_no}). Other doctors can be added as needed.",
+                'message_type' => 'system',
+            ]);
+
+            return $chatRoom;
+            
+        } catch (\Exception $e) {
+            Log::error('Error creating doctor group chat for patient', [
+                'patient_id' => $patient->id,
+                'doctor_id' => $creatingDoctor->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e; // Re-throw to be caught by parent method
+        }
     }
 
     /**
@@ -429,21 +572,29 @@ class ChatController extends Controller
      * Archive a chat room.
      */
     /**
-     * Create a group chat with specific roles
+     * Create a group chat with doctors only (Exclusive for doctors)
      */
     public function createRoleGroup(Request $request)
     {
         $user = auth()->user();
         
+        // Only doctors can create group chats
+        if ($user->role !== 'doctor') {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Only doctors can create group chats'
+            ], 403);
+        }
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'roles' => 'required|array|min:1',
-            'roles.*' => 'in:doctor,nurse,admin,lab_technician,cashier,inventory,pharmacy,billing',
+            'roles.*' => 'in:doctor', // Only allow doctor role
             'patient_no' => 'nullable|string|max:50'
         ]);
 
-        // Get all users with the specified roles
-        $targetUsers = User::whereIn('role', $request->roles)
+        // Get all doctors (excluding current user)
+        $targetUsers = User::where('role', 'doctor')
             ->where('id', '!=', $user->id) // Don't include current user as they'll be added as creator
             ->pluck('id')
             ->toArray();
@@ -451,7 +602,7 @@ class ChatController extends Controller
         if (empty($targetUsers)) {
             return response()->json([
                 'success' => false, 
-                'message' => 'No users found with the specified roles'
+                'message' => 'No other doctors found to add to the group chat'
             ]);
         }
 
@@ -466,13 +617,10 @@ class ChatController extends Controller
         ]);
 
         // Send system message about group creation
-        $roleNames = array_map('ucfirst', $request->roles);
-        $rolesText = implode(', ', $roleNames);
-        
         ChatMessage::create([
             'chat_room_id' => $chatRoom->id,
-            'user_id' => null, // System message
-            'message' => "{$user->name} created a group chat for roles: {$rolesText}",
+            'user_id' => $user->id, // Use creating user's ID instead of null
+            'message' => "Dr. {$user->name} created a doctors group chat",
             'message_type' => 'system'
         ]);
 

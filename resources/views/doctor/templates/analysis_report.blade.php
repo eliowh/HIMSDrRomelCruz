@@ -9,7 +9,7 @@
         .header-table { width: 100%; border-collapse: collapse; }
         .header-table td { padding: 8px; vertical-align: top; }
         .logo-cell { width: 120px; text-align: right; padding-right: 10px; }
-        .hospital-info { text-align: center; font-weight: bold; width: 100%; padding-left: 30px; margin-right: 100px; }
+        .hospital-info { text-align: center; font-weight: bold; width: 100%; padding-left: 30px;}
         .hospital-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; text-align: center; }
         .hospital-address { font-size: 10px; margin-bottom: 8px; text-align: center; }
         .department-title { font-size: 14px; font-weight: 700; text-decoration: underline; margin-bottom: 2px; text-align: center; }
