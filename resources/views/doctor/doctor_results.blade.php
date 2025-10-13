@@ -622,7 +622,8 @@ function saveAnalysis() {
 }
 
 function viewPatientHistory(patientId) {
-    window.location.href = `/doctor/patients/${patientId}`;
+    // Redirect to the doctor patients page which will show patient details
+    window.location.href = `/doctor/patients`;
 }
 
 // Modal functionality
