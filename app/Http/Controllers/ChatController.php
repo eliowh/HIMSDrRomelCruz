@@ -59,42 +59,36 @@ class ChatController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        // Get users for the add participant dropdown based on chat room type
-        if ($chatRoom->room_type === 'doctor_group_consultation') {
-            // For doctor group chats, only show other doctors
+        // Get users for the add participant dropdown based on chat room type and current user role
+        if ($user->role === 'doctor') {
+            // If current user is a doctor, only show other doctors regardless of chat type
             $allUsers = User::whereNotIn('id', $chatRoom->participants ?? [])
                 ->where('id', '!=', $user->id) // Don't include current user
                 ->where('role', 'doctor') // Only doctors
                 ->select('id', 'name', 'role')
                 ->orderBy('name')
-                ->get()
-                ->map(function ($userData) {
-                    return [
-                        'id' => $userData->id,
-                        'name' => $userData->name,
-                        'role' => $userData->role
-                    ];
-                });
+                ->get();
+            $doctors = $allUsers; // For doctors, all users are doctors
         } else {
-            // For regular patient chats, show all healthcare roles
+            // For non-doctors, show all healthcare roles except doctors (since doctors manage their own chats)
             $allUsers = User::whereNotIn('id', $chatRoom->participants ?? [])
                 ->where('id', '!=', $user->id) // Don't include current user
-                ->whereIn('role', ['doctor', 'nurse', 'admin', 'lab_technician', 'cashier', 'inventory', 'pharmacy', 'billing']) // All healthcare roles
+                ->whereIn('role', ['nurse', 'admin', 'lab_technician', 'cashier', 'inventory', 'pharmacy', 'billing']) // Healthcare roles except doctor
                 ->select('id', 'name', 'role')
                 ->orderBy('role')
                 ->orderBy('name')
-                ->get()
-                ->map(function ($userData) {
-                    return [
-                        'id' => $userData->id,
-                        'name' => $userData->name,
-                        'role' => $userData->role // Keep original role for grouping
-                    ];
-                });
+                ->get();
+            $doctors = collect([]); // Non-doctors can't add doctors
         }
 
-        // Get doctors specifically for backwards compatibility
-        $doctors = $allUsers; // Same as allUsers since we're only fetching doctors
+        Log::info('Chat show data', [
+            'chat_room_id' => $chatRoom->id,
+            'room_type' => $chatRoom->room_type,
+            'current_user_role' => $user->role,
+            'allUsers_count' => $allUsers->count(),
+            'doctors_count' => $doctors->count(),
+            'available_roles' => $allUsers->pluck('role')->unique()->values()->toArray()
+        ]);
 
         return view('chat.show', compact('chatRoom', 'doctors', 'allUsers'));
     }
