@@ -981,6 +981,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Function to render admission summary (matching nurse layout exactly)
+    // Inject server-side role info for client-side scripts
+    const isNurse = @json(auth()->user()->role === 'nurse');
+    // Expose to global for use in other functions
+    window.isNurse = isNurse === true;
     function renderAdmissionSummary(admissions, patientId) {
         const summaryContent = document.getElementById('admission-summary-content');
         if (!summaryContent) return;
@@ -1019,7 +1023,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const hasActive = admissions.some(a => a.status === 'active');
-        const newAdmissionButton = !hasActive ? `
+        // Only show the New Admission button to nurses. Doctors should not see it.
+        const newAdmissionButton = (!hasActive && window.isNurse === true) ? `
             <div class="new-admission-section">
                 <button type="button" class="btn btn-success btn-sm new-admission-btn" onclick="openNewAdmissionModal(${patientId})">
                     <i class="fas fa-plus"></i> New Admission

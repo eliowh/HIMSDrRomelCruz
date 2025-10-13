@@ -380,54 +380,8 @@
                         <div class="export-actions" style="margin-top:8px;">
                             <button type="submit" class="export-btn primary">Export Patient Bundle FHIR</button>
                             <button type="submit" formaction="{{ route('admin.export.patient.csv') }}" class="export-btn secondary">Export Patient CSV</button>
-                            {{-- Push to HAPI (server-side) via AJAX) --}}
-                            <button type="button" class="export-btn info" id="pushToHapiBtn">Push to HAPI</button>
                         </div>
                     </form>
-
-                    <script>
-                        (function(){
-                            const pushBtn = document.getElementById('pushToHapiBtn');
-                            pushBtn && pushBtn.addEventListener('click', function(e){
-                                const patientNo = document.getElementById('patient_no').value;
-                                if(!patientNo){
-                                    alert('Please enter a patient number');
-                                    return;
-                                }
-
-                                if(!confirm('Push patient ' + patientNo + ' to HAPI demo server?')) return;
-
-                                pushBtn.disabled = true;
-                                pushBtn.textContent = 'Pushing...';
-
-                                const token = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
-
-                                fetch('{{ route('admin.push.patient.hapi') }}', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json',
-                                        'X-CSRF-TOKEN': token
-                                    },
-                                    body: JSON.stringify({ patient_no: patientNo })
-                                }).then(r => r.json()).then(data => {
-                                    pushBtn.disabled = false;
-                                    pushBtn.textContent = 'Push to HAPI';
-                                    if(data && data.success){
-                                        alert('Success! Location: ' + (data.location || 'see HAPI response'));
-                                    } else if(data && data.error){
-                                        alert('Error: ' + (data.error || JSON.stringify(data)));
-                                    } else {
-                                        alert('Unexpected response: ' + JSON.stringify(data));
-                                    }
-                                }).catch(err => {
-                                    pushBtn.disabled = false;
-                                    pushBtn.textContent = 'Push to HAPI';
-                                    alert('Request failed: ' + err.message);
-                                });
-                            });
-                        })();
-                    </script>
                 </div>
 
                 <!-- Bulk Export Section -->
