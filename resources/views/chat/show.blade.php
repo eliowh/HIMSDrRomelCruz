@@ -69,28 +69,8 @@
             </div>
 
             @php
-                // Get all users that can be added (excluding current user and existing participants)
-                $currentParticipantIds = $chatRoom->participants ?? [];
-                
-                // Check chat room type to determine which roles can be added
-                if ($chatRoom->room_type === 'doctor_group_consultation') {
-                    // For doctor group chats, only show other doctors
-                    $availableUsers = \App\Models\User::whereNotIn('id', $currentParticipantIds)
-                        ->where('id', '!=', auth()->user()->id)
-                        ->where('role', 'doctor') // Only doctors
-                        ->select('id', 'name', 'role')
-                        ->orderBy('name')
-                        ->get();
-                } else {
-                    // For regular patient chats, show all healthcare roles
-                    $availableUsers = \App\Models\User::whereNotIn('id', $currentParticipantIds)
-                        ->where('id', '!=', auth()->user()->id)
-                        ->whereIn('role', ['admin', 'doctor', 'nurse', 'lab_technician', 'pharmacy', 'cashier', 'inventory', 'billing'])
-                        ->select('id', 'name', 'role')
-                        ->orderBy('role')
-                        ->orderBy('name')
-                        ->get();
-                }
+                // Use the data passed from the controller instead of querying again
+                $availableUsers = collect($allUsers);
                     
                 // Group them by role for categorized display
                 $groupedUsers = $availableUsers->groupBy('role');
