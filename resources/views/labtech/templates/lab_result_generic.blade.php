@@ -101,9 +101,9 @@
     @endif
 
     <div class="sig-block" style="margin-top:60px;">
-        <div>{{ isset($currentUser) && $currentUser ? $currentUser->name : ($signature['med_tech_name'] ?? 'Jhen-Jhen DG. Guevarra, RMT') }}</div>
-        <div class="small">License No.: {{ $signature['license_no'] ?? '____________' }}</div>
-        <div style="font-weight:bold; margin-top:4px;">{{ $signature['designation'] ?? 'MEDICAL TECHNOLOGIST' }}</div>
+        <div>{{ $currentUser->name ?? 'Lab Technician' }}</div>
+        <div class="small">License No.: {{ $currentUser->license_number ?? 'N/A' }}</div>
+        <div style="font-weight:bold; margin-top:4px;">{{ strtoupper($currentUser->role === 'lab_technician' ? 'MEDICAL TECHNOLOGIST' : ($currentUser->role ?? 'LAB STAFF')) }}</div>
     </div>
 </body>
 </html>
