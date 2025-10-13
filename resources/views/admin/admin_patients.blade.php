@@ -126,9 +126,6 @@
                                     </button>
                                     <div class="dropdown-content" id="dropdown-{{ $patient->id ?? $loop->index }}">
                                         <a href="#" onclick="viewPatient({{ $patient->id ?? $loop->index }})">View Details</a>
-                                        <a href="#" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'active')" class="activate-action">Mark Active</a>
-                                        <a href="#" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'discharged')" class="discharge-action">Mark Discharged</a>
-                                        <a href="#" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'deceased')" class="deceased-action">Mark Deceased</a>
                                     </div>
                                 </div>
                             </td>

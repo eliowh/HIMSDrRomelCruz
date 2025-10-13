@@ -488,9 +488,19 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/fhir', [AdminController::class, 'fhir'])->name('admin.fhir');
     Route::get('/admin/fhir/export/patients', [AdminController::class, 'exportPatientFhir'])->name('admin.export.patients.fhir');
     Route::get('/admin/fhir/export/patient', [AdminController::class, 'exportPatientFhir'])->name('admin.export.patient.fhir');
+    // CSV exports (capstone/demo)
+    Route::get('/admin/fhir/export/patients/csv', [AdminController::class, 'exportPatientCsv'])->name('admin.export.patients.csv');
+    Route::get('/admin/fhir/export/patient/csv', [AdminController::class, 'exportPatientCsv'])->name('admin.export.patient.csv');
     Route::get('/admin/fhir/export/encounters', [AdminController::class, 'exportEncountersFhir'])->name('admin.export.encounters.fhir');
     Route::get('/admin/fhir/export/observations', [AdminController::class, 'exportObservationsFhir'])->name('admin.export.observations.fhir');
     Route::get('/admin/fhir/export/medications', [AdminController::class, 'exportMedicationsFhir'])->name('admin.export.medications.fhir');
+
+    // Public demo FHIR endpoints (token protected with FHIR_DEMO_TOKEN env var)
+    Route::get('/public/fhir/export/patient', [AdminController::class, 'exportPatientFhirPublic'])->name('public.export.patient.fhir');
+    Route::get('/public/fhir/export/patients', [AdminController::class, 'exportPatientFhirPublic'])->name('public.export.patients.fhir');
+
+    // Server-side push to HAPI (admin only)
+    Route::post('/admin/fhir/push-to-hapi', [AdminController::class, 'pushPatientToHapi'])->name('admin.push.patient.hapi');
     Route::get('/admin/fhir/capability', [AdminController::class, 'getFhirCapability'])->name('admin.fhir.capability');
     
     // ICD-10 Data Import

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Patient;
 use App\Models\Admission;
+use App\Models\Report;
 use Illuminate\Http\Request;
 
 class PatientController extends Controller
@@ -147,6 +148,19 @@ class PatientController extends Controller
 
         // Create patient
         $patient = Patient::create($patientData);
+
+        // Audit: Log patient creation
+        try {
+            Report::log('Patient Created', Report::TYPE_USER_REPORT, 'New patient record created', [
+                'patient_id' => $patient->id,
+                'patient_no' => $patient->patient_no,
+                'name' => $patient->first_name . ' ' . $patient->last_name,
+                'created_by' => auth()->id(),
+                'created_at' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to create patient audit: ' . $e->getMessage());
+        }
 
         // Create admission if admission data provided
         if (!empty($admissionData)) {
@@ -358,6 +372,20 @@ class PatientController extends Controller
             
             // Get the created admission for response
             $admission = \DB::table('admissions')->where('id', $admissionId)->first();
+
+            // Audit: Log admission creation
+            try {
+                Report::log('Patient Admitted', Report::TYPE_USER_REPORT, 'New admission created', [
+                    'patient_id' => $validated['patient_id'],
+                    'admission_id' => $admissionId,
+                    'room_no' => $validated['room_no'],
+                    'admission_type' => $validated['admission_type'],
+                    'doctor_name' => $validated['doctor_name'],
+                    'admission_date' => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create admission audit: ' . $e->getMessage());
+            }
             
             return response()->json([
                 'success' => true,
@@ -504,6 +532,20 @@ class PatientController extends Controller
                 'final_diagnosis' => $validated['final_diagnosis'],
                 'final_diagnosis_description' => $validated['final_diagnosis_description'] ?? null,
             ]);
+
+            // Audit: Log admission finalization
+            try {
+                Report::log('Admission Finalized', Report::TYPE_USER_REPORT, 'Admission finalized with final diagnosis', [
+                    'admission_id' => $admission->id,
+                    'patient_id' => $admission->patient_id ?? null,
+                    'final_diagnosis' => \Illuminate\Support\Str::limit($validated['final_diagnosis'], 400),
+                    'final_diagnosis_description' => isset($validated['final_diagnosis_description']) ? \Illuminate\Support\Str::limit($validated['final_diagnosis_description'], 800) : null,
+                    'finalized_by' => auth()->id(),
+                    'finalized_at' => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create admission finalize audit: ' . $e->getMessage());
+            }
 
             return response()->json(['success' => true, 'message' => 'Final diagnosis saved']);
         } catch (\Illuminate\Validation\ValidationException $e) {

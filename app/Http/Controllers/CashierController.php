@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Billing;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Report;
 
 class CashierController extends Controller
 {
@@ -61,6 +62,18 @@ class CashierController extends Controller
     public function viewBilling($id)
     {
         $billing = Billing::with(['patient', 'billingItems'])->findOrFail($id);
+        // Audit: Log cashier viewing a billing
+        try {
+            Report::log('Billing Viewed', Report::TYPE_USER_REPORT, 'Cashier viewed billing details', [
+                'billing_id' => $billing->id,
+                'billing_number' => $billing->billing_number,
+                'patient_id' => $billing->patient_id ?? null,
+                'viewed_by' => auth()->id(),
+                'viewed_at' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to create cashier billing view audit: ' . $e->getMessage());
+        }
         return view('cashier.cashier_billing_view', compact('billing'));
     }
 
@@ -103,6 +116,21 @@ class CashierController extends Controller
                 'processed_by' => auth()->id()
             ]);
 
+            // Audit: Log billing payment
+            try {
+                Report::log('Billing Paid', Report::TYPE_USER_REPORT, 'Billing payment processed', [
+                    'billing_id' => $billing->id,
+                    'billing_number' => $billing->billing_number,
+                    'patient_id' => $billing->patient_id,
+                    'payment_amount' => $paymentAmount,
+                    'change' => $change,
+                    'processed_by' => auth()->id(),
+                    'payment_date' => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create billing payment audit: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Payment processed successfully',
@@ -129,6 +157,19 @@ class CashierController extends Controller
         }
         
         $logoData = $this->getLogoSafely();
+        // Audit: Log cashier viewing receipt
+        try {
+            Report::log('Receipt Viewed', Report::TYPE_USER_REPORT, 'Cashier viewed billing receipt', [
+                'billing_id' => $billing->id,
+                'billing_number' => $billing->billing_number,
+                'patient_id' => $billing->patient_id ?? null,
+                'viewed_by' => auth()->id(),
+                'viewed_at' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to create cashier receipt view audit: ' . $e->getMessage());
+        }
+
         $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
         $pdf->setPaper('A4', 'portrait');
         
@@ -145,6 +186,19 @@ class CashierController extends Controller
         }
         
         $logoData = $this->getLogoSafely();
+        // Audit: Log cashier downloading receipt
+        try {
+            Report::log('Receipt Downloaded', Report::TYPE_USER_REPORT, 'Cashier downloaded billing receipt', [
+                'billing_id' => $billing->id,
+                'billing_number' => $billing->billing_number,
+                'patient_id' => $billing->patient_id ?? null,
+                'downloaded_by' => auth()->id(),
+                'downloaded_at' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to create cashier receipt download audit: ' . $e->getMessage());
+        }
+
         $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
         $pdf->setPaper('A4', 'portrait');
         

@@ -167,7 +167,7 @@ class AdminController extends Controller
             [
                 'user_id' => $user->id,
                 'user_name' => $user->name,
-                'user_email' => $user->email,
+                'user_email' => $this->maskEmail($user->email),
                 'user_role' => $user->role,
                 'created_by' => auth()->user()->name,
                 'created_by_id' => auth()->id(),
@@ -220,6 +220,20 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
         return redirect('/admin/users')->with('success', 'User created and notified successfully!');
+    }
+
+    /**
+     * Mask an email address for logging to avoid storing full PII.
+     */
+    private function maskEmail($email)
+    {
+        if (empty($email) || !is_string($email) || strpos($email, '@') === false) {
+            return $email;
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        $first = substr($local, 0, 1);
+        return $first . '***@' . $domain;
     }
 
     /**
@@ -1161,6 +1175,310 @@ class AdminController extends Controller
             ]);
 
             return back()->with('error', 'Error exporting FHIR data: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Public demo FHIR export (token-protected) — use only for demos.
+     * Example: /public/fhir/export/patient?patient_no=250001&demo_token=xyz
+     */
+    public function exportPatientFhirPublic(Request $request, $patientId = null)
+    {
+        // Expect a demo token in query string to avoid exposing admin-only endpoint publicly
+        $demoToken = $request->get('demo_token');
+        $expected = env('FHIR_DEMO_TOKEN', null);
+
+        if (empty($expected) || $demoToken !== $expected) {
+            return response()->json(['error' => 'Invalid or missing demo token'], 403);
+        }
+
+        try {
+            $fhirService = new FhirService();
+
+            // Check if patient_no is provided in request (from form/query)
+            $patientNo = $request->get('patient_no');
+
+            if ($patientNo) {
+                $patient = Patient::where('patient_no', $patientNo)->first();
+                if (!$patient) {
+                    return response()->json(['error' => "Patient with number {$patientNo} not found."], 404);
+                }
+
+                $bundle = $fhirService->getPatientBundle($patient->id);
+                $filename = "patient_{$patientNo}_fhir_public_" . date('Y-m-d_H-i-s') . '.json';
+            } elseif ($patientId) {
+                $bundle = $fhirService->getPatientBundle($patientId);
+                $filename = "patient_{$patientId}_fhir_public_" . date('Y-m-d_H-i-s') . '.json';
+            } else {
+                // Small bulk export (demo only)
+                $patients = Patient::with(['admissions', 'labOrders', 'medicines', 'pharmacyRequests'])
+                    ->limit(20)
+                    ->get();
+
+                $bundle = [
+                    'resourceType' => 'Bundle',
+                    'id' => 'public-bulk-export-' . uniqid(),
+                    'meta' => [
+                        'lastUpdated' => now()->toISOString()
+                    ],
+                    'type' => 'collection',
+                    'total' => 0,
+                    'entry' => []
+                ];
+
+                foreach ($patients as $patient) {
+                    $patientBundle = $fhirService->getPatientBundle($patient->id);
+                    $bundle['entry'] = array_merge($bundle['entry'], $patientBundle['entry']);
+                }
+
+                $bundle['total'] = count($bundle['entry']);
+                $filename = "public_all_patients_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            }
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('Public FHIR Export Error', [
+                'patient_id' => $patientId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => 'Error exporting FHIR data: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Server-side push of a patient bundle to HAPI demo server.
+     * This posts the exported patient bundle to HAPI and returns the created resource location.
+     */
+    public function pushPatientToHapi(Request $request)
+    {
+        $this->verifyAdminAccess();
+
+        $patientNo = $request->get('patient_no');
+        if (!$patientNo) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'patient_no is required'], 422);
+            }
+            return back()->with('error', 'patient_no is required');
+        }
+
+        try {
+            $patient = Patient::where('patient_no', $patientNo)->first();
+            if (!$patient) {
+                return back()->with('error', "Patient with number {$patientNo} not found.");
+            }
+
+            $fhirService = new FhirService();
+            $bundle = $fhirService->getPatientBundle($patient->id);
+
+            // Post each resource in the bundle individually to the HAPI Patient endpoint (simpler for demo)
+            // We'll post the Patient resource (first resource with resourceType == 'Patient')
+            $patientResource = null;
+            foreach ($bundle['entry'] as $entry) {
+                if (isset($entry['resource']) && ($entry['resource']['resourceType'] ?? '') === 'Patient') {
+                    $patientResource = $entry['resource'];
+                    break;
+                }
+            }
+
+            if (!$patientResource) {
+                return back()->with('error', 'No Patient resource found in bundle');
+            }
+
+            // Use Guzzle (via Http facade). Allow optional SSL verification control via env:
+            // FHIR_VERIFY_SSL=true|false and FHIR_CACERT_PATH for a local cacert.pem path
+            $verifyEnv = env('FHIR_VERIFY_SSL', true);
+            $cacertPath = env('FHIR_CACERT_PATH', null);
+
+            $options = [];
+            if ($verifyEnv === false || $verifyEnv === 'false' || $verifyEnv === '0') {
+                // disable verification (not recommended for production)
+                $options['verify'] = false;
+            } elseif ($cacertPath) {
+                // point Guzzle to a custom CA bundle
+                $options['verify'] = $cacertPath;
+            }
+
+            $client = \Illuminate\Support\Facades\Http::withOptions($options)->withHeaders([
+                'Content-Type' => 'application/fhir+json'
+            ]);
+
+            $response = $client->post('https://hapi.fhir.org/baseR4/Patient', $patientResource);
+
+            if ($response->successful()) {
+                // HAPI returns Location header or resource in body with id
+                $location = $response->header('Location') ?: null;
+                $body = $response->body();
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => true, 'location' => $location, 'body' => $body], 200);
+                }
+
+                return back()->with('success', 'Patient pushed to HAPI successfully. Location: ' . ($location ?? 'Created resource. See HAPI response.'));
+            }
+
+            \Log::error('HAPI push failed', ['status' => $response->status(), 'body' => $response->body()]);
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Failed to push to HAPI', 'status' => $response->status(), 'body' => $response->body()], 500);
+            }
+
+            return back()->with('error', 'Failed to push to HAPI: ' . $response->status());
+
+        } catch (\Exception $e) {
+            \Log::error('Push to HAPI error', ['error' => $e->getMessage()]);
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Error pushing to HAPI: ' . $e->getMessage()], 500);
+            }
+            return back()->with('error', 'Error pushing to HAPI: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export patient data as CSV (for capstone demo)
+     */
+    public function exportPatientCsv(Request $request, $patientId = null)
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            // If patient_no provided from form, resolve to ID
+            $patientNo = $request->get('patient_no');
+
+            if ($patientNo) {
+                $patient = Patient::where('patient_no', $patientNo)->first();
+                if (!$patient) {
+                    return back()->with('error', "Patient with number {$patientNo} not found.");
+                }
+                $patients = collect([$patient]);
+                $filename = "patient_{$patientNo}_csv_" . date('Y-m-d_H-i-s') . '.csv';
+            } elseif ($patientId) {
+                $patient = Patient::find($patientId);
+                if (!$patient) {
+                    return back()->with('error', "Patient with id {$patientId} not found.");
+                }
+                $patients = collect([$patient]);
+                $filename = "patient_{$patientId}_csv_" . date('Y-m-d_H-i-s') . '.csv';
+            } else {
+                // Bulk: export a small set to avoid memory issues
+                $patients = Patient::with(['admissions', 'labOrders', 'medicines'])
+                    ->limit(500)->get();
+                $filename = "all_patients_csv_" . date('Y-m-d_H-i-s') . '.csv';
+            }
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ];
+
+            $callback = function() use ($patients) {
+                $out = fopen('php://output', 'w');
+
+                // CSV header row
+                fputcsv($out, [
+                    'patient_id', // formatted patient id (Pxxxxx)
+                    'patient_no',
+                    'display_name',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'sex',
+                    'date_of_birth',
+                    'age',
+                    'contact_number',
+                    'barangay',
+                    'city',
+                    'province',
+                    'nationality',
+                    'address',
+                    'room_no',
+                    'admission_diagnosis',
+                    'status',
+                    'general_health_history',
+                    'social_history',
+                    'admissions_count',
+                    'lab_orders_count',
+                    'medicines_count',
+                    'created_at'
+                ]);
+
+                foreach ($patients as $p) {
+                    $age = '';
+                    $dob = '';
+                    $created = '';
+                    try {
+                        if (!empty($p->date_of_birth)) {
+                            $dob = \Carbon\Carbon::parse($p->date_of_birth)->format('Y-m-d');
+                            $age = is_object($p->date_of_birth) ? $p->age : (\Carbon\Carbon::parse($p->date_of_birth)->age ?? '');
+                        }
+                    } catch (\Throwable $e) {
+                        $dob = $p->date_of_birth ?? '';
+                        $age = '';
+                    }
+
+                    try {
+                        if (!empty($p->created_at)) {
+                            $created = \Carbon\Carbon::parse($p->created_at)->toDateTimeString();
+                        }
+                    } catch (\Throwable $e) {
+                        $created = $p->created_at ?? '';
+                    }
+
+                    // Force Excel to treat long numeric strings (like phone numbers) as text by using Excel formula wrapper
+                    $contact = $p->contact_number ?? '';
+                    if ($contact !== '' && is_numeric($contact)) {
+                        $contact = '="' . $contact . '"';
+                    }
+
+                    // Build a human address from components (barangay, city, province)
+                    $addressParts = [];
+                    if (!empty($p->barangay)) $addressParts[] = $p->barangay;
+                    if (!empty($p->city)) $addressParts[] = $p->city;
+                    if (!empty($p->province)) $addressParts[] = $p->province;
+                    $addressStr = !empty($addressParts) ? implode(', ', $addressParts) : '';
+
+                    // Histories as JSON strings
+                    $generalHistory = is_array($p->general_health_history) ? json_encode($p->general_health_history) : ($p->general_health_history ?? '');
+                    $socialHistory = is_array($p->social_history) ? json_encode($p->social_history) : ($p->social_history ?? '');
+
+                    fputcsv($out, [
+                        $p->patient_id ?? $p->id,
+                        $p->patient_no ?? '',
+                        $p->display_name ?? ($p->first_name . ' ' . $p->last_name),
+                        $p->first_name ?? '',
+                        $p->middle_name ?? '',
+                        $p->last_name ?? '',
+                        $p->sex ?? '',
+                        $dob,
+                        $age,
+                        $contact,
+                        $p->barangay ?? '',
+                        $p->city ?? '',
+                        $p->province ?? '',
+                        $p->nationality ?? '',
+                        $addressStr,
+                        $p->room_no ?? '',
+                        $p->admission_diagnosis ?? '',
+                        $p->status ?? '',
+                        $generalHistory,
+                        $socialHistory,
+                        isset($p->admissions) ? $p->admissions->count() : \App\Models\Admission::where('patient_id', $p->id)->count(),
+                        isset($p->labOrders) ? $p->labOrders->count() : \App\Models\LabOrder::where('patient_id', $p->id)->count(),
+                        isset($p->medicines) ? $p->medicines->count() : \App\Models\PatientMedicine::where('patient_id', $p->id)->count(),
+                        $created,
+                    ]);
+                }
+
+                fclose($out);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            \Log::error('CSV Export Error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }
 

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Report;
 
 class BillingController extends Controller
 {
@@ -226,7 +227,22 @@ class BillingController extends Controller
             ]);
             
             DB::commit();
-            
+
+            // Audit: Log billing creation
+            try {
+                Report::log('Billing Created', Report::TYPE_USER_REPORT, 'New billing created', [
+                    'billing_id' => $billing->id,
+                    'billing_number' => $billing->billing_number,
+                    'patient_id' => $billing->patient_id,
+                    'total_amount' => floatval($billing->total_amount ?? 0),
+                    'net_amount' => floatval($billing->net_amount ?? 0),
+                    'created_by' => $billing->created_by ?? auth()->id(),
+                    'created_at' => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create billing audit: ' . $e->getMessage());
+            }
+
             return redirect()->route('billing.show', $billing)
                            ->with('success', 'Billing created successfully.');
                            

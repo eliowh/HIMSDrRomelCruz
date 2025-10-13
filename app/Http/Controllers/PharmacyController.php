@@ -14,6 +14,7 @@ use App\Models\StocksReference;
 use App\Models\PharmacyRequest;
 use App\Models\Patient;
 use App\Models\PatientMedicine;
+use App\Models\Report;
 
 class PharmacyController extends Controller
 {
@@ -772,6 +773,25 @@ class PharmacyController extends Controller
             $pharmacyRequest->calculateTotalPrice();
             $pharmacyRequest->save();
 
+            // Audit: Log pharmacy request creation
+            try {
+                Report::log('Medicine Requested', Report::TYPE_USER_REPORT, 'A nurse submitted a medicine request to pharmacy', [
+                    'patient_id' => $pharmacyRequest->patient_id,
+                    'admission_id' => $pharmacyRequest->admission_id,
+                    'pharmacy_request_id' => $pharmacyRequest->id,
+                    'requested_by' => auth()->id(),
+                    'patient_name' => $pharmacyRequest->patient_name,
+                    'item_code' => $pharmacyRequest->item_code,
+                    'generic_name' => $pharmacyRequest->generic_name,
+                    'brand_name' => $pharmacyRequest->brand_name,
+                    'quantity' => $pharmacyRequest->quantity,
+                    'unit_price' => floatval($pharmacyRequest->unit_price ?? 0),
+                ]);
+            } catch (\Throwable $e) {
+                // Don't block the main flow if logging fails
+                \Log::error('Failed to create pharmacy request audit: ' . $e->getMessage());
+            }
+
             return response()->json(['success' => true, 'message' => 'Medicine request submitted to pharmacy', 'request' => $pharmacyRequest]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to submit request: ' . $e->getMessage()], 500);
@@ -871,6 +891,23 @@ class PharmacyController extends Controller
             
             $pharmacyRequest->update($updateData);
 
+            // Audit: Log pharmacy dispense action
+            try {
+                Report::log('Medicine Dispensed', Report::TYPE_USER_REPORT, 'Pharmacy dispensed medicine for a request', [
+                    'patient_id' => $pharmacyRequest->patient_id,
+                    'admission_id' => $pharmacyRequest->admission_id,
+                    'pharmacy_request_id' => $pharmacyRequest->id,
+                    'patient_medicine_id' => $patientMedicine->id,
+                    'dispensed_by' => auth()->id(),
+                    'dispensed_at' => now()->toDateTimeString(),
+                    'quantity' => $pharmacyRequest->quantity,
+                    'unit_price' => floatval($pharmacyRequest->unit_price ?? 0),
+                    'total_price' => floatval($pharmacyRequest->total_price ?? 0),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create pharmacy dispense audit: ' . $e->getMessage());
+            }
+
             DB::commit();
 
             return response()->json([
@@ -907,6 +944,20 @@ class PharmacyController extends Controller
             $request->cancelled_at = now();
             $request->cancelled_by = auth()->id();
             $request->save();
+
+            // Audit: Log pharmacy request cancellation
+            try {
+                Report::log('Medicine Request Cancelled', Report::TYPE_USER_REPORT, 'A pharmacy request was cancelled', [
+                    'patient_id' => $request->patient_id,
+                    'admission_id' => $request->admission_id,
+                    'pharmacy_request_id' => $request->id,
+                    'cancelled_by' => auth()->id(),
+                    'cancelled_at' => $request->cancelled_at->toDateTimeString(),
+                    'status' => $request->status,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create pharmacy cancel audit: ' . $e->getMessage());
+            }
 
             DB::commit();
 

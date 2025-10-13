@@ -66,6 +66,20 @@ class LabOrderController extends Controller
             'status' => 'pending'
         ]);
 
+        // Audit: Lab order created
+        try {
+            Report::log('Lab Order Created', Report::TYPE_USER_REPORT, 'New lab order requested', [
+                'order_id' => $labOrder->id,
+                'patient_id' => $labOrder->patient_id,
+                'tests' => $labOrder->test_requested,
+                'priority' => $labOrder->priority,
+                'requested_by' => $labOrder->requested_by,
+                'requested_at' => $labOrder->requested_at->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to create lab order audit: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Lab order created successfully',
@@ -123,6 +137,18 @@ class LabOrderController extends Controller
 
         $order->update($updateData);
 
+            // Audit: Lab order status updated
+            try {
+                Report::log('Lab Order Status Updated', Report::TYPE_USER_REPORT, 'Lab order status changed', [
+                    'order_id' => $order->id,
+                    'new_status' => $order->status,
+                    'updated_by' => auth()->id(),
+                    'updated_at' => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to write lab order status audit: ' . $e->getMessage());
+            }
+
         return response()->json([
             'success' => true,
             'message' => 'Order status updated successfully',
@@ -141,6 +167,17 @@ class LabOrderController extends Controller
     public function viewOrder($id)
     {
         $order = LabOrder::with(['patient', 'requestedBy', 'labTech'])->findOrFail($id);
+
+        // Audit: Lab order viewed
+        try {
+            Report::log('Lab Order Viewed', Report::TYPE_USER_REPORT, 'Lab order viewed by user', [
+                'order_id' => $order->id,
+                'viewed_by' => auth()->id(),
+                'viewed_at' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to write lab order viewed audit: ' . $e->getMessage());
+        }
         
         return response()->json([
             'success' => true,
@@ -159,6 +196,17 @@ class LabOrderController extends Controller
         
         return Storage::download($order->results_pdf_path, 
             'Lab_Results_' . $order->patient_name . '_' . $order->id . '.pdf');
+
+        // Audit: Lab results downloaded
+        try {
+            Report::log('Lab Results Downloaded', Report::TYPE_USER_REPORT, 'Lab results PDF downloaded', [
+                'order_id' => $order->id,
+                'downloaded_by' => auth()->id(),
+                'downloaded_at' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to write lab results download audit: ' . $e->getMessage());
+        }
     }
     
     /**
