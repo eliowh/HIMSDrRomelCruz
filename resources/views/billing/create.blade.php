@@ -355,10 +355,11 @@ function displayPatientServices(services) {
                         <input type="number" step="0.01" min="0" 
                                class="form-control case-rate-input" 
                                value="${parsePrice(service.case_rate)}"
+                               onchange="updateServicePrice(this, ${index})"
                                readonly>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Professional Fee</label>
+                                                                <label class="form-label">ICD Fee</label>
                         <input type="number" step="0.01" min="0" 
                                class="form-control unit-price-input" 
                                value="${parsePrice(service.unit_price)}"
@@ -381,8 +382,8 @@ function displayPatientServices(services) {
                         <label class="form-label">Total</label>
                         <div class="form-control-plaintext fw-bold" id="service-total-${index}">
                             ${service.type === 'professional' ? 
-                                // Display billed total (professional fee * qty). Case rate is shown separately and not added to billed total
-                                '₱' + (parsePrice(service.unit_price) * parseFloat(service.quantity || 1)).toFixed(2) :
+                                // Display total including Case Rate + Professional Fee for both member types
+                                '₱' + ((parsePrice(service.case_rate) + parsePrice(service.unit_price)) * parseFloat(service.quantity || 1)).toFixed(2) :
                                 '₱' + (parsePrice(service.unit_price) * parseFloat(service.quantity || 1)).toFixed(2)
                             }
                         </div>
@@ -393,6 +394,8 @@ function displayPatientServices(services) {
             container.innerHTML += serviceHtml;
         });
         
+        // Ensure service totals are correctly displayed
+        refreshServiceTotals();
         calculateTotals();
     }, 10); // Small delay to ensure DOM clears
 }
@@ -407,10 +410,12 @@ function updateServicePrice(input, index) {
     let total;
     
     if (caseRateInput) {
-        // Professional service: add case rate + professional fee
+        // Professional service: both PhilHealth and non-PhilHealth members are charged Case Rate + Professional Fee
+        // The difference is that PhilHealth members get a deduction covering both
         const caseRate = parsePrice(caseRateInput.value);
-        // The billed total should only include the professional fee. Case rate is a separate coverage/discount.
-        total = newPrice * quantity;
+        
+        // Both member types: Case Rate + Professional Fee included in total
+        total = (caseRate + newPrice) * quantity;
     } else {
         // Other services: just use unit price
         total = newPrice * quantity;
@@ -641,8 +646,42 @@ function updatePhilhealthStatus() {
         statusDiv.style.display = 'none';
     }
     
+    // Refresh individual service totals to reflect current calculation logic
+    refreshServiceTotals();
+    
     // Recalculate totals when PhilHealth status changes
     calculateTotals();
+}
+
+// Function to refresh individual service total displays
+function refreshServiceTotals() {
+    const services = document.querySelectorAll('.patient-service');
+    services.forEach((service, index) => {
+        const quantityInput = service.querySelector('.quantity-input');
+        const quantity = quantityInput ? parseFloat(quantityInput.value) || 1 : 1;
+        
+        const caseRateInput = service.querySelector('.case-rate-input');
+        const unitPriceInput = service.querySelector('.unit-price-input');
+        
+        let total = 0;
+        
+        if (caseRateInput && unitPriceInput) {
+            // Professional service: Case Rate + Professional Fee for all patients
+            const caseRate = parsePrice(caseRateInput.value);
+            const professionalFee = parsePrice(unitPriceInput.value);
+            total = (caseRate + professionalFee) * quantity;
+        } else if (unitPriceInput) {
+            // Other services: just unit price
+            const unitPrice = parsePrice(unitPriceInput.value);
+            total = unitPrice * quantity;
+        }
+        
+        // Update the total display
+        const totalElement = document.getElementById(`service-total-${index}`);
+        if (totalElement) {
+            totalElement.textContent = `₱${total.toFixed(2)}`;
+        }
+    });
 }
 
 function getServiceIcon(type) {
@@ -696,9 +735,13 @@ function calculateTotals() {
             let serviceTotal = 0;
             
             if (caseRateInput && professionalFeeInput) {
-                // Professional service: billed total should only include the professional fee.
+                // Professional service: both PhilHealth and non-PhilHealth members are charged Case Rate + Professional Fee
+                // The difference is that PhilHealth members get a deduction covering both amounts
+                const caseRate = parsePrice(caseRateInput.value);
                 const professionalFee = parsePrice(professionalFeeInput.value);
-                serviceTotal = quantity * professionalFee;
+                
+                // Both member types: Case Rate + Professional Fee included in subtotal
+                serviceTotal = quantity * (caseRate + professionalFee);
             } else {
                 // Other services: just use unit price
                 const unitPrice = professionalFeeInput ? parsePrice(professionalFeeInput.value) : 0;
@@ -709,15 +752,20 @@ function calculateTotals() {
         });
     }
     
-    // PhilHealth deduction: sum of case_rate for professional items when PhilHealth member is checked
+    // PhilHealth deduction: sum of Case Rate + Professional Fee for professional items when PhilHealth member is checked
     let philhealthDeduction = 0;
     if (document.getElementById('is_philhealth_member').checked) {
         services.forEach((service) => {
             const caseRateInput = service.querySelector('.case-rate-input');
+            const unitPriceInput = service.querySelector('.unit-price-input');
             const qtyInput = service.querySelector('.quantity-input');
             const qty = qtyInput ? parseFloat(qtyInput.value) || 1 : 1;
+            
             if (caseRateInput) {
-                philhealthDeduction += parsePrice(caseRateInput.value) * qty;
+                // PhilHealth covers Case Rate + Professional Fee
+                const caseRate = parsePrice(caseRateInput.value);
+                const professionalFee = unitPriceInput ? parsePrice(unitPriceInput.value) : 0;
+                philhealthDeduction += (caseRate + professionalFee) * qty;
             }
         });
     }
@@ -810,7 +858,7 @@ async function searchIcdCodes(event) {
             html += `
                 <div class="icd-suggestion p-2 border-bottom cursor-pointer" onclick="selectIcdCode('${item.icd_code}', '${item.description}', this)">
                     <strong>${item.icd_code}</strong> - ${item.description}
-                    <br><small class="text-muted">Professional Fee: ₱${item.professional_fee}</small>
+                    <br><small class="text-muted">ICD Fee: ₱${item.professional_fee}</small>
                 </div>
             `;
         });

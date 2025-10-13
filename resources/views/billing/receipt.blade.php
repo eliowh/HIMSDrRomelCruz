@@ -331,7 +331,7 @@
                 <td class="amount">PHP {{ number_format($billing->room_charges, 2) }}</td>
             </tr>
             <tr>
-                <td class="label">Professional Fees:</td>
+                <td class="label">ICD Fees:</td>
                 <td class="amount">PHP {{ number_format($billing->professional_fees, 2) }}</td>
             </tr>
             <tr>

@@ -124,13 +124,14 @@ class BillingController extends Controller
             $otherCharges = 0;
             
             foreach ($request->billing_items as $item) {
-                // For professional items, DO NOT add case rate into the billed total.
-                // The case_rate represents the PhilHealth case rate (coverage) and functions as a discount.
+                // For professional items, both PhilHealth and non-PhilHealth members are charged Case Rate + Professional Fee
+                // The difference is that PhilHealth members get a deduction that covers both
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    // Only professional fee is added to billed totals
-                    $itemTotal = $item['quantity'] * $professionalFee;
+                    
+                    // Both PhilHealth and non-PhilHealth: Case Rate + Professional Fee included in subtotal
+                    $itemTotal = $item['quantity'] * ($caseRate + $professionalFee);
                 } else {
                     $itemTotal = $item['quantity'] * $item['unit_price'];
                 }
@@ -178,12 +179,13 @@ class BillingController extends Controller
             
             // Create billing items
             foreach ($request->billing_items as $item) {
-                // Calculate correct total amount based on item type. Persist total_amount as what will be billed
-                // (case_rate is stored separately and not included in total_amount)
+                // Calculate correct total amount - both member types are charged Case Rate + Professional Fee
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    $itemTotalAmount = $item['quantity'] * $professionalFee;
+                    
+                    // Both PhilHealth and non-PhilHealth: Case Rate + Professional Fee included in total
+                    $itemTotalAmount = $item['quantity'] * ($caseRate + $professionalFee);
                 } else {
                     $itemTotalAmount = $item['quantity'] * $item['unit_price'];
                 }
@@ -206,12 +208,17 @@ class BillingController extends Controller
             $billing->load('billingItems');
             
             // Calculate deductions and discounts
-            // PhilHealth deduction is based on sum of case_rate values for professional items when member checked
+            // PhilHealth deduction is based on sum of Case Rate + Professional Fee for professional items when member checked
             $philhealthDeduction = 0;
             if ($billing->is_philhealth_member) {
                 foreach ($billing->billingItems as $bi) {
-                    if ($bi->item_type === 'professional' && $bi->case_rate) {
-                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    if ($bi->item_type === 'professional') {
+                        $quantity = $bi->quantity ?: 1;
+                        $caseRate = $bi->case_rate ?: 0;
+                        $professionalFee = $bi->unit_price ?: 0;
+                        
+                        // PhilHealth covers Case Rate + Professional Fee
+                        $philhealthDeduction += (($caseRate + $professionalFee) * $quantity);
                     }
                 }
             }
@@ -372,12 +379,17 @@ class BillingController extends Controller
 
             $tempBilling->is_philhealth_member = $finalIsPhilhealth;
 
-            // PhilHealth deduction based on case_rate only when checked
+            // PhilHealth deduction based on Case Rate + Professional Fee when checked
             $philhealthDeduction = 0;
             if ($tempBilling->is_philhealth_member) {
                 foreach ($billing->billingItems as $bi) {
-                    if ($bi->item_type === 'professional' && $bi->case_rate) {
-                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    if ($bi->item_type === 'professional') {
+                        $quantity = $bi->quantity ?: 1;
+                        $caseRate = $bi->case_rate ?: 0;
+                        $professionalFee = $bi->unit_price ?: 0;
+                        
+                        // PhilHealth covers Case Rate + Professional Fee
+                        $philhealthDeduction += (($caseRate + $professionalFee) * $quantity);
                     }
                 }
             }

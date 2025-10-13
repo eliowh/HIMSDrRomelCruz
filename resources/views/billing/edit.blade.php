@@ -60,7 +60,7 @@
                         <!-- Professional Fee Editing -->
                         <div class="card shadow mb-4">
                             <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0"><i class="fas fa-user-md"></i> Professional Fee Management</h5>
+                                <h5 class="mb-0"><i class="fas fa-user-md"></i> ICD Fee Management</h5>
                             </div>
                             <div class="card-body">
                                 <div class="alert alert-info">
@@ -74,7 +74,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label for="professional_fees" class="form-label">
-                                            Professional Fee Amount <span class="text-danger">*</span>
+                                            ICD Fee Amount <span class="text-danger">*</span>
                                         </label>
                                         <div class="input-group">
                                             <span class="input-group-text">₱</span>
@@ -90,7 +90,7 @@
                                         <small class="text-muted">Editable professional fee portion only</small>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Professional Fee Breakdown</label>
+                                        <label class="form-label">ICD Fee Breakdown</label>
                                         <div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
                                             @forelse($billing->billingItems->where('item_type', 'professional') as $item)
                                                 <div class="mb-2">
@@ -102,7 +102,7 @@
                                                         </div>
                                                     @endif
                                                     <div class="d-flex justify-content-between">
-                                                        <small class="text-muted">Professional Fee:</small>
+                                                        <small class="text-muted">ICD Fee:</small>
                                                         <small class="text-primary">₱{{ number_format($item->unit_price, 2) }}</small>
                                                     </div>
                                                     <div class="d-flex justify-content-between border-top pt-1">
@@ -223,7 +223,7 @@
                                     <div class="col-auto">₱{{ number_format($billing->room_charges ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
-                                    <div class="col">Professional Fees:</div>
+                                    <div class="col">ICD Fees:</div>
                                     <div class="col-auto text-warning" id="currentProfessionalFees">₱{{ number_format($billing->professional_fees ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">
@@ -350,26 +350,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const isSenior = seniorCheckbox.checked;
         const isPwd = pwdCheckbox.checked;
         
-        // Calculate new subtotal
-        const newSubtotal = originalValues.roomCharges + newProfessionalFees + 
+        // Calculate new subtotal - include Case Rate for both PhilHealth and non-PhilHealth members
+        @php
+            $originalCaseRateOnly = $billing->billingItems->where('item_type', 'professional')->sum(function($it) { 
+                return ($it->case_rate ?: 0) * ($it->quantity ?: 1); 
+            });
+        @endphp
+        const caseRateTotal = {{ $originalCaseRateOnly }};
+        
+        // Both member types: Case Rate + Professional Fee included in subtotal
+        const adjustedProfessionalTotal = newProfessionalFees + caseRateTotal;
+        
+        const newSubtotal = originalValues.roomCharges + adjustedProfessionalTotal + 
                            originalValues.medicineCharges + originalValues.labCharges + 
                            originalValues.otherCharges;
         
-        // PhilHealth deduction is sum of case_rate values when the checkbox is checked.
+        // PhilHealth deduction is sum of Case Rate + Professional Fee when the checkbox is checked.
         let newPhilhealthDeduction = 0;
         const isPhilhealthMemberChecked = document.getElementById('is_philhealth_member_edit').checked;
         if (isPhilhealthMemberChecked) {
-            // Sum case_rates from billing items (server-side values are authoritative)
+            // Sum Case Rate + Professional Fee from billing items (server-side values are authoritative)
             @php
-                $caseRateTotal = $billing->billingItems->where('item_type', 'professional')->sum(function($it) { return $it->case_rate * ($it->quantity ?: 1); });
+                $caseRateTotal = $billing->billingItems->where('item_type', 'professional')->sum(function($it) { 
+                    $quantity = $it->quantity ?: 1;
+                    $caseRate = $it->case_rate ?: 0;
+                    $professionalFee = $it->unit_price ?: 0;
+                    return ($caseRate + $professionalFee) * $quantity;
+                });
             @endphp
-            // If original billing had case rates, keep same total case rate amount proportional to quantity (we'll use stored value)
-            // For the edit form we cannot recompute case rates client-side reliably, so fall back to the stored philhealth deduction if present
-            if (originalValues.isPhilhealthMember && originalValues.philhealthDeduction > 0) {
-                newPhilhealthDeduction = originalValues.philhealthDeduction;
-            } else {
-                newPhilhealthDeduction = {{ $caseRateTotal ?? 0 }};
-            }
+            // For professional fee updates, recalculate using new professional fee amount
+            const professionalFeeAdjustment = newProfessionalFees - originalValues.professionalFees;
+            @php
+                $originalCaseRateOnly = $billing->billingItems->where('item_type', 'professional')->sum(function($it) { 
+                    return ($it->case_rate ?: 0) * ($it->quantity ?: 1); 
+                });
+            @endphp
+            // PhilHealth covers Case Rate + Professional Fee
+            newPhilhealthDeduction = {{ $originalCaseRateOnly }} + newProfessionalFees;
         }
         
         // Calculate senior/PWD discount
@@ -400,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
     professionalFeesInput.addEventListener('input', calculateUpdatedTotals);
     seniorCheckbox.addEventListener('change', calculateUpdatedTotals);
     pwdCheckbox.addEventListener('change', calculateUpdatedTotals);
+    document.getElementById('is_philhealth_member_edit').addEventListener('change', calculateUpdatedTotals);
     
     // Initial calculation
     calculateUpdatedTotals();

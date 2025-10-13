@@ -215,7 +215,7 @@
                                 </div>
                                 @endif
                                 <div class="row mb-2">
-                                    <div class="col">Professional Fees Total:</div>
+                                    <div class="col">ICD Fee Total:</div>
                                     <div class="col-auto fw-bold">₱{{ number_format($billing->professional_fees ?? 0, 2) }}</div>
                                 </div>
                                 <div class="row mb-2">

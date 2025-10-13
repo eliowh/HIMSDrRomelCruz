@@ -95,13 +95,17 @@ class Billing extends Model
             return 0;
         }
 
-        // PhilHealth deduction should be based on the ICD case rate only.
-        // Do NOT add case rates to the billed amounts — case rates act as the discount/coverage.
+        // PhilHealth deduction should be based on Case Rate + Professional Fee combined.
+        // This represents the total amount covered by PhilHealth for professional services.
         $deduction = 0;
         foreach ($this->billingItems as $item) {
-            if ($item->item_type === 'professional' && $item->case_rate) {
+            if ($item->item_type === 'professional') {
                 $quantity = $item->quantity ?: 1;
-                $deduction += ($item->case_rate * $quantity);
+                $caseRate = $item->case_rate ?: 0;
+                $professionalFee = $item->unit_price ?: 0;
+                
+                // PhilHealth covers Case Rate + Professional Fee
+                $deduction += (($caseRate + $professionalFee) * $quantity);
             }
         }
 

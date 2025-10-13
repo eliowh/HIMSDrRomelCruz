@@ -36,7 +36,7 @@ class BillingItem extends Model
         'room' => 'Room Charges',
         'medicine' => 'Medicine',
         'laboratory' => 'Laboratory',
-        'professional' => 'Professional Fee',
+        'professional' => 'ICD Fee',
         'other' => 'Other Charges'
     ];
 
