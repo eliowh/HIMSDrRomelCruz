@@ -241,19 +241,7 @@
                                 </dl>
                             </div>
                             
-                            <!-- Admission Details Section -->
-                            <div class="details-section">
-                                <h4 class="section-header">Admission Details</h4>
-                                <dl class="patient-details">
-                                    <dt>Room No.</dt><dd id="md-room_no">-</dd>
-                                    <dt>Admission Type</dt><dd id="md-admission_type">-</dd>
-                                    <dt>Service</dt><dd id="md-service">-</dd>
-                                    <dt>Doctor</dt><dd id="md-doctor_name">-</dd>
-                                    <dt>Doctor Type</dt><dd id="md-doctor_type">-</dd>
-                                    <dt>Diagnosis</dt><dd id="md-admission_diagnosis">-</dd>
-                                    <dt>Admitted</dt><dd id="md-created_at">-</dd>
-                                </dl>
-                            </div>
+                            <!-- Admission Details removed for lab technician view -->
                             
                             <!-- Test History Details Section -->
                             <div class="details-section" id="test-history-section" style="display:none;">
@@ -394,13 +382,7 @@
                 document.getElementById('md-location').textContent = or(location);
                 
                 document.getElementById('md-nationality').textContent = formatName(patient.nationality);
-                document.getElementById('md-room_no').textContent = or(patient.room_no);
-                document.getElementById('md-admission_diagnosis').textContent = or(patient.admission_diagnosis);
-                document.getElementById('md-admission_type').textContent = formatName(patient.admission_type);
-                document.getElementById('md-service').textContent = formatName(patient.service);
-                document.getElementById('md-doctor_name').textContent = formatName(patient.doctor_name);
-                document.getElementById('md-doctor_type').textContent = formatName(patient.doctor_type);
-                document.getElementById('md-created_at').textContent = formatDateTime(patient.created_at);
+                // Admission details removed for lab technician view; skip setting room/admission/doctor fields
                 
                 // Load test history details
                 loadTestHistoryDetails(patient.id);
