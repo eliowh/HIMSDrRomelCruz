@@ -25,6 +25,7 @@
             <div class="form-group">
                 <label class="form-label">Room Name</label>
                 <input type="text" 
+                       placeholder="Enter room name"
                        name="room_name" 
                        class="form-input" 
                        required 

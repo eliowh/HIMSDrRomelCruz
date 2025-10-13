@@ -133,69 +133,90 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener('click', function(e){ if(!modal.contains(e.target) || e.target === modal) { /* allow outside click to close handled by nurse page */ } if(!e.target.closest('.pharmacy-search-container')) clearSuggestions(); });
 
-    // Form submit
+    // Form submit with client-side item_code validation
     document.getElementById('medicineRequestForm').addEventListener('submit', function(e){
         e.preventDefault();
         const pid = document.getElementById('medRequestPatientId').value;
         const aid = document.getElementById('medRequestAdmissionId').value;
         if(!pid){ alert('Patient missing'); return; }
         if(!aid){ alert('Admission missing'); return; }
-        
-        const payload = new FormData();
-        payload.append('patient_id', pid);
-        payload.append('admission_id', aid);
-        payload.append('item_code', itemCode.value || '');
-        payload.append('generic_name', medSearch.value);
-        payload.append('brand_name', '');
-        payload.append('quantity', quantity.value);
-        payload.append('unit_price', unitPrice.value || 0);
-        payload.append('notes', notes.value || '');
+
+        const chosenCode = (itemCode.value || '').trim();
+        const chosenName = medSearch.value.trim();
+
+        // Client-side: ensure item_code is present (readonly field is filled by selection)
+        if (!chosenCode) {
+            nurseError('Invalid Selection', 'Please select a medicine from the suggestions so the item code is filled.');
+            return;
+        }
 
         const btn = this.querySelector('.submit-btn');
-        const txt = btn.textContent; btn.textContent = 'Submitting...'; btn.disabled = true;
+        const txt = btn.textContent; btn.textContent = 'Validating...'; btn.disabled = true;
 
-        // Debug: Log the data being sent
-        console.log('Submitting medicine request:', {
-            patient_id: pid,
-            admission_id: aid,
-            item_code: itemCode.value || '',
-            generic_name: medSearch.value,
-            brand_name: '',
-            quantity: quantity.value,
-            unit_price: unitPrice.value || 0,
-            notes: notes.value || ''
-        });
-
-        fetch('/nurse/pharmacy-orders', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-            body: payload
-        })
-        .then(r=>r.json())
-        .then(j=>{
-            if(j.success){
-                nurseSuccess('Medicine Requested', 'Request sent to Pharmacy');
-                closeMedicineRequestModal();
-            } else {
-                // Show specific validation errors if available
-                let errorMessage = j.message || 'Unable to submit request';
-                if (j.errors) {
-                    const errorList = [];
-                    for (const field in j.errors) {
-                        if (Array.isArray(j.errors[field])) {
-                            errorList.push(...j.errors[field]);
-                        }
-                    }
-                    if (errorList.length > 0) {
-                        errorMessage = errorList.join(', ');
-                    }
+        // Quick server-side existence check against stocks reference by item_code
+        fetch('/nurse/pharmacy/stocks-reference?type=item_code&search='+encodeURIComponent(chosenCode))
+            .then(r=>r.json())
+            .then(j=>{
+                let found = false;
+                if (j && j.success && Array.isArray(j.data)) {
+                    found = j.data.some(it => (it.item_code||'').toString() === chosenCode.toString());
+                } else if (Array.isArray(j)) {
+                    found = j.some(it => (it.item_code||'').toString() === chosenCode.toString());
                 }
-                console.error('Validation errors:', j.errors);
-                nurseError('Request Failed', errorMessage);
-            }
-        })
-        .catch(e=>{ console.error('Submit error', e); nurseError('Request Failed', 'Network error'); })
-        .finally(()=>{ btn.textContent = txt; btn.disabled = false; });
+
+                if (!found) {
+                    nurseError('Invalid Item Code', 'The selected medicine (item code '+chosenCode+') was not found in the pharmacy masterlist. Please re-select from suggestions.');
+                    btn.textContent = txt; btn.disabled = false;
+                    return;
+                }
+
+                // proceed to submit now
+                const payload = new FormData();
+                payload.append('patient_id', pid);
+                payload.append('admission_id', aid);
+                payload.append('item_code', chosenCode);
+                payload.append('generic_name', chosenName);
+                payload.append('brand_name', '');
+                payload.append('quantity', quantity.value);
+                payload.append('unit_price', unitPrice.value || 0);
+                payload.append('notes', notes.value || '');
+
+                btn.textContent = 'Submitting...';
+                fetch('/nurse/pharmacy-orders', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                    body: payload
+                })
+                .then(r=>r.json())
+                .then(j2=>{
+                    if(j2.success){
+                        nurseSuccess('Medicine Requested', 'Request sent to Pharmacy');
+                        closeMedicineRequestModal();
+                    } else {
+                        let errorMessage = j2.message || 'Unable to submit request';
+                        if (j2.errors) {
+                            const errorList = [];
+                            for (const field in j2.errors) {
+                                if (Array.isArray(j2.errors[field])) {
+                                    errorList.push(...j2.errors[field]);
+                                }
+                            }
+                            if (errorList.length > 0) {
+                                errorMessage = errorList.join(', ');
+                            }
+                        }
+                        console.error('Validation errors:', j2.errors);
+                        nurseError('Request Failed', errorMessage);
+                    }
+                })
+                .catch(e=>{ console.error('Submit error', e); nurseError('Request Failed', 'Network error'); })
+                .finally(()=>{ btn.textContent = txt; btn.disabled = false; });
+            })
+            .catch(e=>{
+                console.error('Validation fetch error', e);
+                nurseError('Validation Failed', 'Unable to validate selected medicine. Please try again.');
+                btn.textContent = txt; btn.disabled = false;
+            });
     });
 });
 

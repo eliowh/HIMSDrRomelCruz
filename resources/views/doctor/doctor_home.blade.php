@@ -60,7 +60,7 @@
             </div>
 
             <!-- Quick Actions Card -->
-            <div class="nurse-card">
+            <div class="doctor-card">
                 <h3>Quick Actions</h3>
                 <div class="quick-actions">
                     <a href="/doctor/patients" class="action-btn primary">
@@ -80,7 +80,7 @@
 
             <!-- Recent Patients and System Status -->
             <div class="two-column-layout">
-                <div class="nurse-card">
+                <div class="doctor-card">
                     <h3>Recent Patient Admissions</h3>
                     <div class="recent-patients">
                         @if($patients->count() > 0)
@@ -116,7 +116,7 @@
                     </div>
                 </div>
 
-                <div class="nurse-card">
+                <div class="doctor-card">
                     <h3>System Overview</h3>
                     <div class="system-status">
                         <div class="status-item">
@@ -160,7 +160,7 @@
 
             <!-- Patient Distribution by Admission Type -->
             @if($patients->count() > 0)
-            <div class="nurse-card">
+            <div class="doctor-card">
                 <h3>Patient Distribution by Admission Type</h3>
                 <div class="admission-stats">
                     @php
@@ -188,7 +188,7 @@
             @endif
 
             <!-- Recent Activity -->
-            <div class="nurse-card">
+            <div class="doctor-card">
                 <h3>Recent System Activity</h3>
                 <div class="activity-timeline">
                     @if($patients->count() > 0)

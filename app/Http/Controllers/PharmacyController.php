@@ -284,7 +284,8 @@ class PharmacyController extends Controller
         if ($search) {
             switch ($type) {
                 case 'item_code':
-                    $query->where('COL 1', 'like', '%' . $search . '%');
+                    // For item_code queries, prefer exact match to avoid partial-code acceptance
+                    $query->where('COL 1', '=', $search);
                     break;
                 case 'generic_name':
                     $query->whereNotNull('COL 2')
@@ -636,7 +637,8 @@ class PharmacyController extends Controller
         $validator = Validator::make($request->all(), [
             'patient_id' => 'required|exists:patients,id',
             'admission_id' => 'required|exists:admissions,id',
-            'item_code' => 'nullable|string',
+            // Require item_code to prevent empty medicine requests from nurses
+            'item_code' => 'required|string',
             'generic_name' => 'nullable|string',
             'brand_name' => 'nullable|string',
             'quantity' => 'required|integer|min:1',
@@ -653,9 +655,8 @@ class PharmacyController extends Controller
                 }
             }
             
-            // Temporarily disable strict stock validation for nurse requests
-            // This allows nurses to request any medicine, pharmacy will verify stock
-            // $this->validateStockReference($validator, $request);
+            // Enforce stock reference validation for nurse-submitted requests so item_code must exist
+            $this->validateStockReference($validator, $request);
         });
 
         if ($validator->fails()) {
@@ -674,6 +675,82 @@ class PharmacyController extends Controller
             // Parse unit price to handle commas and currency symbols
             $unitPrice = $this->parsePrice($request->unit_price);
 
+                // If item_code was provided, prefer authoritative values from stocks reference.
+                // Important: we will NOT blindly copy the nurse-supplied 'generic_name' into the generic column
+                // unless the masterlist indicates that the value is a generic. This avoids storing brand names
+                // into the generic_name column when the masterlist has a brand-only row.
+                $authoritativeGeneric = null;
+                $authoritativeBrand = null;
+                $authoritativePrice = null;
+                $ref = null;
+                if (!empty($request->item_code)) {
+                    $ref = \App\Models\StocksReference::excludeHeader()->where('COL 1', $request->item_code)->first();
+                    if ($ref) {
+                        $g = trim((string)($ref->{'COL 2'} ?? ''));
+                        $b = trim((string)($ref->{'COL 3'} ?? ''));
+                        $p = trim((string)($ref->{'COL 4'} ?? ''));
+                        // Keep generic NULL when masterlist has empty generic (brand-only rows)
+                        $authoritativeGeneric = $g !== '' ? $g : null;
+                        $authoritativeBrand = $b !== '' ? $b : null;
+                        if ($p !== '') {
+                            $authoritativePrice = $this->parsePrice($p);
+                        }
+                    }
+                }
+
+                // If authoritative price exists, use it as unit price (unless request provided explicit unit_price)
+                if (!is_null($authoritativePrice) && (empty($request->unit_price) || $this->parsePrice($request->unit_price) <= 0)) {
+                    $unitPrice = $authoritativePrice;
+                }
+
+                // If we found a masterlist row, use its generic/brand strictly (keep generic NULL when master has none).
+                // If no master row was found (should be rare because item_code is required), try to infer whether the
+                // supplied text corresponds to a generic or brand by searching exact matches in the masterlist. Only
+                // set generic_name when the masterlist indicates it is a generic.
+                $finalGeneric = null;
+                $finalBrand = null;
+                if ($ref) {
+                    $finalGeneric = $authoritativeGeneric; // may be null intentionally
+                    $finalBrand = $authoritativeBrand ?: (trim((string)($request->brand_name ?? '')) ?: null);
+                } else {
+                    // No authoritative row found by item_code. Try to infer from provided fields but prefer masterlist confirmation.
+                    $providedGeneric = trim((string)($request->generic_name ?? '')) ?: null;
+                    $providedBrand = trim((string)($request->brand_name ?? '')) ?: null;
+
+                    // Check if providedGeneric exactly matches any master generic (case-insensitive)
+                    if ($providedGeneric) {
+                        $matchG = \App\Models\StocksReference::excludeHeader()
+                            ->whereRaw('LOWER(`COL 2`) = ?', [mb_strtolower($providedGeneric)])
+                            ->first();
+                        if ($matchG) {
+                            $finalGeneric = trim((string)($matchG->{'COL 2'} ?? '')) ?: null;
+                        } else {
+                            // See if the providedGeneric actually matches a brand in masterlist -> treat as brand
+                            $matchAsBrand = \App\Models\StocksReference::excludeHeader()
+                                ->whereRaw('LOWER(`COL 3`) = ?', [mb_strtolower($providedGeneric)])
+                                ->first();
+                            if ($matchAsBrand) {
+                                $finalBrand = trim((string)($matchAsBrand->{'COL 3'} ?? '')) ?: null;
+                            }
+                        }
+                    }
+
+                    if ($providedBrand && !$finalBrand) {
+                        $matchB = \App\Models\StocksReference::excludeHeader()
+                            ->whereRaw('LOWER(`COL 3`) = ?', [mb_strtolower($providedBrand)])
+                            ->first();
+                        if ($matchB) {
+                            $finalBrand = trim((string)($matchB->{'COL 3'} ?? '')) ?: null;
+                        }
+                    }
+
+                    // As a last resort, if nothing matched, allow the provided brand text to be saved into brand_name
+                    // so nurses can still record a recognizable value (but generic remains null unless confirmed).
+                    if (!$finalBrand && $providedBrand) {
+                        $finalBrand = $providedBrand;
+                    }
+                }
+
             $pharmacyRequest = new PharmacyRequest([
                 'patient_id' => $request->patient_id,
                 'admission_id' => $request->admission_id,
@@ -681,8 +758,9 @@ class PharmacyController extends Controller
                 'patient_name' => $patient->first_name . ' ' . $patient->last_name,
                 'patient_no' => $patient->patient_no,
                 'item_code' => $request->item_code ?: null,
-                'generic_name' => $request->generic_name ?: null,
-                'brand_name' => $request->brand_name ?: null,
+                // Prefer authoritative masterlist values when available. finalGeneric/finalBrand are derived above.
+                'generic_name' => $finalGeneric ?? null,
+                'brand_name' => $finalBrand ?? null,
                 'quantity' => $request->quantity,
                 'unit_price' => $unitPrice,
                 'notes' => $request->notes ?: null,
@@ -1012,9 +1090,9 @@ class PharmacyController extends Controller
      */
     private function validateStockReference($validator, $request)
     {
-        $itemCode = $request->item_code;
-        $genericName = $request->generic_name;
-        $brandName = $request->brand_name;
+    $itemCode = trim((string)($request->item_code ?? ''));
+    $genericName = trim((string)($request->generic_name ?? ''));
+    $brandName = trim((string)($request->brand_name ?? ''));
         
         // If no item information is provided, skip validation
         if (empty($itemCode) && empty($genericName) && empty($brandName)) {
@@ -1022,20 +1100,24 @@ class PharmacyController extends Controller
             return;
         }
         
-        // Search for the item in stocks reference
-        $stockItem = \App\Models\StocksReference::excludeHeader()
-            ->where(function ($query) use ($itemCode, $genericName, $brandName) {
-                if (!empty($itemCode)) {
-                    $query->orWhere('COL 1', $itemCode);
-                }
-                if (!empty($genericName)) {
-                    $query->orWhere('COL 2', 'LIKE', '%' . $genericName . '%');
-                }
-                if (!empty($brandName)) {
-                    $query->orWhere('COL 3', 'LIKE', '%' . $brandName . '%');
-                }
-            })
-            ->first();
+        // If item_code was provided, require an exact match on COL 1 only.
+        if (!empty($itemCode)) {
+            $stockItem = \App\Models\StocksReference::excludeHeader()
+                ->where('COL 1', $itemCode)
+                ->first();
+        } else {
+            // Fallback: search by generic or brand names if item_code not provided
+            $stockItem = \App\Models\StocksReference::excludeHeader()
+                ->where(function ($query) use ($genericName, $brandName) {
+                    if (!empty($genericName)) {
+                        $query->orWhere('COL 2', 'LIKE', '%' . $genericName . '%');
+                    }
+                    if (!empty($brandName)) {
+                        $query->orWhere('COL 3', 'LIKE', '%' . $brandName . '%');
+                    }
+                })
+                ->first();
+        }
             
         if (!$stockItem) {
             $searchTerm = '';
@@ -1049,20 +1131,41 @@ class PharmacyController extends Controller
         // If item exists, validate that the provided details match
         if ($stockItem) {
             $errors = [];
-            
-            if (!empty($itemCode) && $stockItem->{'COL 1'} !== $itemCode) {
-                $errors[] = "Item Code '$itemCode' does not match masterlist (Expected: {$stockItem->{'COL 1'}})";
+
+            $masterCode = trim((string)($stockItem->{'COL 1'} ?? ''));
+            $masterGeneric = trim((string)($stockItem->{'COL 2'} ?? ''));
+            $masterBrand = trim((string)($stockItem->{'COL 3'} ?? ''));
+
+            // If item_code was provided and matches the masterlist code, accept immediately.
+            if (!empty($itemCode) && $masterCode === $itemCode) {
+                return;
             }
-            
-            if (!empty($genericName) && stripos($stockItem->{'COL 2'}, $genericName) === false) {
-                $errors[] = "Generic Name '$genericName' does not match masterlist (Expected: {$stockItem->{'COL 2'}})";
+
+            // If item_code was provided but does not match, record an error.
+            if (!empty($itemCode) && $masterCode !== $itemCode) {
+                $errors[] = "Item Code '$itemCode' does not match masterlist (Expected: {$masterCode})";
             }
-            
-            if (!empty($brandName) && stripos($stockItem->{'COL 3'}, $brandName) === false) {
-                $errors[] = "Brand Name '$brandName' does not match masterlist (Expected: {$stockItem->{'COL 3'}})";
+
+            // Only validate generic/brand if the masterlist has a non-empty value for them.
+            if (!empty($genericName) && $masterGeneric !== '') {
+                if (stripos($masterGeneric, $genericName) === false) {
+                    $errors[] = "Generic Name '$genericName' does not match masterlist (Expected: {$masterGeneric})";
+                }
             }
-            
+
+            if (!empty($brandName) && $masterBrand !== '') {
+                if (stripos($masterBrand, $brandName) === false) {
+                    $errors[] = "Brand Name '$brandName' does not match masterlist (Expected: {$masterBrand})";
+                }
+            }
+
             if (!empty($errors)) {
+                // Log the stock item for debugging purposes
+                \Log::warning('Stock reference mismatch', [
+                    'requested' => ['item_code' => $itemCode, 'generic_name' => $genericName, 'brand_name' => $brandName],
+                    'master' => ['COL1' => $masterCode, 'COL2' => $masterGeneric, 'COL3' => $masterBrand],
+                    'errors' => $errors,
+                ]);
                 $validator->errors()->add('medicine', 'Medicine details mismatch: ' . implode(', ', $errors));
             }
         }

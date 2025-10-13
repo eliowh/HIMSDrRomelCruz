@@ -16,49 +16,31 @@ class AccountSeeder extends Seeder
     {
         $accounts = [
             [
-                'name' => 'Dr. John Admin',
-                'email' => 'admin@gmail.com',
-                'password' => 'Admin123!',
-                'role' => 'admin',
-            ],
-            [
-                'name' => 'Maria Doctor',
-                'email' => 'doctor@gmail.com',
-                'password' => 'Doctor123!',
-                'role' => 'doctor',
-            ],
-            [
-                'name' => 'Sarah Nurse',
-                'email' => 'nurse@gmail.com',
-                'password' => 'Nurse123!',
-                'role' => 'nurse',
-            ],
-            [
-                'name' => 'Michael LabTechnician',
+                'name' => 'Claire',
                 'email' => 'lab_technician@gmail.com',
                 'password' => 'Lab_technician123!',
                 'role' => 'lab_technician',
             ],
             [
-                'name' => 'Anna Cashier',
+                'name' => 'Rogelio',
                 'email' => 'cashier@gmail.com',
                 'password' => 'Cashier123!',
                 'role' => 'cashier',
             ],
             [
-                'name' => 'David Inventory',
+                'name' => 'Melvin',
                 'email' => 'inventory@gmail.com',
                 'password' => 'Inventory123!',
                 'role' => 'inventory',
             ],
             [
-                'name' => 'Lisa Pharmacy',
+                'name' => 'Carl',
                 'email' => 'pharmacy@gmail.com',
                 'password' => 'Pharmacy123!',
                 'role' => 'pharmacy',
             ],
             [
-                'name' => 'Robert Billing',
+                'name' => 'Laurence',
                 'email' => 'billing@gmail.com',
                 'password' => 'Billing123!',
                 'role' => 'billing',
