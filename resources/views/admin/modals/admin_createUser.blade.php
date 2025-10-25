@@ -36,14 +36,28 @@
             </div>
             
         <div class="form-group">
-                <label class="form-label">Tittle / Extension</label>
+                <label class="form-label">Title / Extension</label>
                 <input type="text" 
                        name="title" 
                        class="form-input" 
+                       required
                        pattern="[a-zA-Z\s]+"
                        title="Title can only contain letters and spaces"
                        minlength="1"
                        maxlength="20">
+                <div class="error-text" style="display: none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">License Number</label>
+                <input type="text" 
+                       name="license_number" 
+                       class="form-input" 
+                       required
+                       pattern="[a-zA-Z0-9\-]+"
+                       title="License number can only contain letters, numbers, and hyphens"
+                       minlength="3"
+                       maxlength="50">
                 <div class="error-text" style="display: none;"></div>
             </div>
 
@@ -88,6 +102,7 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     const form = this;
     const nameField = form.querySelector('input[name="name"]');
     const titleField = form.querySelector('input[name="title"]');
+    const licenseField = form.querySelector('input[name="license_number"]');
     const emailField = form.querySelector('input[name="email"]');
     const roleField = form.querySelector('select[name="role"]');
     const submitBtn = form.querySelector('.assign-btn');
@@ -106,6 +121,18 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     // Name validation
     if (!nameField.value.match(/^[a-zA-Z\s]{3,20}$/)) {
         showError(nameField, 'Name must be 3-20 letters and can only contain letters and spaces.');
+        isValid = false;
+    }
+    
+    // Title validation (now required)
+    if (!titleField.value.match(/^[a-zA-Z\s]{1,20}$/)) {
+        showError(titleField, 'Title is required and must be 1-20 letters and can only contain letters and spaces.');
+        isValid = false;
+    }
+    
+    // License number validation
+    if (!licenseField.value.match(/^[a-zA-Z0-9\-]{3,50}$/)) {
+        showError(licenseField, 'License number is required and must be 3-50 characters (letters, numbers, and hyphens only).');
         isValid = false;
     }
     
@@ -135,7 +162,8 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
             },
             body: JSON.stringify({
                 name: nameField.value,
-                title: titleField.value || null,
+                title: titleField.value,
+                license_number: licenseField.value,
                 email: emailField.value,
                 role: roleField.value
             })

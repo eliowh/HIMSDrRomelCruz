@@ -90,10 +90,17 @@ class AdminController extends Controller
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
             ],
             'title' => [
-                'nullable',
+                'required',
                 'min:1',
                 'max:20',
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
+            ],
+            'license_number' => [
+                'required',
+                'min:3',
+                'max:50',
+                'regex:/^[a-zA-Z0-9\-]+$/', // Letters, numbers, and hyphens
+                'unique:users,license_number'
             ],
             'email' => [
                 'required',
@@ -107,9 +114,15 @@ class AdminController extends Controller
             'name.min' => 'Name must be 3-20 letters.',
             'name.max' => 'Name must be 3-20 letters.',
             'name.regex' => 'Name can only contain letters and spaces.',
+            'title.required' => 'Please enter a title.',
             'title.min' => 'Title must be at least 1 character.',
             'title.max' => 'Title must be 20 characters or less.',
             'title.regex' => 'Title can only contain letters and spaces.',
+            'license_number.required' => 'Please enter a license number.',
+            'license_number.min' => 'License number must be at least 3 characters.',
+            'license_number.max' => 'License number must be 50 characters or less.',
+            'license_number.regex' => 'License number can only contain letters, numbers, and hyphens.',
+            'license_number.unique' => 'This license number is already registered.',
             'email.required' => 'Please enter an email address.',
             'email.email' => 'Please enter a valid email address.',
             'email.regex' => 'Email must end with .com and be valid.',
@@ -164,6 +177,7 @@ class AdminController extends Controller
         $user = User::create([
             'name' => $request->name,
             'title' => $request->title,
+            'license_number' => $request->license_number,
             'email' => $request->email,
             'password' => Hash::make($tempPassword), // Use the stored temporary password
             'role' => $request->role
