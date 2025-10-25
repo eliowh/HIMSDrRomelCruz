@@ -15,27 +15,34 @@
             color: #000;
         }
         
+        /* Use table layout for header — this is more compatible with PDF renderers
+           (DomPDF has limited flexbox support). We keep markup the same but prefer
+           table/table-cell rendering so header stays consistent between HTML and PDF. */
         .header {
-            display: flex;
-            align-items: flex-start;
+            display: table;
+            width: 100%;
             border-bottom: 2px solid #000;
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
-        
+
         .logo-section {
+            display: table-cell;
             width: 80px;
-            margin-right: 20px;
+            vertical-align: middle;
+            padding-right: 20px;
         }
-        
+
         .logo-section img {
             width: 80px;
             height: 80px;
-            object-fit: contain;
+            /* object-fit isn't always supported by PDF generators; ensure the image
+               fits by using explicit width/height and letting browsers scale it. */
         }
-        
+
         .header-content {
-            flex: 1;
+            display: table-cell;
+            vertical-align: middle;
             text-align: center;
         }
         
@@ -271,13 +278,16 @@
             <div class="info-section">
                 <div class="info-label">Patient Information:</div>
                 <div class="info-value">
-                    <strong>{{ $billing->patient->firstName }} {{ $billing->patient->lastName }}</strong><br>
-                    Date of Birth: {{ $billing->patient->dateOfBirth }}<br>
-                    @if($billing->patient->address)
+                    <strong>{{ $billing->patient->display_name ?? ($billing->patient->first_name . ' ' . $billing->patient->last_name) }}</strong><br>
+                    Date of Birth: {{ $billing->patient->date_of_birth ? \Carbon\Carbon::parse($billing->patient->date_of_birth)->format('M d, Y') : 'N/A' }}<br>
+                    @if(isset($billing->admission) && $billing->admission->admission_date)
+                        Admission Date: {{ \Carbon\Carbon::parse($billing->admission->admission_date)->format('M d, Y g:i A') }}<br>
+                    @endif
+                    @if(!empty($billing->patient->address))
                         Address: {{ $billing->patient->address }}<br>
                     @endif
-                    @if($billing->patient->contactNumber)
-                        Contact: {{ $billing->patient->contactNumber }}
+                    @if(!empty($billing->patient->contact_number))
+                        Contact: {{ $billing->patient->contact_number }}
                     @endif
                 </div>
             </div>
@@ -451,11 +461,12 @@
         </div>
         @endif
         
-        @if($billing->status === 'paid' && $billing->payment_date)
+                @if($billing->status === 'paid' && $billing->payment_date)
         <div style="margin-top: 15px; padding: 10px; background-color: #fff; border: 2px solid #000;">
             <div style="font-weight: bold; color: #000; margin-bottom: 5px;">✓ PAYMENT CONFIRMED</div>
             <div style="font-size: 11px; color: #000;">
                 <strong>Payment Date:</strong> {{ $billing->payment_date->format('F d, Y \a\t g:i A') }}<br>
+                <strong>Clearance Date:</strong> {{ $billing->payment_date ? \Carbon\Carbon::parse($billing->payment_date)->format('F d, Y \a\t g:i A') : 'N/A' }}<br>
                 @if($billing->processed_by)
                 <strong>Processed By:</strong> {{ $billing->processedBy?->name ?? 'System' }}<br>
                 @endif
@@ -486,13 +497,33 @@
     </div>
     @endif
 
-    <!-- Footer -->
+    <!-- Signature and footer (centered block so PDF/HTML match) -->
+    <div style="margin-top: 30px; text-align: center;">
+        <div style="display:inline-block; width:240px; text-align:center;">
+            <div style="height:60px; border-bottom:1px solid #000; margin-bottom:6px;"></div>
+            @php
+                if (isset($isCashier) && $isCashier) {
+                    $signatureName = $billing->processedBy?->name ?? '____________________';
+                    $signatureLabel = 'Cashier';
+                } elseif (isset($isBilling) && $isBilling) {
+                    $signatureName = $billing->createdBy?->name ?? '____________________';
+                    $signatureLabel = 'Billing Staff';
+                } else {
+                    $signatureName = $billing->processedBy?->name ?? $billing->createdBy?->name ?? '____________________';
+                    $signatureLabel = $billing->processedBy ? 'Cashier' : 'Billing Staff';
+                }
+            @endphp
+            <div style="font-weight:700;">{{ $signatureName }}</div>
+            <div style="font-size:12px; color:#000;">{{ $signatureLabel }}</div>
+        </div>
+    </div>
+
     <div class="footer">
         <p><strong>Romel Cruz Hospital Information Management System</strong></p>
         <p>This is a computer-generated receipt. For questions or concerns, please contact our billing department.</p>
         <p style="margin-top: 10px;">
             © {{ date('Y') }} Dr. Romel Cruz Hospital. All rights reserved.<br>
-            Receipt generated on {{ now()->format('F d, Y \a\t g:i A') }}
+            Receipt generated on {{ now()->format('F d, Y \\a\\t g:i A') }}
         </p>
     </div>
 

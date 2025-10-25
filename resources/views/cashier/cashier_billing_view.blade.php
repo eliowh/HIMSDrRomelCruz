@@ -275,13 +275,10 @@
                                             @elseif($billing->status === 'paid')
                                                 <!-- Receipt Actions for Paid Billings -->
                                                 <div class="d-grid gap-2">
-                                                    <a href="{{ route('cashier.billing.receipt', $billing->id) }}" 
-                                                       target="_blank" 
-                                                       class="btn btn-primary">
+                                                    <button type="button" onclick="printReceiptInPlace({{ $billing->id }})" class="btn btn-primary">
                                                         <i class="fas fa-print"></i> Print Receipt
-                                                    </a>
-                                                    <a href="{{ route('cashier.billing.receipt.download', $billing->id) }}" 
-                                                       class="btn btn-success">
+                                                    </button>
+                                                    <a href="{{ route('cashier.billing.receipt.download', $billing->id) }}" class="btn btn-success">
                                                         <i class="fas fa-download"></i> Download Receipt
                                                     </a>
                                                 </div>
@@ -375,6 +372,14 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Print-only CSS: hide everything except #printContainer when printing */
+        @media print {
+            body * { visibility: hidden !important; }
+            #printContainer, #printContainer * { visibility: visible !important; }
+            #printContainer { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
     
     <script>
     // Payment Processing Functions
@@ -620,6 +625,47 @@
     }
 
     // Revert functionality removed for security - preventing payment theft
+    </script>
+
+    <script>
+    // Global helper to fetch the compact receipt fragment and print in-place
+    function printReceiptInPlace(billingId) {
+        try {
+            const fragmentUrl = `/cashier/billing/${billingId}/receipt/fragment`;
+            fetch(fragmentUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(resp => {
+                    if (!resp.ok) return resp.text().then(t => { throw new Error(t || resp.statusText); });
+                    return resp.text();
+                })
+                .then(html => {
+                    let printContainer = document.getElementById('printContainer');
+                    if (!printContainer) {
+                        printContainer = document.createElement('div');
+                        printContainer.id = 'printContainer';
+                        printContainer.style.display = 'none';
+                        document.body.appendChild(printContainer);
+                    }
+                    printContainer.innerHTML = html;
+                    printContainer.style.display = 'block';
+
+                    // Small timeout to allow render
+                    setTimeout(() => {
+                        window.print();
+                        setTimeout(() => {
+                            printContainer.innerHTML = '';
+                            printContainer.style.display = 'none';
+                        }, 800);
+                    }, 200);
+                })
+                .catch(e => {
+                    console.error('printReceiptInPlace error:', e);
+                    alert('Unable to load receipt for printing: ' + (e.message || e));
+                });
+        } catch (e) {
+            console.error('printReceiptInPlace error:', e);
+            alert('Unable to print receipt: ' + e.message);
+        }
+    }
     </script>
 
     <style>

@@ -22,9 +22,6 @@
             <button id="billingNotificationConfirm" class="btn btn-primary" style="display: none;">
                 <i class="fas fa-check"></i> Confirm
             </button>
-            <button id="billingNotificationOk" class="btn btn-primary" style="display: none;">
-                <i class="fas fa-check"></i> OK
-            </button>
         </div>
     </div>
 </div>
@@ -220,9 +217,8 @@ window.showBillingNotification = function(type, title, message, showConfirm = fa
         const icon = document.getElementById('billingNotificationIcon');
         const titleEl = document.getElementById('billingNotificationTitle');
         const messageEl = document.getElementById('billingNotificationMessage');
-        const confirmBtn = document.getElementById('billingNotificationConfirm');
-        const cancelBtn = document.getElementById('billingNotificationCancel');
-        const okBtn = document.getElementById('billingNotificationOk');
+    const confirmBtn = document.getElementById('billingNotificationConfirm');
+    const cancelBtn = document.getElementById('billingNotificationCancel');
         
         // Reset classes
         header.className = 'notification-header';
@@ -264,19 +260,18 @@ window.showBillingNotification = function(type, title, message, showConfirm = fa
         messageEl.style.whiteSpace = 'pre-line';
         messageEl.textContent = message;
         
-        // First hide ALL buttons with !important
+        // First hide Confirm and Cancel with !important
         confirmBtn.style.setProperty('display', 'none', 'important');
         cancelBtn.style.setProperty('display', 'none', 'important');
-        okBtn.style.setProperty('display', 'none', 'important');
-        
+
         // Then show only the appropriate buttons
         if (showConfirm || type === 'confirm' || type === 'payment' || type === 'delete') {
             // For confirmation dialogs: show Confirm and Cancel buttons only
             confirmBtn.style.setProperty('display', 'inline-flex', 'important');
             cancelBtn.style.setProperty('display', 'inline-flex', 'important');
         } else {
-            // For simple notifications: show only OK button
-            okBtn.style.setProperty('display', 'inline-flex', 'important');
+            // For simple notifications: show only Confirm (used as OK)
+            confirmBtn.style.setProperty('display', 'inline-flex', 'important');
         }
         
         // Show modal
@@ -290,24 +285,19 @@ window.showBillingNotification = function(type, title, message, showConfirm = fa
                 modal.style.display = 'none';
                 confirmBtn.onclick = null;
                 cancelBtn.onclick = null;
-                okBtn.onclick = null;
             }, 300);
         };
-        
-        confirmBtn.onclick = () => {
-            cleanup();
-            resolve(true);
-        };
-        
+
         cancelBtn.onclick = () => {
             cleanup();
             resolve(false);
         };
-        
-        okBtn.onclick = () => {
+
+        // Use Confirm as the main action button for both confirmation dialogs and simple notifications
+        confirmBtn.onclick = () => {
             cleanup();
-            // Check if this is a success notification that should trigger a page refresh
-            if (type === 'success' && (message.includes('marked as PAID') || message.includes('reverted to UNPAID'))) {
+            // If this is a simple success notification that should trigger a page refresh
+            if (!showConfirm && type === 'success' && (message.includes('marked as PAID') || message.includes('reverted to UNPAID'))) {
                 location.reload();
             }
             resolve(true);
@@ -334,7 +324,6 @@ window.showBillingLoading = function(message = 'Processing billing...') {
     const loadingEl = document.getElementById('billingNotificationLoading');
     const confirmBtn = document.getElementById('billingNotificationConfirm');
     const cancelBtn = document.getElementById('billingNotificationCancel');
-    const okBtn = document.getElementById('billingNotificationOk');
     
     // Reset to info style
     header.className = 'notification-header info';
@@ -344,10 +333,9 @@ window.showBillingLoading = function(message = 'Processing billing...') {
     messageEl.textContent = message;
     loadingEl.style.display = 'flex';
     
-    // Hide all buttons
-    confirmBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-    okBtn.style.display = 'none';
+    // Hide action buttons while showing loading spinner
+    if (confirmBtn) confirmBtn.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
     
     // Show modal
     modal.style.display = 'flex';
