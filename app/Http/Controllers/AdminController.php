@@ -89,6 +89,12 @@ class AdminController extends Controller
                 'max:20',
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
             ],
+            'title' => [
+                'nullable',
+                'min:1',
+                'max:20',
+                'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
+            ],
             'email' => [
                 'required',
                 'email',
@@ -101,6 +107,9 @@ class AdminController extends Controller
             'name.min' => 'Name must be 3-20 letters.',
             'name.max' => 'Name must be 3-20 letters.',
             'name.regex' => 'Name can only contain letters and spaces.',
+            'title.min' => 'Title must be at least 1 character.',
+            'title.max' => 'Title must be 20 characters or less.',
+            'title.regex' => 'Title can only contain letters and spaces.',
             'email.required' => 'Please enter an email address.',
             'email.email' => 'Please enter a valid email address.',
             'email.regex' => 'Email must end with .com and be valid.',
@@ -141,17 +150,22 @@ class AdminController extends Controller
         // Generate password reset token
         $token = \Illuminate\Support\Str::random(60);
         
+        // Generate temporary password
+        $tempPassword = \Illuminate\Support\Str::random(16);
+        
         // Log token for debugging
         \Log::info('Generated token for new user', [
             'email' => $request->email,
-            'token' => $token
+            'token' => $token,
+            'temp_password' => $tempPassword
         ]);
         
         // Create user with a temporary password
         $user = User::create([
             'name' => $request->name,
+            'title' => $request->title,
             'email' => $request->email,
-            'password' => Hash::make(\Illuminate\Support\Str::random(16)), // Random temporary password
+            'password' => Hash::make($tempPassword), // Use the stored temporary password
             'role' => $request->role
         ]);
         

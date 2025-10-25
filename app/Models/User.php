@@ -19,6 +19,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'title',
         'email',
         'password',
         'role',
@@ -119,5 +120,26 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
+    }
+
+    /**
+     * Get the user's full name with professional title.
+     * Format: "Name, Title" (e.g., "John Doe, RMT")
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        if (!empty($this->title)) {
+            return $this->name . ', ' . $this->title;
+        }
+        return $this->name;
+    }
+
+    /**
+     * Get the user's full name with professional title.
+     * This is an alias for the display_name attribute.
+     */
+    public function getFormattedName(): string
+    {
+        return $this->display_name;
     }
 }

@@ -34,6 +34,18 @@
                        maxlength="20">
                 <div class="error-text" style="display: none;"></div>
             </div>
+            
+        <div class="form-group">
+                <label class="form-label">Tittle / Extension</label>
+                <input type="text" 
+                       name="title" 
+                       class="form-input" 
+                       pattern="[a-zA-Z\s]+"
+                       title="Title can only contain letters and spaces"
+                       minlength="1"
+                       maxlength="20">
+                <div class="error-text" style="display: none;"></div>
+            </div>
 
             <div class="form-group">
                 <label class="form-label">Email Address</label>
@@ -75,6 +87,7 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     
     const form = this;
     const nameField = form.querySelector('input[name="name"]');
+    const titleField = form.querySelector('input[name="title"]');
     const emailField = form.querySelector('input[name="email"]');
     const roleField = form.querySelector('select[name="role"]');
     const submitBtn = form.querySelector('.assign-btn');
@@ -122,6 +135,7 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
             },
             body: JSON.stringify({
                 name: nameField.value,
+                title: titleField.value || null,
                 email: emailField.value,
                 role: roleField.value
             })

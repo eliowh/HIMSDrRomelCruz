@@ -101,7 +101,7 @@
     @endif
 
     <div class="sig-block" style="margin-top:60px;">
-        <div>{{ $currentUser->name ?? 'Lab Technician' }}</div>
+        <div>{{ $currentUser->display_name ?? 'Lab Technician' }}</div>
         <div class="small">License No.: {{ $currentUser->license_number ?? 'N/A' }}</div>
         <div style="font-weight:bold; margin-top:4px;">{{ strtoupper($currentUser->role === 'lab_technician' ? 'MEDICAL TECHNOLOGIST' : ($currentUser->role ?? 'LAB STAFF')) }}</div>
     </div>

@@ -91,7 +91,7 @@
                     <tbody>
                         @foreach($users as $user)
                         <tr data-role="{{ $user->role }}" data-name="{{ strtolower($user->name) }}">
-                            <td>{{ $user->name }}</td>
+                            <td>{{ $user->display_name }}</td>
                             <td>{{ $user->email }}</td>
                             <td>
                                 <span class="role-badge role-{{ $user->role }}">
