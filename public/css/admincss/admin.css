@@ -1597,6 +1597,124 @@ body {
     background: #c82333;
 }
 
+/* Action Buttons for Table Rows */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.edit-btn {
+    background: #367F2B;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(26, 73, 49, 0.10);
+    transition: background-color 0.2s ease;
+}
+
+.edit-btn:hover {
+    background: #2d6624;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(220, 53, 69, 0.10);
+    transition: background-color 0.2s ease;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+}
+
+.archive-btn {
+    background: #fd7e14;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(253, 126, 20, 0.10);
+    transition: background-color 0.2s ease;
+}
+
+.archive-btn:hover {
+    background: #e66200;
+}
+
+.action-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.archived-users-btn {
+    background: #6c757d;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.archived-users-btn:hover {
+    background: #5a6268;
+    text-decoration: none;
+    color: white;
+}
+
+.view-btn {
+    background: #17a2b8;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(23, 162, 184, 0.10);
+    transition: background-color 0.2s ease;
+}
+
+.view-btn:hover {
+    background: #138496;
+}
+
+.warning-btn {
+    background: #ffc107;
+    color: #212529;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px 0 rgba(255, 193, 7, 0.10);
+    transition: background-color 0.2s ease;
+}
+
+.warning-btn:hover {
+    background: #e0a800;
+}
+
 .filter-search-controls {
     display: flex;
     align-items: center;

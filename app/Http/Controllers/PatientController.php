@@ -75,7 +75,7 @@ class PatientController extends Controller
             'last_name' => 'required|string|max:191',
             'sex' => 'nullable|in:male,female,other',
             'contact_number' => 'nullable|string|max:20',
-            'date_of_birth' => 'required|date',
+            'date_of_birth' => 'required|date|before_or_equal:today',
             'province' => 'required|string|max:191',
             'city' => 'required|string|max:191',
             'barangay' => 'required|string|max:191',
@@ -179,7 +179,7 @@ class PatientController extends Controller
             'last_name' => 'required|string|max:191',
             'sex' => 'nullable|in:male,female,other',
             'contact_number' => 'nullable|string|max:20',
-            'date_of_birth' => 'nullable|date',
+            'date_of_birth' => 'nullable|date|before_or_equal:today',
             'province' => 'nullable|string|max:191',
             'city' => 'nullable|string|max:191',
             'barangay' => 'nullable|string|max:191',
@@ -510,6 +510,60 @@ class PatientController extends Controller
             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to finalize admission: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get health history for a specific patient
+     */
+    public function getHealthHistory($patientId)
+    {
+        try {
+            $patient = Patient::findOrFail($patientId);
+            
+            // Get health history from the JSON fields
+            $generalHealthHistory = $patient->general_health_history ?? [];
+            $socialHistory = $patient->social_history ?? [];
+            
+            // Extract medical conditions
+            $medicalConditions = $generalHealthHistory['medical_conditions'] ?? [];
+            
+            // Extract medications
+            $medications = $generalHealthHistory['medications'] ?? [];
+            
+            // Extract allergies
+            $allergies = $generalHealthHistory['allergies'] ?? [];
+            
+            // Extract family history
+            $familyHistory = $generalHealthHistory['family_history'] ?? [];
+            
+            // Extract social history (lifestyle habits)
+            $lifestyleHabits = $socialHistory['lifestyle_habits'] ?? [];
+            
+            $healthHistory = [
+                'chronic_illnesses' => $medicalConditions['chronic_illnesses'] ?? null,
+                'hospitalization_history' => $medicalConditions['hospitalization_history'] ?? null,
+                'surgery_history' => $medicalConditions['surgery_history'] ?? null,
+                'accident_injury_history' => $medicalConditions['accident_injury_history'] ?? null,
+                'current_medications' => $medications['current_medications'] ?? null,
+                'longterm_medications' => $medications['long_term_medications'] ?? null,
+                'known_allergies' => $allergies['known_allergies'] ?? null,
+                'family_history_chronic_diseases' => $familyHistory['family_history_chronic'] ?? null,
+                'smoking_history' => $lifestyleHabits['smoking_history'] ?? null,
+                'alcohol_consumption' => $lifestyleHabits['alcohol_consumption'] ?? null,
+                'recreational_drugs' => $lifestyleHabits['recreational_drugs'] ?? null,
+                'exercise_activity' => $lifestyleHabits['exercise_activity'] ?? null,
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'health_history' => $healthHistory
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get health history: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

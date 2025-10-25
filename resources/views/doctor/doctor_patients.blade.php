@@ -25,25 +25,39 @@
 }
 
 .btn.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #367F2B;
     border: none;
     color: white;
+    transition: background-color 0.2s ease;
 }
 
 .btn.primary:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    background: #2d6624;
     transform: translateY(-1px);
 }
 
 .btn.secondary {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    color: #495057;
+    background: #367F2B;
+    border: 1px solid #367F2B;
+    color: white;
+    transition: background-color 0.2s ease;
 }
 
 .btn.secondary:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background: #2d6624;
+    border-color: #2d6624;
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border: 2px solid #367F2B;
+    color: #367F2B;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+    background: #367F2B;
+    color: white;
 }
 
 .btn:disabled {
@@ -308,7 +322,7 @@
                                 <td class="col-actions">
                                     <div style="display:flex;gap:8px;">
                                         <button type="button" class="btn view-btn js-open-patient">View</button>
-                                        <button type="button" class="btn view-btn finalize-btn" onclick="handleRowFinalizeClick(this)">Finalize</button>
+                                        <button type="button" class="btn finalize-btn" onclick="handleRowFinalizeClick(this)">Finalize</button>
                                     </div>
                                 </td>
                             </tr>
@@ -357,13 +371,12 @@
                 <!-- General Health History Section -->
                 <div class="details-section" id="health-history-section" style="display:none;">
                     <h4 class="section-header">General Health History</h4>
-                    <div id="md-health-history">No health history information available</div>
-                </div>
-
-                <!-- Social History Section -->
-                <div class="details-section" id="social-history-section" style="display:none;">
-                    <h4 class="section-header">Social History</h4>
-                    <div id="md-social-history">No social history information available</div>
+                    <div class="view-more-medicines">
+                        <button type="button" class="btn btn-outline-primary btn-sm view-medicine-summary-btn" onclick="openHealthHistoryModal()">
+                            <i class="fas fa-notes-medical"></i> 
+                            View General Health History
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Medicine Details Section -->
@@ -399,6 +412,7 @@
 @include('doctor.modals.lab_results_modal')
 @include('doctor.modals.notification_system')
 @include('doctor.modals.finalize_diagnosis_modal')
+@include('doctor.modals.health_history_modal')
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -654,14 +668,19 @@ document.addEventListener('DOMContentLoaded', function () {
         
         document.getElementById('md-nationality').textContent = formatName(patient.nationality);
         
-        // Render health history
-        renderHealthHistory(patient);
+        // Show health history section (for the button)
+        const healthHistorySection = document.getElementById('health-history-section');
+        if (healthHistorySection) {
+            healthHistorySection.style.display = 'block';
+        }
         
         // Load admission summary and admission-specific data
         loadAdmissionSummary(patient.id);
+        
     }
 
-    // Function to render health history
+    // Function to render health history - DISABLED: Now using modal instead
+    /*
     function renderHealthHistory(patient) {
         const healthHistorySection = document.getElementById('health-history-section');
         const socialHistorySection = document.getElementById('social-history-section');
@@ -783,6 +802,7 @@ document.addEventListener('DOMContentLoaded', function () {
             socialHistorySection.style.display = 'block';
         }
     }
+    */
     
     // Helper function to check if health data object has any non-empty values
     function hasHealthData(obj) {
@@ -1321,6 +1341,130 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (modal) {
         modal.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeModal));
+    }
+
+    // Health History Modal Functions
+    function openHealthHistoryModal() {
+        const modal = document.getElementById('healthHistoryModal');
+        if (!modal) {
+            console.error('Health history modal not found');
+            return;
+        }
+        
+        // Try to get patient data from the active row
+        const activeRow = document.querySelector('tr.active');
+        if (!activeRow) {
+            alert('Please select a patient first');
+            return;
+        }
+        
+        let selectedPatient;
+        try {
+            const patientData = activeRow.getAttribute('data-patient');
+            selectedPatient = JSON.parse(patientData);
+        } catch (error) {
+            console.error('Error getting patient data:', error);
+            alert('Error loading patient data');
+            return;
+        }
+        
+        // Set patient info - check if elements exist
+        const patientNameEl = document.getElementById('health-history-patient-name');
+        const patientNoEl = document.getElementById('health-history-patient-no');
+        
+        if (patientNameEl) {
+            const fullName = `${selectedPatient.first_name} ${selectedPatient.middle_name} ${selectedPatient.last_name}`.replace(/\s+/g, ' ').trim();
+            patientNameEl.textContent = fullName;
+        }
+        if (patientNoEl) {
+            patientNoEl.textContent = `Patient No: ${selectedPatient.patient_no}`;
+        }
+        
+        // Show loading - check if elements exist
+        const loadingEl = document.getElementById('healthHistoryLoading');
+        const detailsEl = document.getElementById('healthHistoryDetails');
+        const emptyEl = document.getElementById('healthHistoryEmpty');
+        
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (detailsEl) detailsEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'none';
+        
+        // Show modal
+        modal.classList.add('show');
+        
+        // Load health history data
+        loadHealthHistoryData(selectedPatient.id);
+    }
+
+    function closeHealthHistoryModal() {
+        const modal = document.getElementById('healthHistoryModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    function loadHealthHistoryData(patientId) {
+        fetch(`/doctor/api/patient/${patientId}/health-history`)
+            .then(response => response.json())
+            .then(data => {
+                const loadingEl = document.getElementById('healthHistoryLoading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                if (data.success && data.health_history) {
+                    const history = data.health_history;
+                    
+                    // Populate health history fields - check if elements exist
+                    const chronicEl = document.getElementById('chronic-illnesses');
+                    if (chronicEl) chronicEl.textContent = history.chronic_illnesses || 'No chronic illnesses reported';
+                    
+                    const hospitalizationEl = document.getElementById('hospitalization-history');
+                    if (hospitalizationEl) hospitalizationEl.textContent = history.hospitalization_history || 'No hospitalization history reported';
+                    
+                    const surgeryEl = document.getElementById('surgery-history');
+                    if (surgeryEl) surgeryEl.textContent = history.surgery_history || 'No surgery history reported';
+                    
+                    const accidentEl = document.getElementById('accident-history');
+                    if (accidentEl) accidentEl.textContent = history.accident_injury_history || 'No accident/injury history reported';
+                    
+                    const currentMedEl = document.getElementById('current-medications');
+                    if (currentMedEl) currentMedEl.textContent = history.current_medications || 'No current medications reported';
+                    
+                    const longtermMedEl = document.getElementById('longterm-medications');
+                    if (longtermMedEl) longtermMedEl.textContent = history.longterm_medications || 'No long-term medications reported';
+                    
+                    const allergiesEl = document.getElementById('known-allergies');
+                    if (allergiesEl) allergiesEl.textContent = history.known_allergies || 'No known allergies reported';
+                    
+                    const familyEl = document.getElementById('family-history');
+                    if (familyEl) familyEl.textContent = history.family_history_chronic_diseases || 'No family history of chronic diseases reported';
+                    
+                    // Populate social history fields
+                    const smokingEl = document.getElementById('smoking-history');
+                    if (smokingEl) smokingEl.textContent = history.smoking_history || 'No smoking history reported';
+                    
+                    const alcoholEl = document.getElementById('alcohol-consumption');
+                    if (alcoholEl) alcoholEl.textContent = history.alcohol_consumption || 'No alcohol consumption reported';
+                    
+                    const drugsEl = document.getElementById('recreational-drugs');
+                    if (drugsEl) drugsEl.textContent = history.recreational_drugs || 'No recreational drug use reported';
+                    
+                    const exerciseEl = document.getElementById('exercise-activity');
+                    if (exerciseEl) exerciseEl.textContent = history.exercise_activity || 'No exercise activity reported';
+                    
+                    const detailsEl = document.getElementById('healthHistoryDetails');
+                    if (detailsEl) detailsEl.style.display = 'block';
+                } else {
+                    const emptyEl = document.getElementById('healthHistoryEmpty');
+                    if (emptyEl) emptyEl.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading health history:', error);
+                const loadingEl = document.getElementById('healthHistoryLoading');
+                const emptyEl = document.getElementById('healthHistoryEmpty');
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (emptyEl) emptyEl.style.display = 'block';
+            });
     }
 
     // Save button sends PUT to update with validation

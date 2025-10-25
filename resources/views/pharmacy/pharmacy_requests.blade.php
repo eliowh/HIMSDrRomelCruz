@@ -66,26 +66,19 @@
                                 <td>{{ optional($request->requestedBy)->name }}</td>
                                 <td>{{ $request->requested_at ? $request->requested_at->format('M d, Y h:i A') : '-' }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $request->status)) }}</td>
-                                <td>
-                                    <div class="action-dropdown" id="action-dropdown-container-{{ $request->id }}">
-                                        <button class="action-btn" onclick="toggleDropdown({{ $request->id }})">
-                                            <i class="fas fa-ellipsis-v"></i>
+                                <td class="actions-buttons">
+                                    @if($request->status === 'pending')
+                                        <button type="button" class="pharmacy-btn-primary btn-sm" onclick="dispenseRequest({{ $request->id }})" title="Dispense Medicine">
+                                            <i class="fas fa-pills"></i> Dispense
                                         </button>
-                                        <div class="dropdown-content" id="dropdown-{{ $request->id }}">
-                                            @if($request->status === 'pending')
-                                                <a href="#" onclick="dispenseRequest({{ $request->id }})" class="dispense-action">
-                                                    <i class="fas fa-pills"></i> Dispense
-                                                </a>
-                                                <a href="#" onclick="cancelRequest({{ $request->id }})" class="cancel-action">
-                                                    <i class="fas fa-times"></i> Cancel
-                                                </a>
-                                            @else
-                                                <a href="#" onclick="viewRequest({{ $request->id }})">
-                                                    <i class="fas fa-eye"></i> View Details
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </div>
+                                        <button type="button" class="pharmacy-btn-danger btn-sm" onclick="cancelRequest({{ $request->id }})" title="Cancel Request">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    @else
+                                        <button type="button" class="pharmacy-btn-primary btn-sm" onclick="viewRequest({{ $request->id }})" title="View Details">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -153,8 +146,10 @@
                                     -
                                 @endif
                             </td>
-                            <td>
-                                <button class="action-btn" onclick="viewRequest({{ $c->id }})" title="View"><i class="fas fa-eye"></i></button>
+                            <td class="actions-buttons">
+                                <button type="button" class="pharmacy-btn-primary btn-sm" onclick="viewRequest({{ $c->id }})" title="View Details">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
                             </td>
                         </tr>
                         @endforeach
@@ -170,78 +165,6 @@
     @include('pharmacy.notification-system')
 
     <style>
-        /* Action Dropdown Styles */
-        .action-dropdown { 
-            position: relative; 
-        }
-
-        .action-btn { 
-            background: transparent; 
-            border: none; 
-            padding: 8px; 
-            cursor: pointer; 
-            border-radius: 4px;
-            transition: background 0.2s ease;
-            color: #0066cc;
-        }
-
-        .action-btn:hover {
-            background: #f0f8ff;
-        }
-
-        .dropdown-content {
-            position: absolute; 
-            right: 0; 
-            top: 100%; 
-            background: white; 
-            min-width: 160px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15); 
-            border-radius: 8px; 
-            z-index: 1000; 
-            display: none;
-            border: 1px solid #dee2e6;
-        }
-
-        .dropdown-content[style*="bottom:"] {
-            box-shadow: 0 -8px 16px rgba(0,0,0,0.15);
-        }
-
-        .dropdown-content.show { 
-            display: block; 
-            animation: slideDown 0.2s ease;
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .dropdown-content a { 
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 15px; 
-            text-decoration: none; 
-            color: #333;
-            font-size: 14px;
-            transition: background 0.2s ease;
-        }
-
-        .dropdown-content a:first-child {
-            border-radius: 8px 8px 0 0;
-        }
-
-        .dropdown-content a:last-child {
-            border-radius: 0 0 8px 8px;
-        }
-
-        .dropdown-content a:hover { 
-            background: #f8f9fa; 
-        }
-
-        .dispense-action { color: #28a745 !important; }
-        .cancel-action { color: #dc3545 !important; }
-
         /* Sorting styles */
         .sortable {
             cursor: pointer;
@@ -271,37 +194,25 @@
             display: flex;
             justify-content: center;
         }
+
+        /* Actions button spacing */
+        .actions-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .actions-buttons .pharmacy-btn-primary,
+        .actions-buttons .pharmacy-btn-secondary,
+        .actions-buttons .pharmacy-btn-danger,
+        .actions-buttons .pharmacy-btn-info {
+            margin-right: 0;
+            white-space: nowrap;
+        }
     </style>
 
     <script>
-        // Simple and clean dropdown toggle function
-        function toggleDropdown(requestId) {
-            console.log('toggleDropdown called for ID:', requestId);
-            
-            // Close all dropdowns first
-            document.querySelectorAll('.dropdown-content').forEach(function(dd) {
-                dd.classList.remove('show');
-            });
-            
-            // Open the requested dropdown
-            const dropdown = document.getElementById('dropdown-' + requestId);
-            if (dropdown) {
-                dropdown.classList.add('show');
-                console.log('Dropdown shown for ID:', requestId);
-            } else {
-                console.error('Dropdown not found for ID:', requestId);
-            }
-        }
-        
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.action-dropdown')) {
-                document.querySelectorAll('.dropdown-content').forEach(function(dropdown) {
-                    dropdown.classList.remove('show');
-                });
-            }
-        });
-        
         // Sorting and pagination functions
         function sortTable(column) {
             const currentSort = '{{ $sort }}';

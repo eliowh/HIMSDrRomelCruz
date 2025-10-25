@@ -73,13 +73,10 @@
                             <td>{{ $roomName }}</td>
                             <td>₱{{ number_format($cleanPrice, 2) }}</td>
                             <td>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="toggleDropdown('{{ $rowId }}')">
-                                        <span>⋯</span>
+                                <div class="action-buttons">
+                                    <button class="edit-btn" onclick="editRoomByRow('{{ $rowId }}')" title="Edit Room">
+                                        Edit
                                     </button>
-                                    <div class="dropdown-content" id="dropdown-{{ $rowId }}">
-                                        <a href="javascript:void(0);" onclick="editRoomByRow('{{ $rowId }}')">Edit</a>
-                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -225,20 +222,7 @@
         }
     });
 
-    // Dropdown Actions
-    function toggleDropdown(rowId) {
-        const dropdown = document.getElementById(`dropdown-${rowId}`);
-        
-        document.querySelectorAll('.dropdown-content').forEach(dd => {
-            if (dd.id !== `dropdown-${rowId}`) {
-                dd.classList.remove('show');
-            }
-        });
-        
-        if (dropdown) dropdown.classList.toggle('show');
-    }
-
-    // wrapper that reads room name from the row's data attribute
+    // Room Actions
     function editRoomByRow(rowId) {
         const row = document.getElementById(rowId);
         if (!row) {
@@ -254,8 +238,6 @@
     }
 
     async function editRoom(roomName, rowId) {
-        // close dropdown if rowId provided
-        if (rowId) {
             const dd = document.getElementById(`dropdown-${rowId}`);
             if (dd) dd.classList.remove('show');
         }
@@ -403,15 +385,6 @@
             adminError('An error occurred while updating the room status.');
         }
     }
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.action-btn') && !event.target.matches('.action-btn span')) {
-            document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
 
     // Fetch the current page and replace the rooms table tbody to keep DOM fresh
     async function refreshRoomsList() {

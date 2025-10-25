@@ -371,22 +371,22 @@ class AdminController extends Controller
     }
 
     /**
-     * Delete a user
+     * Archive a user (soft delete)
      */
     public function deleteUser($id)
     {
         try {
             $user = User::findOrFail($id);
 
-            // Prevent deletion of the current admin user
+            // Prevent archiving of the current admin user
             if ($user->id === auth()->id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You cannot delete your own account.'
+                    'message' => 'You cannot archive your own account.'
                 ], 403);
             }
 
-            // Store user data for logging before deletion
+            // Store user data for logging before archiving
             $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -395,34 +395,35 @@ class AdminController extends Controller
                 'created_at' => $user->created_at->toISOString()
             ];
 
-            // Delete the user
+            // Archive the user (soft delete)
             $user->delete();
 
-            // Log user deletion
+            // Log user archiving
             Report::log(
-                'User Deleted',
+                'User Archived',
                 Report::TYPE_USER_ACTIVITY,
-                "Admin deleted user: {$userData['name']}",
+                "Admin archived user: {$userData['name']}",
                 [
-                    'deleted_user' => $userData,
-                    'deleted_by' => auth()->user()->name,
-                    'deleted_by_id' => auth()->id(),
-                    'deletion_time' => now()->toISOString()
+                    'archived_user' => $userData,
+                    'archived_by' => auth()->user()->name,
+                    'archived_by_id' => auth()->id(),
+                    'archive_time' => now()->toISOString(),
+                    'note' => 'User account archived to preserve data integrity'
                 ],
                 auth()->id()
             );
 
             return response()->json([
                 'success' => true,
-                'message' => 'User deleted successfully!'
+                'message' => 'User archived successfully! Account data has been preserved.'
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('User deletion error: ' . $e->getMessage());
+            \Log::error('User archiving error: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting user: ' . $e->getMessage()
+                'message' => 'Error archiving user: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -730,7 +731,7 @@ class AdminController extends Controller
                 'first_name' => 'required|string|max:255',
                 'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'required|string|max:255',
-                'date_of_birth' => 'nullable|date|before:today',
+                'date_of_birth' => 'nullable|date|before_or_equal:today',
                 'nationality' => 'nullable|string|max:255',
                 'province' => 'nullable|string|max:255',
                 'city' => 'nullable|string|max:255',
@@ -919,7 +920,7 @@ class AdminController extends Controller
                     
                     <div class="form-field">
                         <label>Date of Birth</label>
-                        <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '">
+                        <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '" max="' . date('Y-m-d') . '">
                     </div>
                     
                     <div class="form-field">
@@ -1066,18 +1067,45 @@ class AdminController extends Controller
             if (dobInput && ageDisplay) {
                 dobInput.addEventListener("change", function() {
                     if (this.value) {
-                        const birthDate = new Date(this.value);
-                        const today = new Date();
-                        let age = today.getFullYear() - birthDate.getFullYear();
-                        const monthDiff = today.getMonth() - birthDate.getMonth();
+                        const selectedDate = this.value; // Get the date string directly
+                        const today = new Date().toISOString().split(\"T\")[0]; // Get today in YYYY-MM-DD format
                         
-                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        // Check if date is in the future
+                        if (selectedDate > today) {
+                            alert(\"Date of Birth cannot be in the future.\");
+                            this.setCustomValidity(\"Date of Birth cannot be in the future.\");
+                            this.value = \"\"; // Clear the invalid date
+                            ageDisplay.value = \"N/A\";
+                            return;
+                        } else {
+                            this.setCustomValidity(\"\"); // Clear any previous custom validity
+                        }
+                        
+                        const birthDate = new Date(this.value);
+                        const todayForAge = new Date();
+                        let age = todayForAge.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = todayForAge.getMonth() - birthDate.getMonth();
+                        
+                        if (monthDiff < 0 || (monthDiff === 0 && todayForAge.getDate() < birthDate.getDate())) {
                             age--;
                         }
                         
                         ageDisplay.value = age >= 0 ? age + " years" : "N/A";
                     } else {
                         ageDisplay.value = "N/A";
+                    }
+                });
+                
+                dobInput.addEventListener(\"input\", function() {
+                    if (this.value) {
+                        const selectedDate = this.value; // Get the date string directly
+                        const today = new Date().toISOString().split(\"T\")[0]; // Get today in YYYY-MM-DD format
+                        
+                        if (selectedDate > today) {
+                            this.setCustomValidity(\"Date of Birth cannot be in the future.\");
+                        } else {
+                            this.setCustomValidity(\"\"); // Clear any previous custom validity
+                        }
                     }
                 });
             }
@@ -1347,6 +1375,169 @@ class AdminController extends Controller
 
         } catch (\Exception $e) {
             return back()->with('error', 'Error getting FHIR capability: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get archived users
+     */
+    public function archivedUsers(Request $request)
+    {
+        try {
+            // Get only archived users (soft deleted)
+            $query = User::onlyTrashed();
+            
+            // Get search and sort parameters
+            $search = $request->get('search', '');
+            $sortBy = $request->get('sort', 'deleted_at');
+            $sortDirection = $request->get('direction', 'desc');
+            
+            // Validate sort column
+            $allowedSortColumns = ['name', 'email', 'role', 'deleted_at', 'created_at'];
+            if (!in_array($sortBy, $allowedSortColumns)) {
+                $sortBy = 'deleted_at';
+            }
+            
+            // Validate sort direction
+            $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'desc';
+            
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('role', 'like', "%{$search}%");
+                });
+            }
+            
+            // Apply sorting and pagination
+            $query->orderBy($sortBy, $sortDirection);
+            $archivedUsers = $query->paginate(10);
+            
+            // Preserve search parameters in pagination links
+            $archivedUsers->appends(request()->query());
+            
+            return view('admin.archived_users', compact('archivedUsers'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Archived users error: ' . $e->getMessage());
+            $emptyCollection = collect();
+            $archivedUsers = new \Illuminate\Pagination\LengthAwarePaginator(
+                $emptyCollection,
+                0,
+                10,
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+            return view('admin.archived_users', compact('archivedUsers'))->with('error', 'Error loading archived users.');
+        }
+    }
+
+    /**
+     * Restore an archived user
+     */
+    public function restoreUser($id)
+    {
+        try {
+            $user = User::onlyTrashed()->findOrFail($id);
+
+            // Store user data for logging
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'archived_at' => $user->deleted_at->toISOString()
+            ];
+
+            // Restore the user
+            $user->restore();
+
+            // Log user restoration
+            Report::log(
+                'User Restored',
+                Report::TYPE_USER_ACTIVITY,
+                "Admin restored archived user: {$userData['name']}",
+                [
+                    'restored_user' => $userData,
+                    'restored_by' => auth()->user()->name,
+                    'restored_by_id' => auth()->id(),
+                    'restore_time' => now()->toISOString(),
+                    'note' => 'User account restored from archived status'
+                ],
+                auth()->id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User account restored successfully! The user can now log in again.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('User restoration error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error restoring user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Permanently delete an archived user (use with extreme caution)
+     */
+    public function permanentlyDeleteUser($id)
+    {
+        try {
+            $user = User::onlyTrashed()->findOrFail($id);
+
+            // Prevent permanent deletion of the current admin user
+            if ($user->id === auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot permanently delete your own account.'
+                ], 403);
+            }
+
+            // Store user data for logging before permanent deletion
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'created_at' => $user->created_at->toISOString(),
+                'archived_at' => $user->deleted_at->toISOString()
+            ];
+
+            // Permanently delete the user
+            $user->forceDelete();
+
+            // Log permanent deletion
+            Report::log(
+                'User Permanently Deleted',
+                Report::TYPE_USER_ACTIVITY,
+                "Admin permanently deleted user: {$userData['name']}",
+                [
+                    'permanently_deleted_user' => $userData,
+                    'deleted_by' => auth()->user()->name,
+                    'deleted_by_id' => auth()->id(),
+                    'permanent_deletion_time' => now()->toISOString(),
+                    'warning' => 'User data permanently removed - cannot be recovered'
+                ],
+                auth()->id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User permanently deleted. This action cannot be undone.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Permanent user deletion error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error permanently deleting user: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
