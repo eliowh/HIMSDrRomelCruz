@@ -120,7 +120,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="edit_doctor_type">Doctor Type</label>
+                        <label for="edit_doctor_type">Specialization</label>
                         <select id="edit_doctor_type" name="doctor_type" required>
                             <option value="" disabled selected>-- Select --</option>
                             <option value="PHYSICIAN">PHYSICIAN</option>

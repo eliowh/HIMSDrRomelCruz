@@ -483,7 +483,7 @@
             </div>
             
             <div class="form-group">
-                <label for="doctor_type">Doctor Type</label>
+                <label for="doctor_type">Specialization</label>
                 <select id="doctor_type" name="doctor_type" required>
                     <option value="" disabled {{ old('doctor_type')=='' ? 'selected':'' }}>-- Select --</option>
                     <option value="PHYSICIAN" {{ old('doctor_type')=='PHYSICIAN' ? 'selected':'' }}>PHYSICIAN</option>
@@ -1007,7 +1007,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!lastItems.length){ clearSuggestions(); return; }
             container.innerHTML = '';
 
-            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 30);
+            // If a specialization/type is selected, filter suggestions client-side as well
+            const selectedType = typeSelect ? (typeSelect.value || '').toString().trim() : '';
+            let filtered = lastItems;
+            if (selectedType) {
+                filtered = lastItems.filter(d => (d.type || '').toString().trim() === selectedType);
+            }
+
+            const itemsToShow = showAll ? filtered : filtered.slice(0, 30);
             itemsToShow.forEach((it, idx)=>{
                 const el = document.createElement('div');
                 el.className = 'icd-suggestion';
@@ -1102,12 +1109,14 @@ document.addEventListener('DOMContentLoaded', function() {
             clearTimeout(timer);
             const q = input.value.trim();
             if(!q){ clearSuggestions(); return; }
-            timer = setTimeout(()=>{
-                fetch('/doctors/search?q='+encodeURIComponent(q))
-                    .then(r => r.json())
-                    .then(data => renderSuggestions(data || []))
-                    .catch(e => console.error('Doctor fetch error', e));
-            }, 250);
+                timer = setTimeout(()=>{
+                    // Include selected specialization in the search if present
+                    const typeParam = (typeSelect && typeSelect.value) ? '&type=' + encodeURIComponent(typeSelect.value) : '';
+                    fetch('/doctors/search?q='+encodeURIComponent(q) + typeParam)
+                        .then(r => r.json())
+                        .then(data => renderSuggestions(data || []))
+                        .catch(e => console.error('Doctor fetch error', e));
+                }, 250);
         });
 
         input.addEventListener('focus', ()=>{
@@ -1116,11 +1125,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const q = input.value.trim();
             if (!q) {
                 // show master list (cached) if available, otherwise fetch and show
-                if (masterDoctorList.length > 0) renderSuggestions(masterDoctorList.slice(0,50), true);
-                else loadAllDoctors(true);
+                if (masterDoctorList.length > 0) {
+                    // if a type is selected, filter before showing
+                    const selectedType = typeSelect ? (typeSelect.value || '').toString().trim() : '';
+                    const listToShow = selectedType ? masterDoctorList.filter(d => (d.type||'').toString().trim() === selectedType) : masterDoctorList;
+                    renderSuggestions(listToShow.slice(0,50), true);
+                } else loadAllDoctors(true);
             } else {
-                // perform a quick filtered search to show relevant suggestions
-                fetch('/doctors/search?q='+encodeURIComponent(q))
+                // perform a quick filtered search to show relevant suggestions; include type if selected
+                const typeParam = (typeSelect && typeSelect.value) ? '&type=' + encodeURIComponent(typeSelect.value) : '';
+                fetch('/doctors/search?q='+encodeURIComponent(q) + typeParam)
                     .then(r => r.json())
                     .then(data => renderSuggestions(data || []))
                     .catch(e => console.error('Doctor fetch error', e));
