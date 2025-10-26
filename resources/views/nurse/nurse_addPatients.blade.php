@@ -48,7 +48,7 @@
 
             <div class="form-group">
                 <label for="date_of_birth">Date of Birth</label>
-                <input id="date_of_birth" type="date" name="date_of_birth" required value="{{ old('date_of_birth') }}">
+                <input id="date_of_birth" type="date" name="date_of_birth" required value="{{ old('date_of_birth') }}" max="{{ date('Y-m-d') }}">
             </div>
 
             <div class="form-group">
@@ -250,22 +250,22 @@
 
             <div class="form-group full-width">
                 <label for="smoking_history">Do you smoke? If yes, how often and how many years?</label>
-                <textarea id="smoking_history" name="smoking_history" rows="2" placeholder="Please specify smoking frequency, duration, and type (cigarettes, cigars, etc.)" value="{{ old('smoking_history') }}"></textarea>
+                <textarea id="smoking_history" name="smoking_history" rows="2" placeholder="Please specify smoking frequency, duration, and type (cigarettes, cigars, etc.)">{{ old('smoking_history') }}</textarea>
             </div>
 
             <div class="form-group full-width">
                 <label for="alcohol_consumption">Do you drink alcohol? If yes, how frequently?</label>
-                <textarea id="alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Please specify frequency and type of alcohol consumption" value="{{ old('alcohol_consumption') }}"></textarea>
+                <textarea id="alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Please specify frequency and type of alcohol consumption">{{ old('alcohol_consumption') }}</textarea>
             </div>
 
             <div class="form-group full-width">
                 <label for="recreational_drugs">Do you use recreational drugs?</label>
-                <textarea id="recreational_drugs" name="recreational_drugs" rows="2" placeholder="Please specify any recreational drug use" value="{{ old('recreational_drugs') }}"></textarea>
+                <textarea id="recreational_drugs" name="recreational_drugs" rows="2" placeholder="Please specify any recreational drug use">{{ old('recreational_drugs') }}</textarea>
             </div>
 
             <div class="form-group full-width">
                 <label for="exercise_activity">How often do you exercise or engage in physical activity?</label>
-                <textarea id="exercise_activity" name="exercise_activity" rows="2" placeholder="Please describe your exercise routine and physical activity level" value="{{ old('exercise_activity') }}"></textarea>
+                <textarea id="exercise_activity" name="exercise_activity" rows="2" placeholder="Please describe your exercise routine and physical activity level">{{ old('exercise_activity') }}</textarea>
             </div>
             <!-- END: Social History -->
 
@@ -430,6 +430,38 @@ document.addEventListener('DOMContentLoaded', function() {
     let icdIsValid = false;
     let roomIsValid = false;
 
+    // Date of Birth validation - prevent future dates
+    const dobInput = document.getElementById('date_of_birth');
+    if (dobInput) {
+        dobInput.addEventListener('change', function() {
+            if (!this.value) return; // Skip validation if no value
+            
+            const selectedDate = this.value; // Get the date string directly
+            const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+            
+            if (selectedDate > today) {
+                nurseError('Invalid Date', 'Date of birth cannot be in the future. Please select a valid date.');
+                this.value = ''; // Clear the invalid date
+                this.focus(); // Focus back on the field
+            }
+        });
+        
+        // Also validate on input (for manual typing)
+        dobInput.addEventListener('input', function() {
+            if (this.value) {
+                const selectedDate = this.value; // Get the date string directly
+                const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+                
+                if (selectedDate > today) {
+                    this.setCustomValidity('Date of birth cannot be in the future');
+                } else {
+                    this.setCustomValidity('');
+                }
+            }
+        });
+        });
+    }
+
     // Enhanced ICD-10 autocomplete
     (function(){
         const input = document.getElementById('admission-diagnosis');
@@ -437,6 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('icd10-suggestions');
         const errorDiv = document.getElementById('icd10-validation-error');
         if (!input || !container) return;
+        }
         
         let timer = null; 
         let activeIndex = -1; 
@@ -458,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearSuggestions(); 
                 return;
             } 
-            container.innerHTML=''; 
+            container.innerHTML='';  
             
             const itemsToShow = showAll ? lastItems : lastItems.slice(0, 10);
             
@@ -473,10 +506,8 @@ document.addEventListener('DOMContentLoaded', function() {
             container.style.display='block'; 
             activeIndex=-1; 
         }
-        
-        function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
-        
-        function selectItem(idx, items = lastItems){ 
+
+        function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }        function selectItem(idx, items = lastItems){ 
             const item=items[idx]; 
             if(!item) return; 
             input.value = item.code || ''; 
@@ -660,9 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.getElementById('room-input');
         const container = document.getElementById('room-suggestions');
         const errorDiv = document.getElementById('room-validation-error');
-        if (!input || !container) return;
-        
-        let timer = null;
+        if (!input || !container) return;        let timer = null;
         let activeIndex = -1;
         let lastItems = [];
         let masterRoomList = []; // This will hold the definitive list of all rooms
@@ -866,9 +895,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('doctor-suggestions');
         const errorDiv = document.getElementById('doctor-validation-error');
         const typeSelect = document.getElementById('doctor_type');
-        if (!input || !container) return;
-
-        let timer = null;
+        if (!input || !container) return;        let timer = null;
         let activeIndex = -1;
         let lastItems = [];
         let masterDoctorList = []; // definitive list cached on first load
@@ -1372,7 +1399,61 @@ textarea:focus {
     margin: 30px 0 20px 0;
     grid-column: 1 / -1;
 }
+
+/* Auto-capitalize name fields */
+.auto-capitalize {
+    text-transform: capitalize;
+}
 </style>
+
+<script>
+// Auto-capitalize function for name fields
+function autoCapitalize(input) {
+    let value = input.value;
+    let cursorPosition = input.selectionStart;
+    
+    // Capitalize first letter and letters after spaces
+    let capitalizedValue = value.toLowerCase().replace(/(?:^|\s)\S/g, function(letter) {
+        return letter.toUpperCase();
+    });
+    
+    // Update the input value
+    input.value = capitalizedValue;
+    
+    // Restore cursor position
+    input.setSelectionRange(cursorPosition, cursorPosition);
+}
+
+// Apply auto-capitalization to name fields when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const nameFields = [
+        'first_name',
+        'middle_name', 
+        'last_name',
+        'barangay',
+        'nationality',
+        'doctor_name'
+    ];
+    
+    nameFields.forEach(function(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            // Add CSS class for visual capitalization
+            field.classList.add('auto-capitalize');
+            
+            // Add event listener for real-time capitalization
+            field.addEventListener('input', function() {
+                autoCapitalize(this);
+            });
+            
+            // Also capitalize on blur (when user leaves the field)
+            field.addEventListener('blur', function() {
+                autoCapitalize(this);
+            });
+        }
+    });
+});
+</script>
 @endpush
 
 @include('nurse.modals.notification_system')

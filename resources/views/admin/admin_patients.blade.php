@@ -120,13 +120,19 @@
                             </td>
                             <td>{{ $patient->created_at ? \Carbon\Carbon::parse($patient->created_at)->format('M d, Y') : 'N/A' }}</td>
                             <td>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="toggleDropdown({{ $patient->id ?? $loop->index }})">
-                                        <span>⋯</span>
+                                <div class="action-buttons">
+                                    <button class="view-btn" onclick="viewPatient({{ $patient->id ?? $loop->index }})" title="View Details">
+                                        View
                                     </button>
-                                    <div class="dropdown-content" id="dropdown-{{ $patient->id ?? $loop->index }}">
-                                        <a href="#" onclick="viewPatient({{ $patient->id ?? $loop->index }})">View Details</a>
-                                    </div>
+                                    <button class="edit-btn" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'active')" title="Mark Active">
+                                        Active
+                                    </button>
+                                    <button class="warning-btn" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'discharged')" title="Mark Discharged">
+                                        Discharge
+                                    </button>
+                                    <button class="delete-btn" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'deceased')" title="Mark Deceased">
+                                        Deceased
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -290,22 +296,8 @@
         });
     });
 
-    // Dropdown Actions
-    function toggleDropdown(patientId) {
-        const dropdown = document.getElementById(`dropdown-${patientId}`);
-        
-        document.querySelectorAll('.dropdown-content').forEach(dd => {
-            if (dd.id !== `dropdown-${patientId}`) {
-                dd.classList.remove('show');
-            }
-        });
-        
-        dropdown.classList.toggle('show');
-    }
-
+    // Patient Actions
     async function viewPatient(patientId) {
-        document.getElementById(`dropdown-${patientId}`).classList.remove('show');
-        
         console.log('Fetching patient details for ID:', patientId);
         
         try {
@@ -337,8 +329,6 @@
     }
 
     async function updatePatientStatus(patientId, newStatus) {
-        document.getElementById(`dropdown-${patientId}`).classList.remove('show');
-        
         const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
         adminConfirm(
             `Are you sure you want to mark this patient as ${statusText}?`,
@@ -374,15 +364,6 @@
             adminError('An error occurred while updating the patient status.');
         }
     }
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.action-btn') && !event.target.matches('.action-btn span')) {
-            document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
     </script>
 
     <style>

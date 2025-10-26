@@ -62,7 +62,9 @@
                                             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">₱{{ is_numeric($s->price) ? number_format($s->price,2) : '0.00' }}</td>
                                             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">{{ $s->quantity ?? 0 }}</td>
                                             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">
-                                                <button type="button" class="btn view-btn js-open-stock" style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 5px; background: #607d8b; color: white;">View</button>
+                                                <button type="button" class="pharmacy-btn-primary btn-sm js-open-stock">
+                                                    <i class="fas fa-eye"></i> View
+                                                </button>
                                             </td>
                                         </tr>
                                         @endforeach

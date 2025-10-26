@@ -134,6 +134,9 @@ Route::middleware(['auth'])->group(function () {
     // Allow doctors to view active admission (read-only access)
     Route::get('/doctor/api/patients/{patientId}/active-admission', [PatientController::class, 'getActiveAdmission'])->name('api.patient.active-admission.doctor');
 
+    // Allow doctors to get patient health history
+    Route::get('/doctor/api/patient/{patientId}/health-history', [PatientController::class, 'getHealthHistory'])->name('api.patient.health-history.doctor');
+
     // Finalize admission (doctor sets final diagnosis)
     Route::post('/doctor/admissions/{admissionId}/finalize', [PatientController::class, 'finalizeAdmission'])->name('doctor.admissions.finalize');
     
@@ -318,6 +321,9 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     // Allow nurses to get current admission data for edit modal
     Route::get('/patients/{id}/current-admission', [PatientController::class, 'getCurrentAdmission'])->name('api.patient.current-admission.nurse');
     
+    // Allow nurses to get patient health history
+    Route::get('/api/patient/{patientId}/health-history', [PatientController::class, 'getHealthHistory'])->name('api.patient.health-history.nurse');
+    
     // Allow nurses to create new admissions
     Route::post('/nurse/admissions', [PatientController::class, 'createAdmission'])->name('nurse.admissions.create');
     
@@ -432,6 +438,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users/{id}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    
+    // Archive Management
+    Route::get('/admin/users/archived', [App\Http\Controllers\AdminController::class, 'archivedUsers'])->name('admin.users.archived');
+    Route::post('/admin/users/{id}/restore', [App\Http\Controllers\AdminController::class, 'restoreUser'])->name('admin.users.restore');
+    Route::delete('/admin/users/{id}/permanent', [App\Http\Controllers\AdminController::class, 'permanentlyDeleteUser'])->name('admin.users.permanent-delete');
 
     // User List with Search and Filtering
     Route::get('/admin/users', function (\Illuminate\Http\Request $request) {
@@ -466,7 +477,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         $users->appends(request()->query());
         
         return view('admin.admin_users', compact('users'));
-    });
+    })->name('admin.users');
     
     // Room Management
     Route::get('/admin/rooms', [AdminController::class, 'rooms'])->name('admin.rooms');

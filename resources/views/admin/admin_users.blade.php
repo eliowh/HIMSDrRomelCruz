@@ -37,7 +37,12 @@
                         <button id="clearButton" class="clear-btn">Clear</button>
                     @endif
                 </div>
-                <button class="add-user-btn" onclick="openAddUserModal()">Add New User</button>
+                <div class="action-controls">
+                    <a href="{{ route('admin.users.archived') }}" class="archived-users-btn">
+                        <i class="fas fa-archive"></i> View Archived Users
+                    </a>
+                    <button class="add-user-btn" onclick="openAddUserModal()">Add New User</button>
+                </div>
             </div>
 
             <div class="admin-card">
@@ -91,7 +96,7 @@
                     <tbody>
                         @foreach($users as $user)
                         <tr data-role="{{ $user->role }}" data-name="{{ strtolower($user->name) }}">
-                            <td>{{ $user->name }}</td>
+                            <td>{{ $user->display_name }}</td>
                             <td>{{ $user->email }}</td>
                             <td>
                                 <span class="role-badge role-{{ $user->role }}">
@@ -104,14 +109,13 @@
                             </td>
                             <td>{{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</td>
                             <td>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="toggleDropdown({{ $user->id }})">
-                                        <span>⋯</span>
+                                <div class="action-buttons">
+                                    <button class="edit-btn" onclick="editUser({{ $user->id }})" title="Edit User">
+                                        Edit
                                     </button>
-                                    <div class="dropdown-content" id="dropdown-{{ $user->id }}">
-                                        <a href="#" onclick="editUser({{ $user->id }})">Edit</a>
-                                        <a href="#" onclick="deleteUser({{ $user->id }})" class="delete-action">Delete</a>
-                                    </div>
+                                    <button class="archive-btn" onclick="archiveUser({{ $user->id }})" title="Archive User">
+                                        Archive
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -258,24 +262,8 @@
         });
     });
 
-    // Dropdown Actions
-    function toggleDropdown(userId) {
-        const dropdown = document.getElementById(`dropdown-${userId}`);
-        
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-content').forEach(dd => {
-            if (dd.id !== `dropdown-${userId}`) {
-                dd.classList.remove('show');
-            }
-        });
-        
-        dropdown.classList.toggle('show');
-    }
-
+    // User Actions
     async function editUser(userId) {
-        // Close dropdown
-        document.getElementById(`dropdown-${userId}`).classList.remove('show');
-        
         try {
             // Fetch user data
             const response = await fetch(`/admin/users/${userId}/edit`);
@@ -302,20 +290,17 @@
         }
     }
 
-    async function deleteUser(userId) {
-        // Close dropdown
-        document.getElementById(`dropdown-${userId}`).classList.remove('show');
-        
+    async function archiveUser(userId) {
         adminConfirm(
-            'Are you sure you want to delete this user? This action cannot be undone.',
-            'Confirm Deletion',
-            () => performUserDeletion(userId),
-            () => console.log('User deletion cancelled')
+            'Are you sure you want to archive this user? The account will be deactivated but all data will be preserved and can be restored later.',
+            'Confirm Archive',
+            () => performUserArchival(userId),
+            () => console.log('User archival cancelled')
         );
         return;
     }
 
-    async function performUserDeletion(userId) {
+    async function performUserArchival(userId) {
         
         try {
             const response = await fetch(`/admin/users/${userId}`, {
@@ -329,14 +314,14 @@
             const result = await response.json();
             
             if (result.success) {
-                adminSuccess('User deleted successfully!');
+                adminSuccess('User archived successfully! Account data has been preserved.');
                 location.reload(); // Refresh the page to update the user list
             } else {
                 adminError('Error: ' + result.message);
             }
         } catch (error) {
             console.error('Error:', error);
-            adminError('An error occurred while deleting the user.');
+            adminError('An error occurred while archiving the user.');
         }
     }
 
@@ -440,15 +425,6 @@
         const form = document.getElementById('editUserForm');
         form.parentElement.insertBefore(errorDiv, form);
     }
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.action-btn') && !event.target.matches('.action-btn span')) {
-            document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
     </script>
     @include('admin.modals.notification_system')
 </body>

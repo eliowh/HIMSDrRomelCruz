@@ -23,7 +23,7 @@
                     
                     <div class="form-group">
                         <label for="edit_date_of_birth">Date of Birth</label>
-                        <input id="edit_date_of_birth" name="date_of_birth" type="date" required />
+                        <input id="edit_date_of_birth" name="date_of_birth" type="date" required max="{{ date('Y-m-d') }}" />
                     </div>
 
                     <div class="form-group">
@@ -259,6 +259,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Date of Birth validation
+    const editDateOfBirthInput = document.getElementById('edit_date_of_birth');
+    if (editDateOfBirthInput) {
+        editDateOfBirthInput.addEventListener('change', function() {
+            if (!this.value) return; // Skip validation if no value
+            
+            const selectedDate = this.value; // Get the date string directly
+            const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+            
+            if (selectedDate > today) {
+                doctorError('Date of Birth cannot be in the future.');
+                this.setCustomValidity('Date of Birth cannot be in the future.');
+                this.value = ''; // Clear the invalid date
+            } else {
+                this.setCustomValidity(''); // Clear any previous custom validity
+            }
+        });
+        
+        editDateOfBirthInput.addEventListener('input', function() {
+            if (this.value) {
+                const selectedDate = this.value; // Get the date string directly
+                const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+                
+                if (selectedDate > today) {
+                    this.setCustomValidity('Date of Birth cannot be in the future.');
+                } else {
+                    this.setCustomValidity(''); // Clear any previous custom validity
+                }
+            }
+        });
+    }
     
     const modal = document.getElementById('editModal');
     observer.observe(modal, { attributes: true });

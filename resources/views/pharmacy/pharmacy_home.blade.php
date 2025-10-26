@@ -83,28 +83,6 @@
                         <small class="stat-sublabel">All time</small>
                     </div>
                 </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon value">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-details">
-                        <span class="stat-number">₱{{ number_format($pendingOrdersValue, 2) }}</span>
-                        <span class="stat-label">Pending Value</span>
-                        <small class="stat-sublabel">Total pending worth</small>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon monthly">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-details">
-                        <span class="stat-number">₱{{ number_format($completedOrdersValue, 2) }}</span>
-                        <span class="stat-label">Monthly Sales</span>
-                        <small class="stat-sublabel">{{ now()->format('F Y') }}</small>
-                    </div>
-                </div>
             </div>
             
             <!-- Recent Orders -->

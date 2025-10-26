@@ -123,7 +123,7 @@
                                             </button>
                                         @endif
                                         
-                                        <button class="btn pharmacy-btn-info btn-sm" onclick="viewOrder({{ $order->id }})">
+                                        <button class="btn pharmacy-btn-primary btn-sm" onclick="viewOrder({{ $order->id }})">>
                                             <i class="fas fa-eye"></i> View
                                         </button>
                                     </td>
