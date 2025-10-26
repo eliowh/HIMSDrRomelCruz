@@ -275,6 +275,13 @@
                 document.getElementById('editUserName').value = result.user.name;
                 document.getElementById('editUserEmail').value = result.user.email;
                 document.getElementById('editUserRole').value = result.user.role;
+                // Populate newly added fields if available
+                try {
+                    document.getElementById('editUserTitle').value = result.user.title || '';
+                } catch (e) {}
+                try {
+                    document.getElementById('editUserLicense').value = result.user.license_number || '';
+                } catch (e) {}
                 
                 // Clear any previous errors
                 clearEditErrors();
@@ -341,9 +348,11 @@
         
         // Create a proper FormData object and add method override
         const formData = new FormData();
-        formData.append('name', document.getElementById('editUserName').value);
-        formData.append('email', document.getElementById('editUserEmail').value);
-        formData.append('role', document.getElementById('editUserRole').value);
+    formData.append('name', document.getElementById('editUserName').value);
+    formData.append('title', document.getElementById('editUserTitle') ? document.getElementById('editUserTitle').value : '');
+    formData.append('license_number', document.getElementById('editUserLicense') ? document.getElementById('editUserLicense').value : '');
+    formData.append('email', document.getElementById('editUserEmail').value);
+    formData.append('role', document.getElementById('editUserRole').value);
         formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}');
         formData.append('_method', 'PUT');
         
@@ -374,13 +383,36 @@
             } else {
                 if (result.errors) {
                     console.log('Validation errors:', result.errors);
-                    // Display validation errors
+                    // Display validation errors. Be resilient to different id/name conventions.
                     Object.keys(result.errors).forEach(field => {
-                        const errorElement = document.getElementById(`edit${field.charAt(0).toUpperCase() + field.slice(1)}Error`);
-                        const inputElement = document.getElementById(`editUser${field.charAt(0).toUpperCase() + field.slice(1)}`);
-                        
-                        if (errorElement && inputElement) {
+                        // Build a couple of variants for error element and input element lookup
+                        const fieldIdSuffix = field.charAt(0).toUpperCase() + field.slice(1);
+
+                        // Prefer an error element with the standard id (e.g., editNameError or editLicense_numberError)
+                        let errorElement = document.getElementById(`edit${fieldIdSuffix}Error`);
+                        if (!errorElement) {
+                            // Try a compacted version (e.g., editLicenseNumberError) to cover different id styles
+                            const compact = `edit${field.replace(/_([a-z])/g, (m, p) => p.toUpperCase()).replace(/_/g, '')}Error`;
+                            errorElement = document.getElementById(compact);
+                        }
+
+                        // For the input element, prefer name-based lookup inside the form; fallback to id-based lookup
+                        const formInputByName = document.querySelector(`#editUserForm [name="${field}"]`);
+                        const idVariant = `editUser${fieldIdSuffix.replace(/_([a-z])/g, (m, p) => p.toUpperCase())}`;
+                        const inputElement = formInputByName || document.getElementById(idVariant) || document.getElementById(`editUser${fieldIdSuffix}`);
+
+                        // Set the error text if we have an element for it
+                        if (errorElement) {
                             errorElement.textContent = result.errors[field][0];
+                            errorElement.style.display = 'block';
+                        } else {
+                            // If no specific error element, show a generic in-modal error area
+                            document.getElementById('editErrorMessage').textContent = result.errors[field][0];
+                            document.getElementById('editErrorMessage').style.display = 'block';
+                        }
+
+                        // Mark the input invalid if we found it
+                        if (inputElement) {
                             inputElement.classList.add('error');
                         }
                     });

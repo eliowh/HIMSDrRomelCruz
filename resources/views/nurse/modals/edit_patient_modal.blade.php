@@ -874,6 +874,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const API_BASE = '/api/locations';
     const provinceSel = document.getElementById('edit_province');
     const citySel = document.getElementById('edit_city');
+    const barangaySel = document.getElementById('edit_barangay');
 
     function clearSelect(sel) {
         while (sel.firstChild) sel.removeChild(sel.firstChild);
@@ -1088,6 +1089,28 @@ document.addEventListener('DOMContentLoaded', function () {
         // observe value attribute changes
         mo.observe(provinceObserverTarget, { attributes: true, attributeFilter: ['value'] });
     }
+
+    // Barangay loading logic
+    const barangaySel = document.getElementById('edit_barangay');
+    citySel.addEventListener('change', function() {
+        const selOpt = this.options[this.selectedIndex];
+        const cityName = selOpt ? selOpt.value : '';
+        const cityCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        clearSelect(barangaySel);
+        addOption(barangaySel, '', '-- Loading barangays... --', false, '');
+        fetch(API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName))))
+            .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+            .then(list => {
+                clearSelect(barangaySel);
+                addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                list.forEach(b => {
+                    const name = b.name || b.barangayDesc || '';
+                    const code = b.code || b.barangay_code || '';
+                    addOption(barangaySel, name, name, false, code);
+                });
+            })
+            .catch(err => console.warn('Failed to load barangays', err));
+    });
 });
 </script>
 

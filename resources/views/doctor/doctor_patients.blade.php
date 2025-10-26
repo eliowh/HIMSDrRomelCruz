@@ -338,10 +338,6 @@
 
     <div class="details-column">
         <div class="nurse-card details-card" id="detailsCard">
-            <div class="patients-header">
-                <h3>Patient Details</h3>
-            </div>
-
             <div class="details-empty" id="detailsEmpty">Select a patient to view details.</div>
 
             <div class="details-content" id="detailsContent" style="display:none;">
@@ -568,6 +564,101 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.querySelectorAll('.patient-row');
+
+    rows.forEach(row => {
+        const viewButton = row.querySelector('.js-open-patient');
+        if (viewButton) {
+            viewButton.addEventListener('click', function () {
+                const patientData = row.getAttribute('data-patient');
+                if (patientData) {
+                    try {
+                        const patient = JSON.parse(patientData);
+                        window.currentPatient = patient;
+
+                        // Render patient details with formatting
+                        renderPatient(patient);
+                    } catch (error) {
+                        console.error('Error parsing patient data:', error);
+                    }
+                }
+            });
+        }
+    });
+
+    // Auto-select the first row if none is active
+    if (rows.length && !document.querySelector('.patient-row.active')) {
+        rows[0].querySelector('.js-open-patient').click();
+    }
+
+    function renderPatient(patient) {
+        console.log('Rendering patient:', patient); // Debug log
+
+        // Patient Details Section
+        document.getElementById('md-patient_no').textContent = patient.patient_no || '-';
+        document.getElementById('md-name').textContent = `${formatName(patient.last_name)}, ${formatName(patient.first_name)} ${formatName(patient.middle_name)}`.trim() || '-';
+        document.getElementById('md-dob').textContent = formatDate(patient.date_of_birth);
+
+        // Compute age
+        const dob = patient.date_of_birth ? new Date(patient.date_of_birth) : null;
+        const now = new Date();
+        let ageText = '-';
+        if (dob && !isNaN(dob.getTime())) {
+            let years = now.getFullYear() - dob.getFullYear();
+            const m = now.getMonth() - dob.getMonth();
+            const d = now.getDate() - dob.getDate();
+            if (m < 0 || (m === 0 && d < 0)) years -= 1;
+            ageText = years + ' years';
+        }
+        document.getElementById('md-age').textContent = ageText;
+
+        // Format sex
+        const sexText = patient.sex ? patient.sex.charAt(0).toUpperCase() + patient.sex.slice(1).toLowerCase() : '-';
+        document.getElementById('md-sex').textContent = sexText;
+
+        document.getElementById('md-contact_number').textContent = patient.contact_number || '-';
+        document.getElementById('md-location').textContent = `${formatName(patient.barangay)}, ${formatName(patient.city)}, ${formatName(patient.province)}`.trim() || '-';
+        document.getElementById('md-nationality').textContent = formatName(patient.nationality);
+
+        // Show health history section
+        const healthHistorySection = document.getElementById('health-history-section');
+        if (healthHistorySection) {
+            healthHistorySection.style.display = 'block';
+        }
+    }
+
+    function formatName(name) {
+        if (!name) return '-';
+        return name.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '-';
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return dateStr.split('T')[0]; // fallback to just date part
+        }
+    }
+
+    // Attach event listener to the "View General Health History" button
+    const healthHistoryButton = document.querySelector('.view-medicine-summary-btn');
+    if (healthHistoryButton) {
+        healthHistoryButton.addEventListener('click', function () {
+            if (typeof window.openHealthHistoryModal === 'function') {
+                window.openHealthHistoryModal();
+            }
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
     // Global variable to track current selected admission (accessible globally)
     window.currentSelectedAdmissionId = null;
     
@@ -623,8 +714,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderPatient(patient){
-        console.log('Rendering patient:', patient); // Debug log
-        
         // Patient Details Section
         document.getElementById('md-patient_no').textContent = or(patient.patient_no);
         
@@ -635,9 +724,6 @@ document.addEventListener('DOMContentLoaded', function () {
             formatName(patient.middle_name)
         ].filter(Boolean);
         document.getElementById('md-name').textContent = nameParts.length ? nameParts.join(', ') : '-';
-        
-        // Format sex
-        document.getElementById('md-sex').textContent = patient.sex ? formatName(patient.sex) : '-';
         
         // Format date without timezone
         document.getElementById('md-dob').textContent = formatDate(patient.date_of_birth);
@@ -655,8 +741,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         document.getElementById('md-age').textContent = ageText;
         
+        // Format sex
+        const sexText = patient.sex ? patient.sex.charAt(0).toUpperCase() + patient.sex.slice(1) : '-';
+        document.getElementById('md-sex').textContent = sexText;
+        
         // Format contact number
-        document.getElementById('md-contact_number').textContent = patient.contact_number || '-';
+        document.getElementById('md-contact_number').textContent = or(patient.contact_number);
         
         // Format location
         const locationParts = [
@@ -674,7 +764,7 @@ document.addEventListener('DOMContentLoaded', function () {
             healthHistorySection.style.display = 'block';
         }
         
-        // Load admission summary and admission-specific data
+        // Load admission summary (this will auto-load admission-specific medicine and lab data)
         loadAdmissionSummary(patient.id);
         
     }
@@ -1101,6 +1191,55 @@ document.addEventListener('DOMContentLoaded', function () {
     window.loadAdmissionSummary = loadAdmissionSummary;
     window.selectAdmission = selectAdmission;
 
+    document.addEventListener('DOMContentLoaded', function () {
+        const rows = document.querySelectorAll('.patient-row');
+        rows.forEach(row => {
+            const btn = row.querySelector('.js-open-patient');
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    try {
+                        const payload = row.getAttribute('data-patient');
+                        console.log('Raw patient data:', payload); // Debug log
+
+                        if (!payload) {
+                            throw new Error('No patient data found');
+                        }
+
+                        const patient = JSON.parse(payload);
+                        console.log('Parsed patient:', patient); // Debug log
+
+                        // Clear active row
+                        rows.forEach(r => r.classList.remove('active'));
+                        row.classList.add('active');
+
+                        // Update global patient variable
+                        window.currentPatient = patient;
+
+                        // Clear previous modal data
+                        const modal = document.getElementById('healthHistoryModal');
+                        if (modal) {
+                            const patientNameEl = document.getElementById('health-history-patient-name');
+                            const patientNoEl = document.getElementById('health-history-patient-no');
+                            if (patientNameEl) patientNameEl.textContent = '';
+                            if (patientNoEl) patientNoEl.textContent = '';
+                        }
+
+                        // Render patient details (if applicable)
+                        renderPatient(patient);
+                    } catch (error) {
+                        console.error('Error parsing patient data:', error);
+                        alert('Failed to load patient details: ' + error.message);
+                    }
+                });
+            }
+        });
+
+        // Optionally auto-select the first row
+        if (rows.length && !document.querySelector('.patient-row.active')) {
+            rows[0].querySelector('.js-open-patient').click();
+        }
+    });
+
     function clearActive(){
         rows.forEach(r => r.classList.remove('active'));
     }
@@ -1349,34 +1488,43 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Health History Modal Functions
-    function openHealthHistoryModal() {
+    window.openHealthHistoryModal = function() {
         const modal = document.getElementById('healthHistoryModal');
         if (!modal) {
             console.error('Health history modal not found');
             return;
         }
-        
-        // Try to get patient data from the active row
-        const activeRow = document.querySelector('tr.active');
-        if (!activeRow) {
+
+        // Try to get the selected patient from global state first
+        let selectedPatient = window.currentPatient;
+
+        // Fallback: if not set, try to find an active patient row in the table
+        if (!selectedPatient) {
+            const activeRow = document.querySelector('.patient-row.active') || document.querySelector('.patient-row');
+            if (activeRow) {
+                try {
+                    const payload = activeRow.getAttribute('data-patient');
+                    if (payload && payload.trim() !== '') {
+                        selectedPatient = JSON.parse(payload);
+                        // also set global for future calls
+                        window.currentPatient = selectedPatient;
+                        console.log('openHealthHistoryModal: recovered selectedPatient from DOM', selectedPatient);
+                    }
+                } catch (e) {
+                    console.error('openHealthHistoryModal: failed to parse patient from DOM', e);
+                }
+            }
+        }
+
+        if (!selectedPatient) {
             alert('Please select a patient first');
             return;
         }
-        
-        let selectedPatient;
-        try {
-            const patientData = activeRow.getAttribute('data-patient');
-            selectedPatient = JSON.parse(patientData);
-        } catch (error) {
-            console.error('Error getting patient data:', error);
-            alert('Error loading patient data');
-            return;
-        }
-        
+
         // Set patient info - check if elements exist
         const patientNameEl = document.getElementById('health-history-patient-name');
         const patientNoEl = document.getElementById('health-history-patient-no');
-        
+
         if (patientNameEl) {
             const fullName = `${selectedPatient.first_name} ${selectedPatient.middle_name} ${selectedPatient.last_name}`.replace(/\s+/g, ' ').trim();
             patientNameEl.textContent = fullName;
@@ -1384,24 +1532,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (patientNoEl) {
             patientNoEl.textContent = `Patient No: ${selectedPatient.patient_no}`;
         }
-        
+
         // Show loading - check if elements exist
         const loadingEl = document.getElementById('healthHistoryLoading');
         const detailsEl = document.getElementById('healthHistoryDetails');
         const emptyEl = document.getElementById('healthHistoryEmpty');
-        
+
         if (loadingEl) loadingEl.style.display = 'block';
         if (detailsEl) detailsEl.style.display = 'none';
         if (emptyEl) emptyEl.style.display = 'none';
-        
+
         // Show modal
         modal.classList.add('show');
-        
+
         // Load health history data
         loadHealthHistoryData(selectedPatient.id);
     }
 
-    function closeHealthHistoryModal() {
+    window.closeHealthHistoryModal = function() {
         const modal = document.getElementById('healthHistoryModal');
         if (modal) {
             modal.classList.remove('show');
@@ -1414,48 +1562,48 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 const loadingEl = document.getElementById('healthHistoryLoading');
                 if (loadingEl) loadingEl.style.display = 'none';
-                
+
                 if (data.success && data.health_history) {
                     const history = data.health_history;
-                    
+
                     // Populate health history fields - check if elements exist
                     const chronicEl = document.getElementById('chronic-illnesses');
                     if (chronicEl) chronicEl.textContent = history.chronic_illnesses || 'No chronic illnesses reported';
-                    
+
                     const hospitalizationEl = document.getElementById('hospitalization-history');
                     if (hospitalizationEl) hospitalizationEl.textContent = history.hospitalization_history || 'No hospitalization history reported';
-                    
+
                     const surgeryEl = document.getElementById('surgery-history');
                     if (surgeryEl) surgeryEl.textContent = history.surgery_history || 'No surgery history reported';
-                    
+
                     const accidentEl = document.getElementById('accident-history');
                     if (accidentEl) accidentEl.textContent = history.accident_injury_history || 'No accident/injury history reported';
-                    
+
                     const currentMedEl = document.getElementById('current-medications');
                     if (currentMedEl) currentMedEl.textContent = history.current_medications || 'No current medications reported';
-                    
+
                     const longtermMedEl = document.getElementById('longterm-medications');
                     if (longtermMedEl) longtermMedEl.textContent = history.longterm_medications || 'No long-term medications reported';
-                    
+
                     const allergiesEl = document.getElementById('known-allergies');
                     if (allergiesEl) allergiesEl.textContent = history.known_allergies || 'No known allergies reported';
-                    
+
                     const familyEl = document.getElementById('family-history');
                     if (familyEl) familyEl.textContent = history.family_history_chronic_diseases || 'No family history of chronic diseases reported';
-                    
+
                     // Populate social history fields
                     const smokingEl = document.getElementById('smoking-history');
                     if (smokingEl) smokingEl.textContent = history.smoking_history || 'No smoking history reported';
-                    
+
                     const alcoholEl = document.getElementById('alcohol-consumption');
                     if (alcoholEl) alcoholEl.textContent = history.alcohol_consumption || 'No alcohol consumption reported';
-                    
+
                     const drugsEl = document.getElementById('recreational-drugs');
                     if (drugsEl) drugsEl.textContent = history.recreational_drugs || 'No recreational drug use reported';
-                    
+
                     const exerciseEl = document.getElementById('exercise-activity');
                     if (exerciseEl) exerciseEl.textContent = history.exercise_activity || 'No exercise activity reported';
-                    
+
                     const detailsEl = document.getElementById('healthHistoryDetails');
                     if (detailsEl) detailsEl.style.display = 'block';
                 } else {
@@ -1466,8 +1614,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => {
                 console.error('Error loading health history:', error);
                 const loadingEl = document.getElementById('healthHistoryLoading');
-                const emptyEl = document.getElementById('healthHistoryEmpty');
                 if (loadingEl) loadingEl.style.display = 'none';
+
+                const emptyEl = document.getElementById('healthHistoryEmpty');
                 if (emptyEl) emptyEl.style.display = 'block';
             });
     }

@@ -99,4 +99,6 @@ use App\Http\Controllers\Api\LocationController;
 Route::prefix('locations')->group(function () {
     Route::get('provinces', [LocationController::class, 'provinces']);
     Route::get('cities', [LocationController::class, 'cities']);
+    // Barangays endpoint - returns barangays and supports filtering by city_code or city name
+    Route::get('barangays', [LocationController::class, 'barangays']);
 });

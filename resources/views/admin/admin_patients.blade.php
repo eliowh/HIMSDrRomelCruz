@@ -525,6 +525,7 @@
 
             const provinceSel = ensureSelect('province') || ensureSelect('edit_province') || ensureSelectForKeyword('province');
             const citySel = ensureSelect('city') || ensureSelect('edit_city') || ensureSelectForKeyword('city');
+            const barangaySel = ensureSelect('barangay') || ensureSelect('edit_barangay') || ensureSelectForKeyword('barangay');
             if (!provinceSel || !citySel) return; // nothing to do
 
             function clearSelect(sel) { while (sel.firstChild) sel.removeChild(sel.firstChild); }
@@ -535,6 +536,7 @@
 
             const preSelectedProvinceValue = provinceSel.value || provinceSel.getAttribute('data-selected') || '';
             let preSelectedCityValue = citySel.value || citySel.getAttribute('data-selected') || '';
+            let preSelectedBarangayValue = barangaySel ? (barangaySel.value || barangaySel.getAttribute('data-selected') || '') : '';
 
             let provincesList = [];
             fetch(API_BASE + '/provinces')
@@ -601,6 +603,12 @@
                             const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
                             addOption(citySel, cname, cname, isSelected, c.code || c.city_code || c.id || '');
                             if (isSelected) preSelectedCityValue = '';
+                            // if city is preselected, attempt to load barangays for it after options are inserted
+                            if (isSelected && barangaySel) {
+                                const code = c.code || c.city_code || c.id || '';
+                                // small delay to ensure option selection has settled
+                                setTimeout(() => loadBarangaysForCity(cname, code), 40);
+                            }
                         });
                     })
                     .catch(err => { console.warn('Failed to load cities for admin modal', err); clearSelect(citySel); addOption(citySel, '', '-- Unable to load cities --', false, ''); });
@@ -612,6 +620,65 @@
                 const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
                 if (provName) loadCitiesForProvince(provName, provCode);
                 else { clearSelect(citySel); addOption(citySel, '', '-- Select province first --', false, ''); }
+            });
+
+            // Load barangays for a given city (by name or code)
+            function loadBarangaysForCity(cityName, cityCode) {
+                if (!barangaySel) return;
+                clearSelect(barangaySel); addOption(barangaySel, '', '-- Loading barangays... --', false, '');
+                // Always prefer cityCode if available, fallback to cityName
+                let url = API_BASE + '/barangays';
+                if (cityCode && cityCode !== '') {
+                    url += '?city_code=' + encodeURIComponent(cityCode);
+                } else if (cityName && cityName !== '') {
+                    url += '?city=' + encodeURIComponent(cityName);
+                }
+                fetch(url)
+                    .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+                    .then(list => {
+                        clearSelect(barangaySel); addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                        if (!Array.isArray(list) || list.length === 0) {
+                            // Try fallback: if we used code and got nothing, try with city name
+                            if (cityCode && cityName) {
+                                fetch(API_BASE + '/barangays?city=' + encodeURIComponent(cityName))
+                                    .then(r2 => r2.ok ? r2.json() : [])
+                                    .then(list2 => {
+                                        if (Array.isArray(list2) && list2.length > 0) {
+                                            clearSelect(barangaySel); addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                                            list2.forEach(b => {
+                                                const bname = b.name || b.barangayDesc || b.barangay || '';
+                                                if (!bname) return;
+                                                const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                                                addOption(barangaySel, bname, bname, isSelected, b.code || b.id || b.barangay_code || '');
+                                                if (isSelected) preSelectedBarangayValue = '';
+                                            });
+                                        } else {
+                                            clearSelect(barangaySel); addOption(barangaySel, '', '-- No barangays found --', false, '');
+                                        }
+                                    });
+                                return;
+                            }
+                            clearSelect(barangaySel); addOption(barangaySel, '', '-- No barangays found --', false, '');
+                            return;
+                        }
+                        list.forEach(b => {
+                            const bname = b.name || b.barangayDesc || b.barangay || '';
+                            if (!bname) return;
+                            const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                            addOption(barangaySel, bname, bname, isSelected, b.code || b.id || b.barangay_code || '');
+                            if (isSelected) preSelectedBarangayValue = '';
+                        });
+                    })
+                    .catch(err => { console.warn('Failed to load barangays for admin modal', err); clearSelect(barangaySel); addOption(barangaySel, '', '-- Unable to load barangays --', false, ''); });
+            }
+
+            // When city changes, load barangays for that city if barangay select exists
+            citySel?.addEventListener('change', function() {
+                const sel = this.options[this.selectedIndex];
+                const cname = sel ? sel.value : '';
+                const code = sel && sel.dataset ? sel.dataset.code : '';
+                if (cname && barangaySel) loadBarangaysForCity(cname, code);
+                else if (barangaySel) { clearSelect(barangaySel); addOption(barangaySel, '', '-- Select city first --', false, ''); }
             });
 
             // Also attempt to trigger city load if modal is already open and province has value

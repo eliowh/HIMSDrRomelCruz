@@ -15,6 +15,19 @@
             </div>
             
             <div class="form-group">
+                <label for="editUserTitle" class="form-label">Title / Extension</label>
+                <input type="text" id="editUserTitle" name="title" class="form-input" placeholder="e.g. MD, RN, PhD">
+                <span class="error-text" id="editTitleError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="editUserLicense" class="form-label">License Number</label>
+                <input type="text" id="editUserLicense" name="license_number" class="form-input" placeholder="e.g. LIC-12345">
+                <span class="error-text" id="editLicenseError"></span>
+                <span class="error-text" id="editLicense_numberError" style="display:none"></span>
+            </div>
+            
+            <div class="form-group">
                 <label for="editUserEmail" class="form-label">Email Address</label>
                 <input type="email" id="editUserEmail" name="email" class="form-input" required>
                 <span class="error-text" id="editEmailError"></span>

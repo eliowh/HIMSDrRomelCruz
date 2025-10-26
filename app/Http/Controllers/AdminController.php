@@ -90,16 +90,16 @@ class AdminController extends Controller
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
             ],
             'title' => [
-                'required',
+                'nullable',
                 'min:1',
                 'max:20',
-                'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
+                'regex:/^[a-zA-Z\s]+$/'/* Only letters and spaces */
             ],
             'license_number' => [
-                'required',
+                'nullable',
                 'min:3',
                 'max:50',
-                'regex:/^[a-zA-Z0-9\-]+$/', // Letters, numbers, and hyphens
+                'regex:/^[a-zA-Z0-9\-]+$/'/* Letters, numbers, and hyphens */,
                 'unique:users,license_number'
             ],
             'email' => [
@@ -108,17 +108,16 @@ class AdminController extends Controller
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/', // Only .com domains allowed
                 'unique:users,email'
             ],
+            // (no duplicate validation rules here)
             'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin,inventory,pharmacy,billing']
         ], [
             'name.required' => 'Please enter a name.',
             'name.min' => 'Name must be 3-20 letters.',
             'name.max' => 'Name must be 3-20 letters.',
             'name.regex' => 'Name can only contain letters and spaces.',
-            'title.required' => 'Please enter a title.',
             'title.min' => 'Title must be at least 1 character.',
             'title.max' => 'Title must be 20 characters or less.',
             'title.regex' => 'Title can only contain letters and spaces.',
-            'license_number.required' => 'Please enter a license number.',
             'license_number.min' => 'License number must be at least 3 characters.',
             'license_number.max' => 'License number must be 50 characters or less.',
             'license_number.regex' => 'License number can only contain letters, numbers, and hyphens.',
@@ -279,6 +278,8 @@ class AdminController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'title' => $user->title,
+                    'license_number' => $user->license_number,
                     'created_at' => $user->created_at->format('M d, Y')
                 ]
             ]);
@@ -354,6 +355,13 @@ class AdminController extends Controller
             $user->name = $request->name;
             $user->email = $request->email;
             $user->role = $request->role;
+            // Save optional fields if provided
+            if ($request->has('title')) {
+                $user->title = $request->title;
+            }
+            if ($request->has('license_number')) {
+                $user->license_number = $request->license_number;
+            }
             $user->save();
 
             // Log user update
@@ -978,17 +986,17 @@ class AdminController extends Controller
                     
                     <div class="form-field">
                         <label>Province</label>
-                        <input type="text" name="province" value="' . htmlspecialchars($patient->province ?? '') . '">
+                        <input id="province" type="text" name="province" value="' . htmlspecialchars($patient->province ?? '') . '">
                     </div>
                     
                     <div class="form-field">
                         <label>City</label>
-                        <input type="text" name="city" value="' . htmlspecialchars($patient->city ?? '') . '">
+                        <input id="city" type="text" name="city" value="' . htmlspecialchars($patient->city ?? '') . '">
                     </div>
                     
                     <div class="form-field">
                         <label>Barangay</label>
-                        <input type="text" name="barangay" value="' . htmlspecialchars($patient->barangay ?? '') . '">
+                        <input id="barangay" type="text" name="barangay" value="' . htmlspecialchars($patient->barangay ?? '') . '">
                     </div>
                 </div>
                 

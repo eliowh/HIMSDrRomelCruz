@@ -177,6 +177,59 @@ class LocationController extends Controller
         return response()->json(array_values($filtered));
     }
 
+    public function barangays(Request $request)
+    {
+        // Proxy the barangays JSON and optionally filter by city code or city name
+        try {
+            $res = Http::timeout(10)->get($this->psgcBase . '/barangays.json');
+            $json = $res->json();
+            $list = (is_array($json) && array_key_exists('value', $json) && is_array($json['value'])) ? $json['value'] : $json;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            logger()->warning('Barangays fetch failed, retrying without verification', ['err' => $e->getMessage()]);
+            try {
+                $res = Http::withoutVerifying()->timeout(10)->get($this->psgcBase . '/barangays.json');
+                $json = $res->json();
+                $list = (is_array($json) && array_key_exists('value', $json) && is_array($json['value'])) ? $json['value'] : $json;
+            } catch (\Throwable $e2) {
+                logger()->error('LocationController::barangays fetch failed (no-verify)', ['err' => $e2->getMessage()]);
+                return response()->json(['error' => 'Unable to fetch barangays', 'message' => $e2->getMessage()], 502);
+            }
+        } catch (\Throwable $e) {
+            logger()->error('LocationController::barangays fetch failed', ['err' => $e->getMessage()]);
+            return response()->json(['error' => 'Exception fetching barangays', 'message' => $e->getMessage()], 502);
+        }
+
+        $cityCode = $request->query('city_code');
+        $cityName = $request->query('city');
+
+        $filtered = array_filter($list, function ($b) use ($cityCode, $cityName) {
+            if ($cityCode) {
+                $cc = $b['citymunCode'] ?? $b['citymun_code'] ?? $b['municipalityCode'] ?? $b['code'] ?? $b['id'] ?? null;
+                if ($cc && (string)$cc === (string)$cityCode) return true;
+            }
+            if ($cityName) {
+                $prov = $b['citymunDesc'] ?? $b['city_name'] ?? $b['city'] ?? '';
+                if ($this->normalize($prov) === $this->normalize($cityName)) return true;
+                if (strpos($this->normalize($prov), $this->normalize($cityName)) !== false) return true;
+            }
+            return false;
+        });
+
+        if (empty($filtered) && $cityName) {
+            $normTarget = $this->normalize($cityName);
+            $relaxed = array_filter($list, function ($b) use ($normTarget) {
+                $cname = $b['barangayDesc'] ?? $b['name'] ?? '';
+                $other = $b['citymunDesc'] ?? $b['city_name'] ?? '';
+                if (strpos($this->normalize($other), $normTarget) !== false) return true;
+                if (strpos($this->normalize($cname), $normTarget) !== false) return true;
+                return false;
+            });
+            if (!empty($relaxed)) return response()->json(array_values($relaxed));
+        }
+
+        return response()->json(array_values($filtered));
+    }
+
     protected function normalize($s)
     {
         if (! $s) return '';

@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Room         if (!roomRow) {
-            adminError('Unable to find selected room.');
-            return;
-        }gement</title>
+    <title>Room Management</title>
     <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
     <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
 </head>
@@ -240,7 +237,6 @@
     async function editRoom(roomName, rowId) {
             const dd = document.getElementById(`dropdown-${rowId}`);
             if (dd) dd.classList.remove('show');
-        }
         
         // Try fetch with one retry for transient errors
         try {
