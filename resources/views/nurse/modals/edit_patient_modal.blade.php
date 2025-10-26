@@ -57,7 +57,9 @@
                     
                     <div class="form-group">
                         <label for="edit_barangay">Barangay</label>
-                        <input id="edit_barangay" name="barangay" placeholder="Enter barangay" required />
+                        <select id="edit_barangay" name="barangay" data-selected="" required>
+                            <option value="" disabled selected>-- Select Barangay --</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -889,6 +891,18 @@ document.addEventListener('DOMContentLoaded', function () {
         sel.appendChild(opt);
     }
 
+    // Extended addOption that allows creating disabled placeholder options
+    // Backwards compatible wrapper
+    function addOptionExt(sel, value, text, isSelected, dataCode, isDisabled) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        if (isSelected) opt.selected = true;
+        if (isDisabled) opt.disabled = true;
+        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+        sel.appendChild(opt);
+    }
+
     function normalize(s) {
         if (!s) return '';
         return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w\s]/g, '').toLowerCase().trim();
@@ -900,16 +914,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let provincesList = [];
     fetch(API_BASE + '/provinces')
-        .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+        .then(r => {
+            console.debug('Edit modal: provinces fetch status', r.status);
+            return r.ok ? r.json() : Promise.reject('No provinces');
+        })
         .then(list => {
             provincesList = Array.isArray(list) ? list : [];
             clearSelect(provinceSel);
-            addOption(provinceSel, '', '-- Select Province --', false, '');
+            addOptionExt(provinceSel, '', '-- Select Province --', false, '', true);
             provincesList.forEach(p => {
                 const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
                 const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
                 if (!name) return;
-                addOption(provinceSel, name, name, false, code);
+                addOptionExt(provinceSel, name, name, false, code, false);
             });
 
             // If safeSetValue already set a province value (string), try to preselect and load cities
@@ -946,15 +963,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     function loadCitiesForProvince(provinceName, provinceCode) {
-        clearSelect(citySel);
-        addOption(citySel, '', '-- Loading cities... --', false, '');
+                clearSelect(citySel);
+                addOptionExt(citySel, '', '-- Loading cities... --', false, '', true);
 
         const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
         fetch(citiesUrl)
             .then(r => r.ok ? r.json() : Promise.reject('No cities'))
             .then(list => {
                 clearSelect(citySel);
-                addOption(citySel, '', '-- Select City --', false, '');
+                addOptionExt(citySel, '', '-- Select City --', false, '', true);
 
                 let matched = [];
                 if (provinceCode) {
@@ -980,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (!matched.length) {
                     clearSelect(citySel);
-                    addOption(citySel, '', '-- No cities found for selected province --', false, '');
+                    addOptionExt(citySel, '', '-- No cities found for selected province --', false, '', true);
                     return;
                 }
 
@@ -1018,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => {
                 console.warn('Failed to load cities for edit modal', err);
                 clearSelect(citySel);
-                addOption(citySel, '', '-- Unable to load cities --', false, '');
+                addOptionExt(citySel, '', '-- Unable to load cities --', false, '', true);
             });
     }
 
@@ -1027,9 +1044,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const provName = selOpt ? selOpt.value : '';
         const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
         if (provName) loadCitiesForProvince(provName, provCode);
-        else {
+            else {
             clearSelect(citySel);
-            addOption(citySel, '', '-- Select province first --', false, '');
+            addOptionExt(citySel, '', '-- Select province first --', false, '', true);
         }
     });
 
@@ -1090,26 +1107,45 @@ document.addEventListener('DOMContentLoaded', function () {
         mo.observe(provinceObserverTarget, { attributes: true, attributeFilter: ['value'] });
     }
 
-    // Barangay loading logic
-    const barangaySel = document.getElementById('edit_barangay');
+    // Barangay loading logic (populate select based on city)
     citySel.addEventListener('change', function() {
         const selOpt = this.options[this.selectedIndex];
         const cityName = selOpt ? selOpt.value : '';
         const cityCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
-        clearSelect(barangaySel);
-        addOption(barangaySel, '', '-- Loading barangays... --', false, '');
-        fetch(API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName))))
+    const selectedBarangay = barangaySel ? (barangaySel.getAttribute('data-selected') || barangaySel.value || '') : '';
+
+    clearSelect(barangaySel);
+    addOptionExt(barangaySel, '', '-- Loading barangays... --', false, '', true);
+
+        const url = API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName)));
+        fetch(url)
             .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
             .then(list => {
                 clearSelect(barangaySel);
-                addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                addOptionExt(barangaySel, '', '-- Select Barangay --', false, '', true);
+                if (!Array.isArray(list) || !list.length) {
+                    addOptionExt(barangaySel, '', '-- No barangays found --', false, '', true);
+                    return;
+                }
+
                 list.forEach(b => {
-                    const name = b.name || b.barangayDesc || '';
-                    const code = b.code || b.barangay_code || '';
-                    addOption(barangaySel, name, name, false, code);
+                    const name = b.name || b.barangayDesc || b.barangay || '';
+                    const code = b.code || b.barangay_code || b.id || '';
+                    const isSelected = selectedBarangay && (selectedBarangay === name || selectedBarangay === code);
+                    addOptionExt(barangaySel, name, name, isSelected, code, false);
                 });
+
+                // Ensure preselected barangay is actually selected by value or data-code
+                if (selectedBarangay) {
+                    const resolved = Array.from(barangaySel.options).find(o => o.value === selectedBarangay) || Array.from(barangaySel.options).find(o => o.dataset && o.dataset.code === selectedBarangay);
+                    if (resolved) barangaySel.value = resolved.value;
+                }
             })
-            .catch(err => console.warn('Failed to load barangays', err));
+            .catch(err => {
+                console.warn('Failed to load barangays', err);
+                clearSelect(barangaySel);
+                addOptionExt(barangaySel, '', '-- Unable to load barangays --', false, '', true);
+            });
     });
 });
 </script>
