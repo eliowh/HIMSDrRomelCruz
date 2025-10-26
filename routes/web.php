@@ -413,6 +413,9 @@ Route::middleware(['auth', 'role:cashier'])->group(function () {
     // Receipt Management
     Route::get('/cashier/billing/{id}/receipt', [App\Http\Controllers\CashierController::class, 'viewReceipt'])->name('cashier.billing.receipt');
     Route::get('/cashier/billing/{id}/receipt/download', [App\Http\Controllers\CashierController::class, 'downloadReceipt'])->name('cashier.billing.receipt.download');
+    // HTML view for cashier printing (opens the billing.receipt blade with autoPrint)
+    Route::get('/cashier/billing/{id}/receipt/view', [App\Http\Controllers\CashierController::class, 'viewReceiptHtml'])->name('cashier.billing.receipt.view');
+    Route::get('/cashier/billing/{id}/receipt/fragment', [App\Http\Controllers\CashierController::class, 'viewReceiptFragment'])->name('cashier.billing.receipt.fragment');
 });
 
 /*
@@ -499,6 +502,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/fhir', [AdminController::class, 'fhir'])->name('admin.fhir');
     Route::get('/admin/fhir/export/patients', [AdminController::class, 'exportPatientFhir'])->name('admin.export.patients.fhir');
     Route::get('/admin/fhir/export/patient', [AdminController::class, 'exportPatientFhir'])->name('admin.export.patient.fhir');
+    // CSV exports (capstone/demo)
+    Route::get('/admin/fhir/export/patients/csv', [AdminController::class, 'exportPatientCsv'])->name('admin.export.patients.csv');
+    Route::get('/admin/fhir/export/patient/csv', [AdminController::class, 'exportPatientCsv'])->name('admin.export.patient.csv');
     Route::get('/admin/fhir/export/encounters', [AdminController::class, 'exportEncountersFhir'])->name('admin.export.encounters.fhir');
     Route::get('/admin/fhir/export/observations', [AdminController::class, 'exportObservationsFhir'])->name('admin.export.observations.fhir');
     Route::get('/admin/fhir/export/medications', [AdminController::class, 'exportMedicationsFhir'])->name('admin.export.medications.fhir');
@@ -602,6 +608,8 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     
     // AJAX endpoints for billing (MUST come before wildcard routes)
     Route::get('/billing/search-patients', [App\Http\Controllers\BillingController::class, 'searchPatients'])->name('billing.search.patients');
+    // Recent patients list for autocomplete when query is empty or on focus
+    Route::get('/billing/recent-patients', [App\Http\Controllers\BillingController::class, 'recentPatients'])->name('billing.recent.patients');
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
     // Check patient's last billing philhealth status (auto-check on create)
     Route::post('/billing/last-philhealth-status', [App\Http\Controllers\BillingController::class, 'lastPhilhealthStatus'])->name('billing.last.philhealth');

@@ -140,10 +140,6 @@
                         <i class="fas fa-users"></i>
                         <span>View Patients</span>
                     </a>
-                    <a href="/labtech/account" class="quick-action-btn">
-                        <i class="fas fa-user-cog"></i>
-                        <span>My Account</span>
-                    </a>
                 </div>
             </div>
         </main>

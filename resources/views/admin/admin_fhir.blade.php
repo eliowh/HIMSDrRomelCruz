@@ -156,6 +156,19 @@
             box-sizing: border-box;
             line-height: 1.4;
         }
+
+        /* helper to keep multiple action buttons same height/width */
+        .export-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .export-actions .export-btn {
+            width: auto;
+            flex: 1 1 0;
+        }
         
         .export-btn:hover {
             background: #2980b9;
@@ -364,7 +377,10 @@
                                 @endforeach
                             </small>
                         </div>
-                        <button type="submit" class="export-btn primary">Export Patient Bundle FHIR</button>
+                        <div class="export-actions" style="margin-top:8px;">
+                            <button type="submit" class="export-btn primary">Export Patient Bundle FHIR</button>
+                            <button type="submit" formaction="{{ route('admin.export.patient.csv') }}" class="export-btn secondary">Export Patient CSV</button>
+                        </div>
                     </form>
                 </div>
 
@@ -375,9 +391,14 @@
                         <div class="export-card">
                             <h4>👥 All Patients</h4>
                             <p>Export all patient records with complete medical history including admissions, lab results, and medications.</p>
-                            <a href="{{ route('admin.export.patients.fhir') }}" class="export-btn primary" onclick="showLoading(this)">
-                                Export All Patients
-                            </a>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <a href="{{ route('admin.export.patients.fhir') }}" class="export-btn primary" onclick="showLoading(this)">
+                                    Export All Patients (FHIR JSON)
+                                </a>
+                                <a href="{{ route('admin.export.patients.csv') }}" class="export-btn secondary" onclick="showLoading(this)">
+                                    Export All Patients (CSV)
+                                </a>
+                            </div>
                         </div>
                         
                         <div class="export-card">

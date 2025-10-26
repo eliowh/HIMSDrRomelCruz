@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Report;
 
 class BillingController extends Controller
 {
@@ -78,19 +79,35 @@ class BillingController extends Controller
             'billing_items.*.icd_code' => 'nullable|string'
         ]);
 
-        // Check if a billing already exists for this admission
-        if ($request->admission_id) {
-            $existingBilling = Billing::where('admission_id', $request->admission_id)->first();
-            if ($existingBilling) {
-                return back()->withErrors([
-                    'admission' => 'A billing record already exists for this admission (Billing #' . $existingBilling->billing_number . '). Please edit the existing billing instead of creating a new one.'
-                ])->withInput();
-            }
-        }
-
+        // Start a DB transaction and take a pessimistic lock on the admission row
+        // to prevent concurrent requests from racing and creating duplicate billings
+        // for the same admission. We re-check for existing billings while the
+        // lock is held to make the operation atomic.
         DB::beginTransaction();
-        
+
         try {
+            // If admission_id is present, lock the admission row first to serialize
+            // concurrent attempts to create a billing for the same admission.
+            if ($request->admission_id) {
+                $admission = Admission::where('id', $request->admission_id)->lockForUpdate()->first();
+                if (!$admission) {
+                    DB::rollback();
+                    return back()->withErrors([
+                        'admission' => 'Admission not found.'
+                    ])->withInput();
+                }
+
+                // Re-check for any existing billing for this admission while the lock
+                // is held. If found, abort the transaction and return an error.
+                $existingBilling = Billing::where('admission_id', $request->admission_id)->first();
+                if ($existingBilling) {
+                    DB::rollback();
+                    return back()->withErrors([
+                        'admission' => 'A billing record already exists for this admission (Billing #' . $existingBilling->billing_number . '). Please edit the existing billing instead of creating a new one.'
+                    ])->withInput();
+                }
+            }
+
             $patient = Patient::findOrFail($request->patient_id);
             
             // Check PhilHealth membership - prioritize user input over automatic lookup
@@ -111,9 +128,6 @@ class BillingController extends Controller
                 $isPhilhealthMember = true;
             }
             
-            // Generate billing number
-            $billingNumber = 'BILL-' . date('Y') . '-' . str_pad(Billing::whereYear('created_at', date('Y'))->count() + 1, 6, '0', STR_PAD_LEFT);
-            
             // Calculate totals
             $totalAmount = 0;
             $roomCharges = 0;
@@ -123,13 +137,14 @@ class BillingController extends Controller
             $otherCharges = 0;
             
             foreach ($request->billing_items as $item) {
-                // For professional items, DO NOT add case rate into the billed total.
-                // The case_rate represents the PhilHealth case rate (coverage) and functions as a discount.
+                // For professional items, both PhilHealth and non-PhilHealth members are charged Case Rate + Professional Fee
+                // The difference is that PhilHealth members get a deduction that covers both
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    // Only professional fee is added to billed totals
-                    $itemTotal = $item['quantity'] * $professionalFee;
+                    
+                    // Both PhilHealth and non-PhilHealth: Case Rate + Professional Fee included in subtotal
+                    $itemTotal = $item['quantity'] * ($caseRate + $professionalFee);
                 } else {
                     $itemTotal = $item['quantity'] * $item['unit_price'];
                 }
@@ -155,11 +170,13 @@ class BillingController extends Controller
                 }
             }
             
-            // Create billing record
+            // Create billing record with a temporary unique placeholder for billing_number. We will
+            // update the final billing_number after obtaining the auto-increment ID. This avoids
+            // generating possibly-duplicate numbers when multiple requests occur concurrently.
             $billing = Billing::create([
                 'patient_id' => $patient->id,
                 'admission_id' => $request->admission_id,
-                'billing_number' => $billingNumber,
+                'billing_number' => 'TEMP-' . Str::uuid(),
                 'total_amount' => $totalAmount,
                 'room_charges' => $roomCharges,
                 'professional_fees' => $professionalFees,
@@ -174,15 +191,23 @@ class BillingController extends Controller
                 'created_by' => auth()->id(),
                 'notes' => $request->notes
             ]);
+
+            // Generate a stable, unique billing number based on the newly-created record's ID.
+            // Using the record ID guarantees uniqueness and avoids race conditions when multiple
+            // billings are created concurrently.
+            $finalBillingNumber = 'BILL-' . date('Y') . '-' . str_pad($billing->id, 6, '0', STR_PAD_LEFT);
+            $billing->billing_number = $finalBillingNumber;
+            $billing->save();
             
             // Create billing items
             foreach ($request->billing_items as $item) {
-                // Calculate correct total amount based on item type. Persist total_amount as what will be billed
-                // (case_rate is stored separately and not included in total_amount)
+                // Calculate correct total amount - both member types are charged Case Rate + Professional Fee
                 if ($item['item_type'] === 'professional') {
                     $caseRate = (float)($item['case_rate'] ?? 0);
                     $professionalFee = (float)($item['unit_price'] ?? 0);
-                    $itemTotalAmount = $item['quantity'] * $professionalFee;
+                    
+                    // Both PhilHealth and non-PhilHealth: Case Rate + Professional Fee included in total
+                    $itemTotalAmount = $item['quantity'] * ($caseRate + $professionalFee);
                 } else {
                     $itemTotalAmount = $item['quantity'] * $item['unit_price'];
                 }
@@ -205,12 +230,17 @@ class BillingController extends Controller
             $billing->load('billingItems');
             
             // Calculate deductions and discounts
-            // PhilHealth deduction is based on sum of case_rate values for professional items when member checked
+            // PhilHealth deduction is based on sum of Case Rate + Professional Fee for professional items when member checked
             $philhealthDeduction = 0;
             if ($billing->is_philhealth_member) {
                 foreach ($billing->billingItems as $bi) {
-                    if ($bi->item_type === 'professional' && $bi->case_rate) {
-                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    if ($bi->item_type === 'professional') {
+                        $quantity = $bi->quantity ?: 1;
+                        $caseRate = $bi->case_rate ?: 0;
+                        $professionalFee = $bi->unit_price ?: 0;
+                        
+                        // PhilHealth covers Case Rate + Professional Fee
+                        $philhealthDeduction += (($caseRate + $professionalFee) * $quantity);
                     }
                 }
             }
@@ -226,7 +256,22 @@ class BillingController extends Controller
             ]);
             
             DB::commit();
-            
+
+            // Audit: Log billing creation
+            try {
+                Report::log('Billing Created', Report::TYPE_USER_REPORT, 'New billing created', [
+                    'billing_id' => $billing->id,
+                    'billing_number' => $billing->billing_number,
+                    'patient_id' => $billing->patient_id,
+                    'total_amount' => floatval($billing->total_amount ?? 0),
+                    'net_amount' => floatval($billing->net_amount ?? 0),
+                    'created_by' => $billing->created_by ?? auth()->id(),
+                    'created_at' => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to create billing audit: ' . $e->getMessage());
+            }
+
             return redirect()->route('billing.show', $billing)
                            ->with('success', 'Billing created successfully.');
                            
@@ -314,8 +359,9 @@ class BillingController extends Controller
                         // The case rate should remain the same, only professional fee portion changes
                         $caseRate = $item->case_rate ?? 0;
                         $newProfessionalFee = $request->professional_fees;
-                        // total_amount should represent billed amount (professional fee * qty)
-                        $newTotalAmount = ($newProfessionalFee) * ($item->quantity ?: 1);
+                        $quantity = $item->quantity ?: 1;
+                        // total_amount should represent billed amount (case rate + professional fee) * qty
+                        $newTotalAmount = ($caseRate + $newProfessionalFee) * $quantity;
 
                         $item->update([
                             'unit_price' => $newProfessionalFee,
@@ -338,8 +384,21 @@ class BillingController extends Controller
             $tempBilling = clone $billing;
             $tempBilling->total_amount = $totalAmount;
             $tempBilling->is_philhealth_member = $request->boolean('is_philhealth_member');
-            $tempBilling->is_senior_citizen = $request->boolean('is_senior_citizen');
-            $tempBilling->is_pwd = $request->boolean('is_pwd');
+
+            // Derive senior/pwd selection. Prefer the explicit radio `discount_type` when present
+            // because the UI shows a mutually-exclusive choice. If the radio is missing (legacy),
+            // fall back to the hidden boolean fields for compatibility.
+            $discountType = $request->get('discount_type', null);
+            if ($discountType !== null) {
+                $isSeniorRequested = ($discountType === 'senior');
+                $isPwdRequested = ($discountType === 'pwd');
+            } else {
+                $isSeniorRequested = $request->boolean('is_senior_citizen');
+                $isPwdRequested = $request->boolean('is_pwd');
+            }
+
+            $tempBilling->is_senior_citizen = $isSeniorRequested;
+            $tempBilling->is_pwd = $isPwdRequested;
             
             // Determine final philhealth flag with server-side enforcement
             $requestedPhilhealth = $request->boolean('is_philhealth_member');
@@ -356,12 +415,17 @@ class BillingController extends Controller
 
             $tempBilling->is_philhealth_member = $finalIsPhilhealth;
 
-            // PhilHealth deduction based on case_rate only when checked
+            // PhilHealth deduction based on Case Rate + Professional Fee when checked
             $philhealthDeduction = 0;
             if ($tempBilling->is_philhealth_member) {
                 foreach ($billing->billingItems as $bi) {
-                    if ($bi->item_type === 'professional' && $bi->case_rate) {
-                        $philhealthDeduction += ($bi->case_rate * ($bi->quantity ?: 1));
+                    if ($bi->item_type === 'professional') {
+                        $quantity = $bi->quantity ?: 1;
+                        $caseRate = $bi->case_rate ?: 0;
+                        $professionalFee = $bi->unit_price ?: 0;
+                        
+                        // PhilHealth covers Case Rate + Professional Fee
+                        $philhealthDeduction += (($caseRate + $professionalFee) * $quantity);
                     }
                 }
             }
@@ -369,9 +433,10 @@ class BillingController extends Controller
             $seniorPwdDiscount = $tempBilling->calculateSeniorPwdDiscount();
             $netAmount = $totalAmount - $philhealthDeduction - $seniorPwdDiscount;
             
-            // Update billing record with all calculated values
-            $billing->update([
-                'admission_id' => $request->admission_id,
+            // Build update payload. Only change admission_id when the request explicitly
+            // provides it to avoid accidentally unassigning the billing from its admission
+            // (which allowed creating a duplicate billing for the same admission).
+            $updatePayload = [
                 'room_charges' => $roomCharges,
                 'professional_fees' => $professionalTotal,
                 'medicine_charges' => $medicineCharges,
@@ -382,11 +447,19 @@ class BillingController extends Controller
                 'senior_pwd_discount' => $seniorPwdDiscount,
                 'net_amount' => $netAmount,
                 'is_philhealth_member' => $finalIsPhilhealth,
-                'is_senior_citizen' => $request->boolean('is_senior_citizen'),
-                'is_pwd' => $request->boolean('is_pwd'),
+                // Persist boolean flags; prefer hidden inputs but fall back to discount_type radio
+                'is_senior_citizen' => $isSeniorRequested,
+                'is_pwd' => $isPwdRequested,
                 // status updates are managed via payment flow and not editable here
                 'notes' => $request->notes
-            ]);
+            ];
+
+            if ($request->filled('admission_id')) {
+                $updatePayload['admission_id'] = $request->admission_id;
+            }
+
+            // Update billing record with all calculated values
+            $billing->update($updatePayload);
             
             DB::commit();
             
@@ -451,8 +524,11 @@ class BillingController extends Controller
     {
         $billing->load(['patient', 'billingItems', 'createdBy']);
         $logoData = $this->getLogoSafely();
-        
-        $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
+        // Use the compact fragment wrapper for PDF generation so exported PDFs are
+        // compact and consistent with the cashier/billing print fragment.
+        $isPdf = true;
+        $isBilling = true;
+        $pdf = Pdf::loadView('billing.receipt_wrapper', compact('billing', 'logoData', 'isPdf', 'isBilling'));
         $pdf->setPaper('A4', 'portrait');
         
         return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
@@ -463,8 +539,10 @@ class BillingController extends Controller
         $billing->load(['patient', 'billingItems', 'createdBy']);
         $logoData = $this->getLogoSafely();
         $autoPrint = true; // Flag to auto-trigger print dialog
-        
-        return view('billing.receipt', compact('billing', 'logoData', 'autoPrint'));
+        // Return a minimal wrapper that includes the fragment so the billing role
+        // sees the compact receipt and the print dialog is consistent with PDF output.
+        $isBilling = true;
+        return view('billing.receipt_wrapper', compact('billing', 'logoData', 'autoPrint', 'isBilling'));
     }
 
     /**
@@ -655,19 +733,20 @@ class BillingController extends Controller
                           if ($patient->admissions->isEmpty()) {
                               return true;
                           }
-                          
-                          // Check if patient has at least one admission without billing
+
+                          // Include patient if they have at least one admission that does NOT have an active (pending/paid) billing.
+                          // This prevents offering patients for new billing when an admission already has an active billing.
                           foreach ($patient->admissions as $admission) {
-                              $hasNoBilling = $admission->billings->isEmpty();
-                              $hasUnfinishedBilling = $admission->billings->where('status', 'pending')->isNotEmpty();
-                              
-                              // Include patient if they have an admission with no billing or pending billing
-                              if ($hasNoBilling || $hasUnfinishedBilling) {
-                                  return true;
-                              }
+                              // Consider a billing 'active' if its status is 'pending' or 'paid'. 'cancelled' billings do not block new billings.
+                                                        // Admission is eligible only if it has NO billings at all. We block creation
+                                                        // whenever a billing record exists for the admission to avoid duplicates.
+                                                        $hasAnyBilling = $admission->billings->isNotEmpty();
+                                                            if (!$hasAnyBilling) {
+                                                                    return true;
+                                                            }
                           }
-                          
-                          // Exclude patient if all admissions have completed billing (paid status)
+
+                          // Exclude patient if all admissions have an active billing (pending or paid)
                           return false;
                       })
                       ->take(10) // Final limit after filtering
@@ -678,6 +757,44 @@ class BillingController extends Controller
                           ];
                       })
                       ->values(); // Reindex array
+
+        return response()->json(['patients' => $patients]);
+    }
+
+    /**
+     * Return recent patients for dropdown when search field is focused with empty query
+     */
+    public function recentPatients(Request $request)
+    {
+        // Return most recently updated patients but apply the same admission/billing filters
+        $patients = Patient::with(['admissions.billings'])
+                        ->orderBy('updated_at', 'desc')
+                        ->limit(40)
+                        ->get()
+                        ->filter(function ($patient) {
+                            // Include patient if they have no admissions
+                            if ($patient->admissions->isEmpty()) {
+                                return true;
+                            }
+
+                            // Include patient if they have at least one admission that does NOT have an active (pending/paid) billing.
+                            foreach ($patient->admissions as $admission) {
+                                $hasAnyBilling = $admission->billings->isNotEmpty();
+                                if (!$hasAnyBilling) {
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        })
+                        ->take(10)
+                        ->map(function ($patient) {
+                            return [
+                                'id' => $patient->id,
+                                'text' => $patient->display_name . ' (Patient #: ' . $patient->patient_no . ')'
+                            ];
+                        })
+                        ->values();
 
         return response()->json(['patients' => $patients]);
     }

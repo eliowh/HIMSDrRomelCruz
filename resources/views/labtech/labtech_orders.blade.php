@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Orders</title>
+    <title>Lab Requests</title>
     <link rel="stylesheet" href="{{ asset('css/labtechcss/labtech.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,7 +21,7 @@
 
         <main class="main-content">
             <div class="page-header">
-                <h2><i class="fas fa-flask"></i> Lab Orders</h2>
+                <h2><i class="fas fa-flask"></i> Lab Requests</h2>
                 <div class="page-subtitle">Manage laboratory test orders and results</div>
             </div>
             <!-- Filter Tabs -->
@@ -152,7 +152,7 @@
                 @else
                     <div class="no-orders">
                         <i class="fas fa-flask"></i>
-                        <h3>No Lab Orders</h3>
+                        <h3>No Lab Requests</h3>
                         <p>No laboratory orders have been requested yet.</p>
                     </div>
                 @endif

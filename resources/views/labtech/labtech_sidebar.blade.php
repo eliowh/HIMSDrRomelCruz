@@ -23,7 +23,7 @@
             <li>
                 <a href="{{ asset('/labtech/orders') }}"
                    class="sidebar-btn{{ request()->is('labtech/orders') ? ' active' : '' }}">
-                    <span class="icon">🧪</span> <span class="text">Orders</span>
+                    <span class="icon">🧪</span> <span class="text">Requests</span>
                 </a>
             </li>
             <li>

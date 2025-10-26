@@ -90,8 +90,8 @@
                                                     @endif
                                                     @if($billing->professional_fees > 0)
                                                     <tr>
-                                                        <td><span class="badge bg-primary">Professional</span></td>
-                                                        <td>Professional Fees</td>
+                                                        <td><span class="badge bg-primary">ICD</span></td>
+                                                        <td>ICD Fees</td>
                                                         <td class="text-end">₱{{ number_format($billing->professional_fees, 2) }}</td>
                                                     </tr>
                                                     @endif
@@ -264,21 +264,21 @@
                                         <div class="d-grid gap-2">
                                             @if($billing->status === 'pending')
                                                 <button type="button" 
-                                                        class="btn btn-success mark-as-paid-btn" 
+                                                        class="btn btn-success process-payment-btn" 
                                                         data-billing-id="{{ $billing->id }}"
-                                                        data-billing-number="{{ $billing->billing_number }}">
-                                                    <i class="fas fa-check-circle"></i> Mark as Paid
+                                                        data-billing-number="{{ $billing->billing_number }}"
+                                                        data-net-amount="{{ $billing->net_amount }}"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#paymentModal">
+                                                    <i class="fas fa-credit-card"></i> Process Payment
                                                 </button>
                                             @elseif($billing->status === 'paid')
                                                 <!-- Receipt Actions for Paid Billings -->
                                                 <div class="d-grid gap-2">
-                                                    <a href="{{ route('cashier.billing.receipt', $billing->id) }}" 
-                                                       target="_blank" 
-                                                       class="btn btn-primary">
+                                                    <button type="button" onclick="printReceiptInPlace({{ $billing->id }})" class="btn btn-primary">
                                                         <i class="fas fa-print"></i> Print Receipt
-                                                    </a>
-                                                    <a href="{{ route('cashier.billing.receipt.download', $billing->id) }}" 
-                                                       class="btn btn-success">
+                                                    </button>
+                                                    <a href="{{ route('cashier.billing.receipt.download', $billing->id) }}" class="btn btn-success">
                                                         <i class="fas fa-download"></i> Download Receipt
                                                     </a>
                                                 </div>
@@ -303,30 +303,282 @@
 
     @include('cashier.modals.notification_system')
 
+    <!-- Payment Processing Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="paymentModalLabel">
+                        <i class="fas fa-cash-register"></i> Process Payment
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Billing #:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="modal-billing-number"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Amount Due:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                <span id="modal-net-amount" class="text-primary fw-bold fs-5"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="paymentAmount" class="form-label">
+                                <i class="fas fa-money-bill-wave"></i> Payment Amount Received <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="paymentAmount" 
+                                       name="payment_amount" 
+                                       step="0.01" 
+                                       min="0"
+                                       max="999999.99"
+                                       placeholder="0.00" 
+                                       required>
+                            </div>
+                            <div class="form-text">Enter the exact amount received from the customer</div>
+                        </div>
+                        <div class="mb-3" id="changeDisplay" style="display: none;">
+                            <div class="alert alert-info">
+                                <strong><i class="fas fa-exchange-alt"></i> Change to Return:</strong>
+                                <span id="changeAmount" class="fw-bold fs-5"></span>
+                            </div>
+                        </div>
+                        <div id="paymentError" class="alert alert-danger d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmPaymentBtn">
+                        <i class="fas fa-check-circle"></i> Confirm Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Print-only CSS: hide everything except #printContainer when printing */
+        @media print {
+            body * { visibility: hidden !important; }
+            #printContainer, #printContainer * { visibility: visible !important; }
+            #printContainer { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
     
     <script>
     // Payment Processing Functions
     document.addEventListener('DOMContentLoaded', function() {
-        // Mark as Paid button
-        const markAsPaidBtn = document.querySelector('.mark-as-paid-btn');
-        if (markAsPaidBtn) {
-            markAsPaidBtn.addEventListener('click', function() {
-                const billingId = this.dataset.billingId;
-                markBillingAsPaid(billingId, this);
-            });
-        }
+        let currentBillingId = null;
+        let currentNetAmount = 0;
         
-        // Mark as Unpaid button
-        const markAsUnpaidBtn = document.querySelector('.mark-as-unpaid-btn');
-        if (markAsUnpaidBtn) {
-            markAsUnpaidBtn.addEventListener('click', function() {
-                const billingId = this.dataset.billingId;
-                markBillingAsUnpaid(billingId, this);
+        // Process Payment buttons
+        document.querySelectorAll('.process-payment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                currentBillingId = this.dataset.billingId;
+                currentNetAmount = parseFloat(this.dataset.netAmount);
+                
+                document.getElementById('modal-billing-number').textContent = this.dataset.billingNumber;
+                document.getElementById('modal-net-amount').textContent = '₱' + currentNetAmount.toFixed(2);
+                
+                // Reset form
+                document.getElementById('paymentAmount').value = '';
+                document.getElementById('changeDisplay').style.display = 'none';
+                document.getElementById('paymentError').classList.add('d-none');
             });
-        }
+        });
+        
+        // Payment amount input change handler
+        document.getElementById('paymentAmount').addEventListener('input', function() {
+            const paymentInput = this.value;
+            const paymentAmount = parseFloat(paymentInput) || 0;
+            
+            // Clear previous errors
+            document.getElementById('paymentError').classList.add('d-none');
+            document.getElementById('changeDisplay').style.display = 'none';
+            
+            if (paymentInput && paymentInput.trim() !== '') {
+                if (isNaN(paymentAmount)) {
+                    document.getElementById('paymentError').textContent = 'Please enter a valid number.';
+                    document.getElementById('paymentError').classList.remove('d-none');
+                    return;
+                }
+                
+                if (paymentAmount > 999999.99) {
+                    document.getElementById('paymentError').textContent = 'Amount too large. Maximum: ₱999,999.99';
+                    document.getElementById('paymentError').classList.remove('d-none');
+                    return;
+                }
+                
+                if (paymentAmount > 0) {
+                    const changeAmount = paymentAmount - currentNetAmount;
+                    
+                    if (changeAmount >= 0) {
+                        document.getElementById('changeAmount').textContent = '₱' + changeAmount.toFixed(2);
+                        document.getElementById('changeDisplay').style.display = 'block';
+                    } else {
+                        const shortfall = Math.abs(changeAmount);
+                        document.getElementById('paymentError').textContent = 'Insufficient payment. Short by ₱' + shortfall.toFixed(2);
+                        document.getElementById('paymentError').classList.remove('d-none');
+                    }
+                }
+            }
+        });
+        
+        // Confirm payment button
+        document.getElementById('confirmPaymentBtn').addEventListener('click', async function() {
+            const paymentInput = document.getElementById('paymentAmount').value;
+            const paymentAmount = parseFloat(paymentInput);
+            
+            // Validate input
+            if (!paymentInput || paymentInput.trim() === '') {
+                document.getElementById('paymentError').textContent = 'Please enter a payment amount.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            if (isNaN(paymentAmount) || paymentAmount <= 0) {
+                document.getElementById('paymentError').textContent = 'Please enter a valid payment amount.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            if (paymentAmount > 999999.99) {
+                document.getElementById('paymentError').textContent = 'Payment amount is too large. Maximum allowed is ₱999,999.99.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            if (paymentAmount < currentNetAmount) {
+                document.getElementById('paymentError').textContent = 'Payment amount is insufficient.';
+                document.getElementById('paymentError').classList.remove('d-none');
+                return;
+            }
+            
+            await processPayment(currentBillingId, paymentAmount);
+        });
     });
+
+    async function processPayment(billingId, paymentAmount) {
+        try {
+            // Show loading state
+            showBillingLoading('Processing payment...');
+            
+            const response = await fetch(`/cashier/billing/${billingId}/mark-as-paid`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payment_amount: paymentAmount
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Close payment modal
+                const paymentModal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                paymentModal.hide();
+                
+                closeBillingNotification();
+                
+                let message = 'Payment processed successfully!';
+                if (data.change > 0) {
+                    message += `\n\nChange to return: ${data.change_formatted}`;
+                }
+                
+                showBillingNotification('success', 'Payment Complete', message);
+                
+                // Auto refresh after 2 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                closeBillingNotification();
+                showBillingNotification('error', 'Payment Error', data.message);
+            }
+        } catch (error) {
+            closeBillingNotification();
+            showBillingNotification('error', 'Network Error', 'Failed to process payment: ' + error.message);
+        }
+    }
+
+    // Helper functions for notifications and loading states
+    function showBillingLoading(message = 'Processing...') {
+        const notificationContainer = document.getElementById('notification-container') || createNotificationContainer();
+        notificationContainer.innerHTML = `
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                ${message}
+            </div>
+        `;
+        notificationContainer.style.display = 'block';
+    }
+
+    function showBillingNotification(type, title, message) {
+        const notificationContainer = document.getElementById('notification-container') || createNotificationContainer();
+        const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+        
+        notificationContainer.innerHTML = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <strong>${title}</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        notificationContainer.style.display = 'block';
+        
+        // Auto-hide success notifications after 5 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                closeBillingNotification();
+            }, 5000);
+        }
+    }
+
+    function closeBillingNotification() {
+        const notificationContainer = document.getElementById('notification-container');
+        if (notificationContainer) {
+            notificationContainer.style.display = 'none';
+            notificationContainer.innerHTML = '';
+        }
+    }
+
+    function createNotificationContainer() {
+        let container = document.getElementById('notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                max-width: 500px;
+            `;
+            document.body.appendChild(container);
+        }
+        return container;
+    }
 
     async function markBillingAsPaid(billingId, button) {
         const billingNumber = button.dataset.billingNumber;
@@ -373,6 +625,47 @@
     }
 
     // Revert functionality removed for security - preventing payment theft
+    </script>
+
+    <script>
+    // Global helper to fetch the compact receipt fragment and print in-place
+    function printReceiptInPlace(billingId) {
+        try {
+            const fragmentUrl = `/cashier/billing/${billingId}/receipt/fragment`;
+            fetch(fragmentUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(resp => {
+                    if (!resp.ok) return resp.text().then(t => { throw new Error(t || resp.statusText); });
+                    return resp.text();
+                })
+                .then(html => {
+                    let printContainer = document.getElementById('printContainer');
+                    if (!printContainer) {
+                        printContainer = document.createElement('div');
+                        printContainer.id = 'printContainer';
+                        printContainer.style.display = 'none';
+                        document.body.appendChild(printContainer);
+                    }
+                    printContainer.innerHTML = html;
+                    printContainer.style.display = 'block';
+
+                    // Small timeout to allow render
+                    setTimeout(() => {
+                        window.print();
+                        setTimeout(() => {
+                            printContainer.innerHTML = '';
+                            printContainer.style.display = 'none';
+                        }, 800);
+                    }, 200);
+                })
+                .catch(e => {
+                    console.error('printReceiptInPlace error:', e);
+                    alert('Unable to load receipt for printing: ' + (e.message || e));
+                });
+        } catch (e) {
+            console.error('printReceiptInPlace error:', e);
+            alert('Unable to print receipt: ' + e.message);
+        }
+    }
     </script>
 
     <style>

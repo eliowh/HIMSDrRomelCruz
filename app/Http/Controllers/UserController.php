@@ -69,7 +69,7 @@ class UserController extends Controller
     ]);
 
     $user = User::where('email', $incomingFields['loginemail'])->first();
-    if ($user && \Hash::check($request->input('loginpassword'), $user->password)) {
+        if ($user && \Hash::check($request->input('loginpassword'), $user->password)) {
         $request->session()->regenerate();
         \Auth::login($user);
         
@@ -80,8 +80,9 @@ class UserController extends Controller
             "User {$user->name} ({$user->role}) logged in successfully",
             [
                 'user_id' => $user->id,
-                'user_name' => $user->name,
-                'user_email' => $user->email,
+                    'user_name' => $user->name,
+                    // Mask email to avoid storing full personal identifiers
+                    'user_email' => $this->maskEmail($user->email),
                 'user_role' => $user->role,
                 'login_time' => now()->toISOString(),
                 'ip_address' => $request->ip(),
@@ -112,7 +113,7 @@ class UserController extends Controller
         } else {
             return redirect('/');
         }
-    } else {
+        } else {
         // Log failed login attempt
         $failedEmail = $incomingFields['loginemail'];
         Report::log(
@@ -120,7 +121,8 @@ class UserController extends Controller
             Report::TYPE_LOGIN_REPORT,
             "Failed login attempt for email: {$failedEmail}",
             [
-                'attempted_email' => $failedEmail,
+                    // Mask attempted email
+                    'attempted_email' => $this->maskEmail($failedEmail),
                 'failure_reason' => !$user ? 'Email not found' : 'Invalid password',
                 'attempt_time' => now()->toISOString(),
                 'ip_address' => $request->ip(),
@@ -135,6 +137,21 @@ class UserController extends Controller
         }
     }
 }
+
+    /**
+     * Mask an email address to avoid storing full PII in logs/reports.
+     * Example: john.doe@example.com -> j***@example.com
+     */
+    private function maskEmail($email)
+    {
+        if (empty($email) || !is_string($email) || strpos($email, '@') === false) {
+            return $email;
+        }
+
+        list($local, $domain) = explode('@', $email, 2);
+        $first = substr($local, 0, 1);
+        return $first . '***@' . $domain;
+    }
 
     public function forgotPassword(Request $request)
     {

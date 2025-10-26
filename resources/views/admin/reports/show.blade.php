@@ -121,10 +121,46 @@
                 @endif
             </div>
             
+        @elseif($report->type === 'login_report')
+            <div class="data-section">
+                <h6>Login Details</h6>
+                <div class="login-grid">
+                    <div class="login-item"><label>User ID:</label> <span>{{ $report->data['user_id'] ?? 'N/A' }}</span></div>
+                    <div class="login-item"><label>Name:</label> <span>{{ $report->data['user_name'] ?? 'N/A' }}</span></div>
+                    <div class="login-item"><label>Email:</label> <span>{{ $report->data['user_email'] ?? 'N/A' }}</span></div>
+                    <div class="login-item"><label>Role:</label> <span>{{ $report->data['user_role'] ?? 'N/A' }}</span></div>
+                    <div class="login-item"><label>Login Time:</label> <span>{{ $report->data['login_time'] ?? 'N/A' }}</span></div>
+                    <div class="login-item"><label>IP Address:</label> <span>{{ $report->data['ip_address'] ?? 'N/A' }}</span></div>
+                    <div class="login-item full-width"><label>User Agent:</label> <span>{{ $report->data['user_agent'] ?? 'N/A' }}</span></div>
+                </div>
+            </div>
+
         @else
             <div class="data-section">
-                <div class="raw-data">
-                    <pre>{{ json_encode($report->data, JSON_PRETTY_PRINT) }}</pre>
+                <h6>Report Data</h6>
+                <div class="kv-list">
+                    @if(is_array($report->data) && count($report->data) > 0)
+                        <ul>
+                            @foreach($report->data as $k => $v)
+                                <li>
+                                    <strong>{{ ucwords(str_replace('_', ' ', $k)) }}:</strong>
+                                    @if(is_array($v))
+                                        <div class="nested">
+                                            <ul>
+                                                @foreach($v as $subk => $subv)
+                                                    <li><strong>{{ ucwords(str_replace('_', ' ', $subk)) }}:</strong> {{ is_array($subv) ? json_encode($subv) : $subv }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <span>{{ $v }}</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p>No detailed data available.</p>
+                    @endif
                 </div>
             </div>
         @endif

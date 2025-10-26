@@ -84,14 +84,58 @@ class Report extends Model
      */
     public static function log($title, $type, $description = null, $data = [], $generatedBy = null)
     {
+        // Sanitize data to avoid storing sensitive tokens/passwords
+        $cleanData = self::sanitizeData($data);
+
         return self::create([
             'title' => $title,
             'type' => $type,
             'description' => $description,
-            'data' => $data,
+            'data' => $cleanData,
             'generated_by' => $generatedBy ?? auth()->id(),
             'status' => self::STATUS_COMPLETED,
             'generated_at' => now()
         ]);
+    }
+
+    /**
+     * Sanitize data arrays to redact sensitive fields before persisting.
+     * This will recursively walk arrays and redact any keys that match
+     * a configured blacklist (passwords, tokens, etc.).
+     */
+    private static function sanitizeData($data)
+    {
+        $sensitiveKeys = [
+            'password',
+            'password_confirmation',
+            'token',
+            'password_reset_token',
+            'reset_token',
+            'auth_token',
+        ];
+
+        if (!is_array($data)) {
+            return $data;
+        }
+
+        $clean = [];
+        foreach ($data as $key => $value) {
+            // If key is sensitive, replace value with a redaction notice
+            if (in_array(strtolower($key), $sensitiveKeys, true)) {
+                $clean[$key] = '[REDACTED]';
+                continue;
+            }
+
+            // If value is an array, recurse
+            if (is_array($value)) {
+                $clean[$key] = self::sanitizeData($value);
+                continue;
+            }
+
+            // Otherwise keep the value (cast to string for safety)
+            $clean[$key] = $value;
+        }
+
+        return $clean;
     }
 }
