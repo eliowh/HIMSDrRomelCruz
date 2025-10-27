@@ -587,6 +587,11 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
     // Stocks management (list stocks reference)
     Route::get('/pharmacy/stocks', [App\Http\Controllers\PharmacyController::class, 'stocks'])->name('pharmacy.stocks');
     Route::get('/pharmacy/stockspharmacy', [App\Http\Controllers\PharmacyController::class, 'stocksPharmacy'])->name('pharmacy.stockspharmacy');
+    
+    // Pharmacy stock CRUD (allow pharmacy role to manage their own pharmacy stocks)
+    Route::post('/pharmacy/stocks/add', [App\Http\Controllers\PharmacyController::class, 'addPharmacyStock'])->name('pharmacy.stocks.add');
+    Route::patch('/pharmacy/stocks/{id}', [App\Http\Controllers\PharmacyController::class, 'updatePharmacyStock'])->name('pharmacy.stocks.update');
+    Route::delete('/pharmacy/stocks/{id}', [App\Http\Controllers\PharmacyController::class, 'deletePharmacyStock'])->name('pharmacy.stocks.delete');
 });
 
 /*

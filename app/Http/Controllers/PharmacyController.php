@@ -1,11 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\StockOrder;
 use App\Models\StockPrice;
@@ -279,44 +278,56 @@ class PharmacyController extends Controller
     {
         $search = $request->get('search', '');
         $type = $request->get('type', 'all'); // 'item_code', 'generic_name', 'brand_name', or 'all'
-        
+
         $query = StocksReference::excludeHeader(); // Exclude header row and show all items
-        
+
         if ($search) {
-            switch ($type) {
-                case 'item_code':
-                    // For item_code queries, prefer exact match to avoid partial-code acceptance
-                    $query->where('COL 1', '=', $search);
-                    break;
-                case 'generic_name':
-                    $query->whereNotNull('COL 2')
-                          ->where('COL 2', '!=', '')
-                          ->where('COL 2', 'like', '%' . $search . '%');
-                    break;
-                case 'brand_name':
-                    $query->whereNotNull('COL 3')
-                          ->where('COL 3', '!=', '')
-                          ->where('COL 3', 'like', '%' . $search . '%');
-                    break;
-                default:
-                    $query->where(function($q) use ($search) {
-                        $q->where('COL 1', 'like', '%' . $search . '%')
-                          ->orWhere(function($subQ) use ($search) {
-                              $subQ->whereNotNull('COL 2')
-                                   ->where('COL 2', '!=', '')
-                                   ->where('COL 2', 'like', '%' . $search . '%');
-                          })
-                          ->orWhere(function($subQ) use ($search) {
-                              $subQ->whereNotNull('COL 3')
-                                   ->where('COL 3', '!=', '')
-                                   ->where('COL 3', 'like', '%' . $search . '%');
-                          });
-                    });
+            // Support an exact item_code match when requested (client uses this for Enter/blur lookups)
+            if ($type === 'item_code_exact') {
+                $query->where('COL 1', $search);
+            } else {
+                switch ($type) {
+                    case 'item_code':
+                        // For item_code queries, allow partial matches so autocomplete works when typing prefixes
+                        $query->where('COL 1', 'like', '%' . $search . '%');
+                        break;
+                    case 'generic_name':
+                        $query->whereNotNull('COL 2')
+                              ->where('COL 2', '!=', '')
+                              ->where('COL 2', 'like', '%' . $search . '%');
+                        break;
+                    case 'brand_name':
+                        $query->whereNotNull('COL 3')
+                              ->where('COL 3', '!=', '')
+                              ->where('COL 3', 'like', '%' . $search . '%');
+                        break;
+                    default:
+                        $query->where(function($q) use ($search) {
+                            $q->where('COL 1', 'like', '%' . $search . '%')
+                              ->orWhere(function($subQ) use ($search) {
+                                  $subQ->whereNotNull('COL 2')
+                                       ->where('COL 2', '!=', '')
+                                       ->where('COL 2', 'like', '%' . $search . '%');
+                              })
+                              ->orWhere(function($subQ) use ($search) {
+                                  $subQ->whereNotNull('COL 3')
+                                       ->where('COL 3', '!=', '')
+                                       ->where('COL 3', 'like', '%' . $search . '%');
+                              });
+                        });
+                }
             }
         }
-        
+
+        // Ensure returned reference items include at least a generic name or a brand name
+        // This normalizes the masterlist so clients receive well-formed suggestion objects
+        $query->where(function($q2){
+            $q2->whereNotNull('COL 2')->where('COL 2','!=','')
+               ->orWhereNotNull('COL 3')->where('COL 3','!=','');
+        });
+
         $stocks = $query->limit(50)->get();
-        
+
         return response()->json([
             'success' => true,
             'data' => $stocks->map(function($stock) {
@@ -388,9 +399,29 @@ class PharmacyController extends Controller
             ->whereYear('requested_at', now()->year)
             ->sum('total_price');
         
-        // Get low stock items (you can adjust this logic based on your needs)
-        $lowStockCount = 0; // Placeholder - you can implement this based on your stock management
-        
+        // Stock metrics for dashboard (pharmacy-specific)
+        try {
+            $totalStocks = PharmacyStock::count();
+            // Low stock when quantity is less than or equal to reorder_level
+            $lowStockCount = PharmacyStock::whereColumn('quantity', '<=', 'reorder_level')->count();
+            $outOfStockCount = PharmacyStock::where('quantity', '<=', 0)->count();
+            $recentStocks = PharmacyStock::orderBy('id', 'desc')->limit(5)->get();
+            $totalStockValue = PharmacyStock::selectRaw('SUM(quantity * price) as total_value')->value('total_value') ?? 0;
+            // Provide actual low stock items for reorder modal (limit to 20)
+            $lowStockItems = PharmacyStock::whereColumn('quantity', '<=', 'reorder_level')
+                ->orderBy('quantity', 'asc')
+                ->limit(20)
+                ->get();
+        } catch (\Throwable $e) {
+            \Log::error('Pharmacy dashboard stock metrics failed: '.$e->getMessage());
+            $totalStocks = 0;
+            $lowStockCount = 0;
+            $outOfStockCount = 0;
+            $recentStocks = collect();
+            $totalStockValue = 0;
+            $lowStockItems = collect();
+        }
+
         return view('pharmacy.pharmacy_home', compact(
             'pendingOrders',
             'approvedOrders', 
@@ -400,7 +431,12 @@ class PharmacyController extends Controller
             'recentOrders',
             'pendingOrdersValue',
             'completedOrdersValue',
-            'lowStockCount'
+            'totalStocks',
+            'lowStockCount',
+            'outOfStockCount',
+            'recentStocks',
+            'lowStockItems',
+            'totalStockValue'
         ));
     }
 
@@ -622,6 +658,174 @@ class PharmacyController extends Controller
     public function stocks(Request $request)
     {
         return $this->stocksPharmacy($request);
+    }
+
+    /**
+     * Add or increase a pharmacy stock item. Allows pharmacy staff to manage their own stocks.
+     */
+    public function addPharmacyStock(Request $request)
+    {
+        $data = $request->validate([
+            'item_code' => ['required','string','max:100'],
+            'generic_name' => ['nullable','string','max:255'],
+            'brand_name' => ['nullable','string','max:255'],
+            'quantity' => ['required','integer','min:1'],
+            'price' => ['required','numeric','min:0'],
+            'reorder_level' => ['nullable','integer','min:0'],
+            'expiry_date' => ['nullable','date'],
+            'supplier' => ['nullable','string','max:255'],
+            'batch_number' => ['nullable','string','max:100'],
+            'date_received' => ['nullable','date'],
+        ]);
+
+        try {
+            // Validate against stocks reference if available, unless caller marked this as a custom medicine
+            $isCustom = $request->boolean('custom_medicine');
+            $referenceStock = null;
+            if (!$isCustom) {
+                $referenceStock = StocksReference::excludeHeader()
+                    ->where('COL 1', $data['item_code'])
+                    ->first();
+
+                if (!$referenceStock) {
+                    return response()->json(['ok' => false, 'message' => 'Item code not found in reference database.'], 422);
+                }
+
+                // Merge defaults from reference when needed
+                $data['generic_name'] = $data['generic_name'] ?: ($referenceStock['COL 2'] ?? null);
+                $data['brand_name'] = $data['brand_name'] ?: ($referenceStock['COL 3'] ?? null);
+            }
+
+            $stock = PharmacyStock::where('item_code', $data['item_code'])->first();
+
+            if ($stock) {
+                $stock->quantity = ($stock->quantity ?? 0) + intval($data['quantity']);
+                $stock->price = $data['price'];
+                $stock->reorder_level = $data['reorder_level'] ?? $stock->reorder_level;
+                $stock->expiry_date = $data['expiry_date'] ?? $stock->expiry_date;
+                $stock->supplier = $data['supplier'] ?? $stock->supplier;
+                $stock->batch_number = $data['batch_number'] ?? $stock->batch_number;
+                $stock->date_received = $data['date_received'] ?? $stock->date_received;
+                if (!$stock->generic_name && $data['generic_name']) $stock->generic_name = $data['generic_name'];
+                if (!$stock->brand_name && $data['brand_name']) $stock->brand_name = $data['brand_name'];
+                $stock->save();
+
+                try { Report::log('Pharmacy Stock Updated', Report::TYPE_USER_REPORT, 'Pharmacy stock increased', ['item_code'=>$stock->item_code,'added'=>$data['quantity'],'by'=>auth()->id()]); } catch (\Throwable $e) { \Log::error('Report log failed: '.$e->getMessage()); }
+
+                return response()->json(['ok' => true, 'stock' => $stock, 'message' => 'Pharmacy stock updated successfully.']);
+            }
+
+            // If this was a custom medicine and it's not present in the master reference, add it there too
+            if ($isCustom) {
+                try {
+                    $existsRef = StocksReference::excludeHeader()->where('COL 1', $data['item_code'])->first();
+                    if (!$existsRef) {
+                        // Use a direct table insert to avoid Eloquent timestamp/PK expectations on this legacy table
+                        DB::table('stocksreference')->insert([
+                            'COL 1' => $data['item_code'],
+                            'COL 2' => $data['generic_name'] ?? '',
+                            'COL 3' => $data['brand_name'] ?? '',
+                            'COL 4' => is_numeric($data['price']) ? number_format((float)$data['price'], 2, '.', '') : ($data['price'] ?? 0),
+                            'COL 5' => ''
+                        ]);
+                        try {
+                            Report::log('Custom Masterlist Row Added', Report::TYPE_USER_REPORT, 'Custom medicine added to stocksreference', [
+                                'item_code' => $data['item_code'],
+                                'generic_name' => $data['generic_name'] ?? '',
+                                'brand_name' => $data['brand_name'] ?? '',
+                                'price' => is_numeric($data['price']) ? number_format((float)$data['price'], 2, '.', '') : ($data['price'] ?? 0),
+                                'by' => auth()->id()
+                            ]);
+                        } catch (\Throwable $e) {
+                            \Log::error('Report log failed: '.$e->getMessage());
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Don't fail the add operation if reference insert fails; just log it
+                    \Log::warning('Failed to add custom medicine to StocksReference: '.$e->getMessage());
+                }
+            }
+
+            $new = PharmacyStock::create([
+                'item_code' => $data['item_code'],
+                'generic_name' => $data['generic_name'],
+                'brand_name' => $data['brand_name'],
+                'price' => $data['price'],
+                'quantity' => $data['quantity'],
+                'expiry_date' => $data['expiry_date'] ?? null,
+                'reorder_level' => $data['reorder_level'] ?? 10,
+                'supplier' => $data['supplier'] ?? null,
+                'batch_number' => $data['batch_number'] ?? null,
+                'date_received' => $data['date_received'] ?? null,
+            ]);
+
+            try { Report::log('Pharmacy Stock Added', Report::TYPE_USER_REPORT, 'New pharmacy stock added', ['item_code'=>$new->item_code,'quantity'=>$new->quantity,'by'=>auth()->id()]); } catch (\Throwable $e) { \Log::error('Report log failed: '.$e->getMessage()); }
+
+            return response()->json(['ok' => true, 'stock' => $new, 'message' => 'Pharmacy stock created successfully.']);
+
+        } catch (\Exception $e) {
+            \Log::error('addPharmacyStock error: '.$e->getMessage());
+            return response()->json(['ok' => false, 'message' => 'Failed to add pharmacy stock: '.$e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update a pharmacy stock item
+     */
+    public function updatePharmacyStock(Request $request, $id)
+    {
+        $data = $request->validate([
+            'item_code' => ['nullable','string','max:100'],
+            'generic_name' => ['nullable','string','max:255'],
+            'brand_name' => ['nullable','string','max:255'],
+            'price' => ['nullable','numeric','min:0'],
+            'quantity' => ['nullable','integer','min:0'],
+            'reorder_level' => ['nullable','integer','min:0'],
+            'expiry_date' => ['nullable','date'],
+            'supplier' => ['nullable','string','max:255'],
+            'batch_number' => ['nullable','string','max:100'],
+            'date_received' => ['nullable','date'],
+        ]);
+
+        try {
+            $stock = PharmacyStock::find($id);
+            if (!$stock) {
+                $stock = PharmacyStock::where('item_code', $id)->first();
+            }
+            if (!$stock) return response()->json(['ok'=>false,'message'=>'Stock not found'],404);
+
+            foreach ($data as $k=>$v) {
+                if ($v !== null) $stock->$k = $v;
+            }
+            $stock->save();
+
+            try { Report::log('Pharmacy Stock Edited', Report::TYPE_USER_REPORT, 'Pharmacy stock edited', ['item_code'=>$stock->item_code,'by'=>auth()->id()]); } catch (\Throwable $e) { \Log::error('Report log failed: '.$e->getMessage()); }
+
+            return response()->json(['ok'=>true,'stock'=>$stock]);
+        } catch (\Exception $e) {
+            \Log::error('updatePharmacyStock error: '.$e->getMessage());
+            return response()->json(['ok'=>false,'message'=>'Update failed: '.$e->getMessage()],500);
+        }
+    }
+
+    /**
+     * Delete a pharmacy stock item
+     */
+    public function deletePharmacyStock(Request $request, $id)
+    {
+        try {
+            $stock = PharmacyStock::find($id);
+            if (!$stock) $stock = PharmacyStock::where('item_code', $id)->first();
+            if (!$stock) return response()->json(['ok'=>false,'message'=>'Stock not found'],404);
+
+            $stock->delete();
+            try { Report::log('Pharmacy Stock Deleted', Report::TYPE_USER_REPORT, 'Pharmacy stock deleted', ['item_code'=>$stock->item_code,'by'=>auth()->id()]); } catch (\Throwable $e) { \Log::error('Report log failed: '.$e->getMessage()); }
+
+            return response()->json(['ok'=>true,'message'=>'Stock deleted']);
+        } catch (\Exception $e) {
+            \Log::error('deletePharmacyStock error: '.$e->getMessage());
+            return response()->json(['ok'=>false,'message'=>'Delete failed: '.$e->getMessage()],500);
+        }
     }
 
     /**

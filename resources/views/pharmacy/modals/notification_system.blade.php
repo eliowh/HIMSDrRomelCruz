@@ -599,4 +599,16 @@ if (document.readyState === 'loading') {
         }
     }, 100);
 }
+
+// Provide global aliases expected by Inventory scripts (fallback to pharmacy notification helpers)
+(function(){
+    try{
+        if (typeof window.showSuccess !== 'function') window.showSuccess = function(msg,title,cb){ try{ showPharmacySuccess(msg,title,cb); }catch(e){ console.log(msg); if(cb) cb(true); } };
+        if (typeof window.showError !== 'function') window.showError = function(msg,title,cb){ try{ showPharmacyError(msg,title,cb); }catch(e){ console.error(msg); if(cb) cb(true); } };
+        if (typeof window.showWarning !== 'function') window.showWarning = function(msg,title,cb){ try{ showPharmacyWarning(msg,title,cb); }catch(e){ console.warn(msg); if(cb) cb(true); } };
+        if (typeof window.showInfo !== 'function') window.showInfo = function(msg,title,cb){ try{ showPharmacyInfo(msg,title,cb); }catch(e){ console.log(msg); if(cb) cb(true); } };
+        if (typeof window.showConfirm !== 'function') window.showConfirm = function(msg,title,cb){ try{ showPharmacyConfirm(msg,title,cb); }catch(e){ var r = confirm((title?title+" - ":"")+msg); if(cb) cb(!!r); } };
+        if (typeof window.showLoading !== 'function') window.showLoading = function(msg,title){ try{ showPharmacyLoading(msg,title); }catch(e){ console.log(title+": "+msg); } };
+    }catch(e){ console.warn('Could not create notification aliases', e); }
+})();
 </script>
