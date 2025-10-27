@@ -56,6 +56,26 @@ class FhirService
     }
 
     /**
+     * Compatibility wrapper for older callers expecting convertToFhir()
+     *
+     * @deprecated Use transformToFhir() instead.
+     */
+    public function convertToFhir(Model $model): array
+    {
+        return $this->transformToFhir($model);
+    }
+
+    /**
+     * Compatibility wrapper for collections
+     *
+     * @deprecated Use transformCollectionToFhir() instead.
+     */
+    public function convertCollectionToFhir(Collection $models): array
+    {
+        return $this->transformCollectionToFhir($models);
+    }
+
+    /**
      * Transform a collection of models to FHIR resources
      */
     public function transformCollectionToFhir(Collection $models): array
