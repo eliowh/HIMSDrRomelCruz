@@ -7,6 +7,7 @@
     <title>Reports</title>
     <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
     <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     @php
@@ -165,14 +166,14 @@
                                     <td>{{ $report->generated_at ? $report->generated_at->format('M d, Y g:i A') : 'N/A' }}</td>
                                     <td>
                                         <div class="report-actions">
-                                            <button class="action-btn small" onclick="viewReport({{ $report->id }})" title="View Report">
-                                                👁️
+                                            <button class="view-btn" onclick="viewReport({{ $report->id }})" title="View Report">
+                                                <i class="fas fa-eye"></i> View
                                             </button>
-                                            <button class="action-btn small" onclick="exportReport({{ $report->id }})" title="Export Report">
-                                                📥
+                                            <button class="edit-btn" onclick="exportReport({{ $report->id }})" title="Export Report">
+                                                <i class="fas fa-download"></i> Export
                                             </button>
-                                            <button class="action-btn small delete" onclick="deleteReport({{ $report->id }})" title="Delete Report">
-                                                🗑️
+                                            <button class="delete-btn" onclick="deleteReport({{ $report->id }})" title="Delete Report">
+                                                <i class="fas fa-trash"></i> Delete
                                             </button>
                                         </div>
                                     </td>
@@ -355,5 +356,65 @@
     });
     </script>
     @include('admin.modals.notification_system')
+
+    <style>
+    .report-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
+    .report-actions .view-btn,
+    .report-actions .edit-btn,
+    .report-actions .delete-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-width: auto;
+        white-space: nowrap;
+    }
+
+    .report-actions .view-btn {
+        background: #28a745;
+        color: #fff;
+        box-shadow: 0 2px 6px 0 rgba(40, 167, 69, 0.10);
+    }
+
+    .report-actions .view-btn:hover {
+        background: #218838;
+    }
+
+    .report-actions .edit-btn {
+        background: #28a745;
+        color: #fff;
+        box-shadow: 0 2px 6px 0 rgba(40, 167, 69, 0.10);
+    }
+
+    .report-actions .edit-btn:hover {
+        background: #218838;
+    }
+
+    .report-actions .delete-btn {
+        background: #dc3545;
+        color: #fff;
+        box-shadow: 0 2px 6px 0 rgba(220, 53, 69, 0.10);
+    }
+
+    .report-actions .delete-btn:hover {
+        background: #c82333;
+    }
+
+    .report-actions i {
+        font-size: 0.75rem;
+    }
+    </style>
 </body>
 </html>

@@ -195,7 +195,7 @@ class AdminController extends Controller
             [
                 'user_id' => $user->id,
                 'user_name' => $user->name,
-                'user_email' => $this->maskEmail($user->email),
+                'user_email' => $user->email,
                 'user_role' => $user->role,
                 'created_by' => auth()->user()->name,
                 'created_by_id' => auth()->id(),
@@ -248,20 +248,6 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
         return redirect('/admin/users')->with('success', 'User created and notified successfully!');
-    }
-
-    /**
-     * Mask an email address for logging to avoid storing full PII.
-     */
-    private function maskEmail($email)
-    {
-        if (empty($email) || !is_string($email) || strpos($email, '@') === false) {
-            return $email;
-        }
-
-        [$local, $domain] = explode('@', $email, 2);
-        $first = substr($local, 0, 1);
-        return $first . '***@' . $domain;
     }
 
     /**
@@ -1231,152 +1217,6 @@ class AdminController extends Controller
             ]);
 
             return back()->with('error', 'Error exporting FHIR data: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Export patient data as CSV (for capstone demo)
-     */
-    public function exportPatientCsv(Request $request, $patientId = null)
-    {
-        $this->verifyAdminAccess();
-
-        try {
-            // If patient_no provided from form, resolve to ID
-            $patientNo = $request->get('patient_no');
-
-            if ($patientNo) {
-                $patient = Patient::where('patient_no', $patientNo)->first();
-                if (!$patient) {
-                    return back()->with('error', "Patient with number {$patientNo} not found.");
-                }
-                $patients = collect([$patient]);
-                $filename = "patient_{$patientNo}_csv_" . date('Y-m-d_H-i-s') . '.csv';
-            } elseif ($patientId) {
-                $patient = Patient::find($patientId);
-                if (!$patient) {
-                    return back()->with('error', "Patient with id {$patientId} not found.");
-                }
-                $patients = collect([$patient]);
-                $filename = "patient_{$patientId}_csv_" . date('Y-m-d_H-i-s') . '.csv';
-            } else {
-                // Bulk: export a small set to avoid memory issues
-                $patients = Patient::with(['admissions', 'labOrders', 'medicines'])
-                    ->limit(500)->get();
-                $filename = "all_patients_csv_" . date('Y-m-d_H-i-s') . '.csv';
-            }
-
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            ];
-
-            $callback = function() use ($patients) {
-                $out = fopen('php://output', 'w');
-
-                // CSV header row
-                fputcsv($out, [
-                    'patient_id', // formatted patient id (Pxxxxx)
-                    'patient_no',
-                    'display_name',
-                    'first_name',
-                    'middle_name',
-                    'last_name',
-                    'sex',
-                    'date_of_birth',
-                    'age',
-                    'contact_number',
-                    'barangay',
-                    'city',
-                    'province',
-                    'nationality',
-                    'address',
-                    'room_no',
-                    'admission_diagnosis',
-                    'status',
-                    'general_health_history',
-                    'social_history',
-                    'admissions_count',
-                    'lab_orders_count',
-                    'medicines_count',
-                    'created_at'
-                ]);
-
-                foreach ($patients as $p) {
-                    $age = '';
-                    $dob = '';
-                    $created = '';
-                    try {
-                        if (!empty($p->date_of_birth)) {
-                            $dob = \Carbon\Carbon::parse($p->date_of_birth)->format('Y-m-d');
-                            $age = is_object($p->date_of_birth) ? $p->age : (\Carbon\Carbon::parse($p->date_of_birth)->age ?? '');
-                        }
-                    } catch (\Throwable $e) {
-                        $dob = $p->date_of_birth ?? '';
-                        $age = '';
-                    }
-
-                    try {
-                        if (!empty($p->created_at)) {
-                            $created = \Carbon\Carbon::parse($p->created_at)->toDateTimeString();
-                        }
-                    } catch (\Throwable $e) {
-                        $created = $p->created_at ?? '';
-                    }
-
-                    // Force Excel to treat long numeric strings (like phone numbers) as text by using Excel formula wrapper
-                    $contact = $p->contact_number ?? '';
-                    if ($contact !== '' && is_numeric($contact)) {
-                        $contact = '="' . $contact . '"';
-                    }
-
-                    // Build a human address from components (barangay, city, province)
-                    $addressParts = [];
-                    if (!empty($p->barangay)) $addressParts[] = $p->barangay;
-                    if (!empty($p->city)) $addressParts[] = $p->city;
-                    if (!empty($p->province)) $addressParts[] = $p->province;
-                    $addressStr = !empty($addressParts) ? implode(', ', $addressParts) : '';
-
-                    // Histories as JSON strings
-                    $generalHistory = is_array($p->general_health_history) ? json_encode($p->general_health_history) : ($p->general_health_history ?? '');
-                    $socialHistory = is_array($p->social_history) ? json_encode($p->social_history) : ($p->social_history ?? '');
-
-                    fputcsv($out, [
-                        $p->patient_id ?? $p->id,
-                        $p->patient_no ?? '',
-                        $p->display_name ?? ($p->first_name . ' ' . $p->last_name),
-                        $p->first_name ?? '',
-                        $p->middle_name ?? '',
-                        $p->last_name ?? '',
-                        $p->sex ?? '',
-                        $dob,
-                        $age,
-                        $contact,
-                        $p->barangay ?? '',
-                        $p->city ?? '',
-                        $p->province ?? '',
-                        $p->nationality ?? '',
-                        $addressStr,
-                        $p->room_no ?? '',
-                        $p->admission_diagnosis ?? '',
-                        $p->status ?? '',
-                        $generalHistory,
-                        $socialHistory,
-                        isset($p->admissions) ? $p->admissions->count() : \App\Models\Admission::where('patient_id', $p->id)->count(),
-                        isset($p->labOrders) ? $p->labOrders->count() : \App\Models\LabOrder::where('patient_id', $p->id)->count(),
-                        isset($p->medicines) ? $p->medicines->count() : \App\Models\PatientMedicine::where('patient_id', $p->id)->count(),
-                        $created,
-                    ]);
-                }
-
-                fclose($out);
-            };
-
-            return response()->stream($callback, 200, $headers);
-
-        } catch (\Exception $e) {
-            \Log::error('CSV Export Error', ['error' => $e->getMessage()]);
-            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
         }
     }
 
