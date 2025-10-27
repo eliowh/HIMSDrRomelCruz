@@ -85,7 +85,7 @@
                     </div>
                 </div>
 
-                <div id="low-stock-card" class="stat-card {{ ($lowStockCount ?? 0) > 0 ? 'alert-warning' : '' }}" onclick="openReorderModal()" role="button" tabindex="0" style="cursor:pointer;">
+                <div id="low-stock-card" class="stat-card {{ ($lowStockCount ?? 0) > 0 ? 'alert-warning' : '' }}" role="button" tabindex="0" style="cursor:pointer;" onclick="window.location.href='{{ route('pharmacy.stockspharmacy') }}?highlight=low'">
                     <div class="stat-icon low" style="color:#ff8c00">
                         <i class="fas fa-exclamation-circle"></i>
                     </div>
@@ -184,55 +184,50 @@
                     </div>
                 @endif
             </div>
+
             
-            <!-- Reorder Modal -->
-            <div id="reorderModal" class="inventory-modal" style="display:none;">
-                <div class="inventory-modal-content" style="max-width:800px;">
-                            <div class="inventory-modal-header">
-                                <h3>Reorder Low Stock Items</h3>
-                                <span class="inventory-modal-close" onclick="closeReorderModal()">&times;</span>
-                            </div>
-                    <div class="inventory-modal-body">
-                        @if(isset($lowStockItems) && $lowStockItems->count() > 0)
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Code</th>
-                                        <th>Name</th>
-                                        <th>Qty</th>
-                                        <th>Reorder</th>
-                                        <th>Price</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($lowStockItems as $li)
-                                    <tr>
-                                        <td>{{ $li->item_code }}</td>
-                                        <td>{{ $li->generic_name ?: $li->brand_name }}</td>
-                                        <td>{{ $li->quantity }}</td>
-                                        <td>{{ $li->reorder_level }}</td>
-                                        <td>₱{{ number_format($li->price ?? 0,2) }}</td>
-                                        <td>
-                                            <form method="POST" action="{{ url('/pharmacy/orders') }}" style="display:inline;">
-                                                @csrf
-                                                <input type="hidden" name="item_code" value="{{ $li->item_code }}">
-                                                <input type="hidden" name="generic_name" value="{{ $li->generic_name }}">
-                                                <input type="hidden" name="brand_name" value="{{ $li->brand_name }}">
-                                                <input type="hidden" name="unit_price" value="{{ $li->price }}">
-                                                <input type="number" name="quantity" value="{{ max( ($li->reorder_level ?: 1) * 2, 1) }}" min="1" style="width:80px; display:inline-block; margin-right:8px;">
-                                                <button class="pharmacy-btn-primary btn-sm" type="submit">Reorder</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        @else
-                            <p>No low-stock items available.</p>
-                        @endif
-                    </div>
+            <!-- To be expired summary -->
+            <div class="dashboard-section" style="margin-top:16px;">
+                <div class="section-header">
+                    <h3><i class="fas fa-calendar-times"></i> To be expired</h3>
+                    <a href="{{ route('pharmacy.stockspharmacy') }}?highlight=expiry&highlight_codes={{ isset($expiringSoonItems) ? $expiringSoonItems->pluck('item_code')->join(',') : '' }}" class="view-all-link">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
+
+                @if(isset($expiringSoonItems) && $expiringSoonItems->count() > 0)
+                    <div class="orders-grid">
+                        @foreach($expiringSoonItems->take(6) as $e)
+                        <div class="order-card">
+                            <div class="order-header">
+                                <span class="order-id">{{ $e->item_code }}</span>
+                                <span class="status-badge status-warning">Expires {{ 
+                                    ($e->expiry_date instanceof \Carbon\Carbon) ? $e->expiry_date->diffForHumans() : \Carbon\Carbon::parse($e->expiry_date)->diffForHumans()
+                                }}</span>
+                            </div>
+                            <div class="order-content">
+                                <div class="medicine-info">
+                                    <strong>{{ $e->generic_name ?: $e->brand_name }}</strong>
+                                    <br><small>Exp: {{ $e->expiry_date ? (\Carbon\Carbon::parse($e->expiry_date)->format('Y-m-d')) : '-' }}</small>
+                                </div>
+                                <div class="order-details">
+                                    <div class="quantity">
+                                        <i class="fas fa-boxes"></i>
+                                        Qty: {{ $e->quantity ?? 0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="order-footer">
+                                <a href="{{ route('pharmacy.stockspharmacy') }}?highlight=expiry&highlight_codes={{ $e->item_code }}" class="pharmacy-btn-primary btn-sm"><i class="fas fa-eye"></i> View</a>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state">
+                        <p>No expiring medicines in the next 30 days.</p>
+                    </div>
+                @endif
             </div>
             
             <!-- Quick actions removed per request -->

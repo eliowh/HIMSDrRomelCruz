@@ -268,6 +268,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Submit handler for addStockForm (guard existence)
     const addForm = document.getElementById('addStockForm');
+    // Set min date for expiry to today to prevent selecting past expiry dates
+    try {
+        const today = new Date().toISOString().slice(0,10);
+        const addExpiry = document.getElementById('add-expiry-date');
+        if (addExpiry) addExpiry.setAttribute('min', today);
+    } catch(e) { /* ignore */ }
     if (addForm) addForm.addEventListener('submit', function(e){
         e.preventDefault();
         const form = this;
@@ -303,6 +309,20 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = false; 
             return;
         }
+
+        // Expiry date validation: if provided, must not be in the past
+        try {
+            const expiry = formData.get('expiry_date');
+            const today = new Date().toISOString().slice(0,10);
+            if (expiry && expiry.trim() !== '') {
+                if (expiry < today) {
+                    showError('Expiry date cannot be in the past', 'Validation Error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+            }
+        } catch(e) { /* ignore validation if parsing fails */ }
 
         fetch('/pharmacy/stocks/add', {
             method: 'POST',

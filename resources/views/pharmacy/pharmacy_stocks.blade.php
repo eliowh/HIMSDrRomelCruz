@@ -10,6 +10,12 @@
     <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        /* Highlight styles for stocks page */
+        tr.stock-row.highlight-low { background: #fff3cd !important; }
+        tr.stock-row.highlight-expiry { background: #f8d7da !important; }
+        tr.stock-row.highlight-generic { outline: 2px solid rgba(46,125,50,0.12); }
+    </style>
     <script>
         // Safety stubs to avoid inline-onclick ReferenceErrors before full scripts load
         if (typeof window.openEditModalFromDetails !== 'function') window.openEditModalFromDetails = function(){ try{ if(typeof showError==='function') showError('No stock selected','Selection Error'); else alert('No stock selected'); }catch(e){} };
@@ -64,7 +70,11 @@
                                     </thead>
                                     <tbody>
                                         @foreach($stockspharmacy as $s)
-                                        <tr class="stock-row order-row" data-stock='@json($s)' style="transition: background-color 0.2s;">
+                                        @php
+                                            $sData = $s->toArray();
+                                            $sData['expiry_date'] = $s->expiry_date ? ($s->expiry_date instanceof \Carbon\Carbon ? $s->expiry_date->format('Y-m-d') : \Carbon\Carbon::parse($s->expiry_date)->format('Y-m-d')) : null;
+                                        @endphp
+                                        <tr class="stock-row order-row" data-stock='@json($sData)' style="transition: background-color 0.2s;">
                                             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">{{ $s->item_code }}</td>
                                             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">{{ $s->generic_name }}</td>
                                             <td style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">{{ $s->brand_name }}</td>
@@ -199,7 +209,23 @@
             document.getElementById('md-price').textContent = '₱' + (stock.price ? parseFloat(stock.price).toFixed(2) : '0.00');
             document.getElementById('md-quantity').textContent = or(stock.quantity || 0);
             document.getElementById('md-reorder_level').textContent = or(stock.reorder_level);
-            document.getElementById('md-expiry_date').textContent = or(stock.expiry_date);
+            // Normalize expiry date display: show YYYY-MM-DD, or '-' if not present
+            try {
+                const raw = stock.expiry_date;
+                if (raw && String(raw).trim() !== '') {
+                    const d = new Date(raw);
+                    if (!isNaN(d.getTime())) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth()+1).padStart(2,'0');
+                        const day = String(d.getDate()).padStart(2,'0');
+                        document.getElementById('md-expiry_date').textContent = `${y}-${m}-${day}`;
+                    } else {
+                        document.getElementById('md-expiry_date').textContent = String(raw);
+                    }
+                } else {
+                    document.getElementById('md-expiry_date').textContent = '-';
+                }
+            } catch(e) { document.getElementById('md-expiry_date').textContent = or(stock.expiry_date); }
             document.getElementById('md-supplier').textContent = or(stock.supplier);
             document.getElementById('md-batch_number').textContent = or(stock.batch_number);
             document.getElementById('md-date_received').textContent = or(stock.date_received);
@@ -273,6 +299,53 @@
         if (!restored && rows.length && !document.querySelector('.stock-row.active')) {
             rows[0].querySelector('.js-open-stock').click();
         }
+
+        // Highlighting based on query params: ?highlight=low or ?highlight=expiry or ?highlight_codes=code1,code2
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const highlight = params.get('highlight');
+            const highlightCodesParam = params.get('highlight_codes');
+            const highlightCodes = highlightCodesParam ? highlightCodesParam.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean) : [];
+
+            if (highlight === 'low') {
+                // Highlight all rows where quantity <= reorder_level, then focus the first match
+                let firstLowRow = null;
+                for (const row of rows) {
+                    try {
+                        const stock = JSON.parse(row.getAttribute('data-stock') || '{}');
+                        const qty = parseInt(stock.quantity || 0, 10);
+                        const rl = parseInt(stock.reorder_level || 0, 10);
+                        if (!isNaN(qty) && !isNaN(rl) && qty <= rl) {
+                            row.classList.add('highlight-low');
+                            if (!firstLowRow) firstLowRow = row;
+                        }
+                    } catch(e) { /* ignore parse errors */ }
+                }
+                if (firstLowRow) {
+                    firstLowRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    try { firstLowRow.querySelector('.js-open-stock').click(); } catch(e){}
+                }
+            }
+
+            if (highlight === 'expiry' || highlightCodes.length) {
+                // Highlight all matching expiry codes, focus first match
+                let firstExpiryRow = null;
+                for (const row of rows) {
+                    try {
+                        const stock = JSON.parse(row.getAttribute('data-stock') || '{}');
+                        const code = String(stock.item_code || '').trim().toLowerCase();
+                        if (highlightCodes.length && highlightCodes.indexOf(code) !== -1) {
+                            row.classList.add('highlight-expiry');
+                            if (!firstExpiryRow) firstExpiryRow = row;
+                        }
+                    } catch(e) { }
+                }
+                if (firstExpiryRow) {
+                    firstExpiryRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    try { firstExpiryRow.querySelector('.js-open-stock').click(); } catch(e){}
+                }
+            }
+        } catch(e) { console.error('Highlighting error', e); }
 
         // Simple table sorting functionality
         const sortableHeaders = document.querySelectorAll('.sortable');
@@ -413,7 +486,21 @@
             }
             document.getElementById('edit-quantity').value = s.quantity ?? 0;
             document.getElementById('edit-reorder_level').value = s.reorder_level ?? '';
-            document.getElementById('edit-expiry_date').value = s.expiry_date ?? '';
+            // Ensure expiry_date input is YYYY-MM-DD for <input type="date">
+            try {
+                const raw = s.expiry_date;
+                if (raw && String(raw).trim() !== '') {
+                    const d = new Date(raw);
+                    if (!isNaN(d.getTime())) {
+                        const val = d.toISOString().slice(0,10);
+                        document.getElementById('edit-expiry_date').value = val;
+                    } else {
+                        document.getElementById('edit-expiry_date').value = s.expiry_date;
+                    }
+                } else {
+                    document.getElementById('edit-expiry_date').value = '';
+                }
+            } catch(e) { document.getElementById('edit-expiry_date').value = s.expiry_date ?? ''; }
             document.getElementById('edit-supplier').value = s.supplier ?? '';
             document.getElementById('edit-batch_number').value = s.batch_number ?? '';
             document.getElementById('edit-date_received').value = s.date_received ?? '';

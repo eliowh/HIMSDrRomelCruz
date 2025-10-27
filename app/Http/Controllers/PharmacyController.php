@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\StockOrder;
 use App\Models\StockPrice;
@@ -407,11 +408,21 @@ class PharmacyController extends Controller
             $outOfStockCount = PharmacyStock::where('quantity', '<=', 0)->count();
             $recentStocks = PharmacyStock::orderBy('id', 'desc')->limit(5)->get();
             $totalStockValue = PharmacyStock::selectRaw('SUM(quantity * price) as total_value')->value('total_value') ?? 0;
-            // Provide actual low stock items for reorder modal (limit to 20)
+            // Provide actual low stock items for potential auto-reorder (limit to 100)
             $lowStockItems = PharmacyStock::whereColumn('quantity', '<=', 'reorder_level')
                 ->orderBy('quantity', 'asc')
-                ->limit(20)
+                ->limit(100)
                 ->get();
+
+            // Expiring soon items (within 30 days)
+            $expiringSoonItems = PharmacyStock::whereNotNull('expiry_date')
+                ->whereBetween('expiry_date', [Carbon::now()->toDateString(), Carbon::now()->addDays(30)->toDateString()])
+                ->orderBy('expiry_date', 'asc')
+                ->limit(50)
+                ->get();
+
+            // Auto-reorder has been moved to a scheduled Artisan command: `php artisan pharmacy:auto-reorder`.
+            // Running the auto-reorder from a command keeps the controller idempotent and avoids side-effects on page loads.
         } catch (\Throwable $e) {
             \Log::error('Pharmacy dashboard stock metrics failed: '.$e->getMessage());
             $totalStocks = 0;
@@ -436,6 +447,7 @@ class PharmacyController extends Controller
             'outOfStockCount',
             'recentStocks',
             'lowStockItems',
+            'expiringSoonItems',
             'totalStockValue'
         ));
     }

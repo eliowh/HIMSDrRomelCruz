@@ -85,6 +85,13 @@ function closeEditStockModal(){
     document.getElementById('editStockForm').reset();
 }
 
+// Prevent selecting past expiry dates by setting min to today
+try {
+    const today = new Date().toISOString().slice(0,10);
+    const editExpiry = document.getElementById('edit-expiry_date');
+    if (editExpiry) editExpiry.setAttribute('min', today);
+} catch(e) { /* ignore */ }
+
 document.getElementById('editStockForm').addEventListener('submit', function(e){
     e.preventDefault();
     const id = document.getElementById('edit-id').value;
@@ -106,6 +113,15 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
         date_received: document.getElementById('edit-date_received').value,
         _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
     };
+
+    // Client-side expiry validation: expiry_date (if provided) cannot be in the past
+    try {
+        const today = new Date().toISOString().slice(0,10);
+        if (payload.expiry_date && payload.expiry_date.trim() !== '' && payload.expiry_date < today) {
+            showError('Expiry date cannot be in the past', 'Validation Error');
+            return;
+        }
+    } catch(e) { /* ignore */ }
 
     const submitBtn = this.querySelector('.submit-btn');
     const orig = submitBtn.textContent; submitBtn.textContent = 'Saving...'; submitBtn.disabled = true;
@@ -161,6 +177,21 @@ document.getElementById('editStockForm').addEventListener('submit', function(e){
                     const sameBySelected = window.__currentStock && s && ((s.id && window.__currentStock.id && String(s.id) === String(window.__currentStock.id)) || (s.item_code && window.__currentStock.item_code && String(s.item_code) === String(window.__currentStock.item_code)));
 
                     if (sameById || sameByOldCode || sameBySelected) {
+                        // Normalize expiry_date in the returned stock to YYYY-MM-DD so the client date input parses it reliably
+                        try {
+                            if (j.stock && j.stock.expiry_date) {
+                                const sRaw = String(j.stock.expiry_date || '');
+                                const m = sRaw.match(/^(\d{4}-\d{2}-\d{2})/);
+                                if (m) {
+                                    j.stock.expiry_date = m[1];
+                                } else {
+                                    // remove excessive fractional seconds if present, e.g. .0000000Z
+                                    const cleaned = sRaw.replace(/(\.\d+Z)$/, 'Z');
+                                    const d = new Date(cleaned);
+                                    if (!isNaN(d.getTime())) j.stock.expiry_date = d.toISOString().slice(0,10);
+                                }
+                            }
+                        } catch(e) { /* ignore normalization errors */ }
                         r.setAttribute('data-stock', JSON.stringify(j.stock));
                         const tds = r.querySelectorAll('td');
                         if (tds && tds.length >= 5) {

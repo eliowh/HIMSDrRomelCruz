@@ -67,10 +67,41 @@
                                 <td>{{ $request->requested_at ? $request->requested_at->format('M d, Y h:i A') : '-' }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', $request->status)) }}</td>
                                 <td class="actions-buttons">
+                                    @php
+                                        // Determine available stock for this request
+                                        $availableQty = 0;
+                                        try {
+                                            if (!empty($request->item_code)) {
+                                                $ps = \App\Models\PharmacyStock::where('item_code', $request->item_code)->first();
+                                                if ($ps) $availableQty = intval($ps->quantity ?? 0);
+                                            }
+                                            // Fallback: try matching by generic or brand if item_code didn't return stock
+                                            if ($availableQty <= 0 && !empty($request->generic_name)) {
+                                                $ps = \App\Models\PharmacyStock::where('generic_name', $request->generic_name)->first();
+                                                if ($ps) $availableQty = intval($ps->quantity ?? 0);
+                                            }
+                                            if ($availableQty <= 0 && !empty($request->brand_name)) {
+                                                $ps = \App\Models\PharmacyStock::where('brand_name', $request->brand_name)->first();
+                                                if ($ps) $availableQty = intval($ps->quantity ?? 0);
+                                            }
+                                        } catch (\Throwable $e) {
+                                            // In case of DB issues, assume 0 so button will be disabled rather than allowing dispense
+                                            $availableQty = 0;
+                                        }
+                                        $canDispense = ($request->status === 'pending') && ($availableQty >= intval($request->quantity));
+                                    @endphp
+
                                     @if($request->status === 'pending')
-                                        <button type="button" class="pharmacy-btn-primary btn-sm" onclick="dispenseRequest({{ $request->id }})" title="Dispense Medicine">
-                                            <i class="fas fa-pills"></i> Dispense
-                                        </button>
+                                        @if($canDispense)
+                                            <button type="button" class="pharmacy-btn-primary btn-sm" onclick="dispenseRequest({{ $request->id }})" title="Dispense Medicine">
+                                                <i class="fas fa-pills"></i> Dispense
+                                            </button>
+                                        @else
+                                            <button type="button" class="pharmacy-btn-disabled btn-sm" disabled title="Insufficient stock to dispense">
+                                                <i class="fas fa-pills"></i> Dispense
+                                            </button>
+                                        @endif
+
                                         <button type="button" class="pharmacy-btn-danger btn-sm" onclick="cancelRequest({{ $request->id }})" title="Cancel Request">
                                             <i class="fas fa-times"></i> Cancel
                                         </button>
@@ -195,20 +226,55 @@
             justify-content: center;
         }
 
-        /* Actions button spacing */
+        /* Actions button spacing: keep buttons horizontally aligned and prevent inconsistent stacking
+           Allow horizontal scrolling on very narrow viewports rather than wrapping vertically. */
         .actions-buttons {
             display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            gap: 8px;
+            flex-wrap: nowrap; /* keep buttons in one row */
             align-items: center;
+            justify-content: flex-start; /* align actions to the left so View Details lines up consistently */
+            overflow-x: auto; /* allow scroll instead of wrapping when viewport is too narrow */
+            -webkit-overflow-scrolling: touch;
+            padding: 4px 0;
         }
+
+        .actions-buttons::-webkit-scrollbar { height: 6px; }
+        .actions-buttons::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
 
         .actions-buttons .pharmacy-btn-primary,
         .actions-buttons .pharmacy-btn-secondary,
         .actions-buttons .pharmacy-btn-danger,
-        .actions-buttons .pharmacy-btn-info {
+        .actions-buttons .pharmacy-btn-info,
+        .actions-buttons .pharmacy-btn-disabled {
             margin-right: 0;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex: 0 0 auto; /* prevent buttons from flexing or shrinking undesirably */
+            height: 34px;
+            padding: 6px 10px;
+            box-sizing: border-box;
+        }
+
+        /* On very small screens allow wrapping so buttons don't overflow the table too aggressively */
+        @media (max-width: 520px) {
+            .actions-buttons { flex-wrap: wrap; gap: 6px; }
+            .actions-buttons .pharmacy-btn-primary,
+            .actions-buttons .pharmacy-btn-danger,
+            .actions-buttons .pharmacy-btn-disabled { height: auto; padding: 8px 10px; }
+        }
+
+        /* Disabled/greyed out button style for insufficient stock */
+        .pharmacy-btn-disabled {
+            background: #e0e0e0;
+            color: #666 !important;
+            border: 1px solid #cfcfcf;
+            cursor: not-allowed;
+            opacity: 0.9;
+            padding: 6px 10px;
+            border-radius: 4px;
         }
     </style>
 
