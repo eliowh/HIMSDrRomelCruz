@@ -74,6 +74,9 @@
                                     <button class="edit-btn" onclick="editRoomByRow('{{ $rowId }}')" title="Edit Room">
                                         Edit
                                     </button>
+                                        <button class="delete-btn" onclick="deleteRoomByRow('{{ $rowId }}')" title="Delete Room">
+                                            Delete
+                                        </button>
                                 </div>
                             </td>
                         </tr>
@@ -401,6 +404,42 @@
         } catch (err) {
             console.warn('Error refreshing rooms list:', err);
         }
+    }
+
+    // Delete room by row id (reads data-room-name)
+    async function deleteRoomByRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (!row) return adminError('Unable to find the selected room row.');
+        const roomName = row.getAttribute('data-room-name');
+        if (!roomName) return adminError('Room name missing.');
+
+        adminConfirm(
+            `Are you sure you want to delete room "${roomName}"? This action cannot be undone.`,
+            'Confirm Delete',
+            async function() {
+                try {
+                    const encoded = encodeURIComponent(roomName);
+                    const resp = await fetch(`/admin/rooms/${encoded}/delete`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const j = await resp.json();
+                    if (resp.ok && j.success) {
+                        adminSuccess(j.message || 'Room deleted');
+                        // remove row from DOM
+                        try { row.remove(); } catch(e) { refreshRoomsList(); }
+                    } else {
+                        adminError(j.message || 'Failed to delete room');
+                    }
+                } catch (e) {
+                    console.error('Delete room error', e);
+                    adminError('Error deleting room.');
+                }
+            }
+        );
     }
 
     // Sorting functionality

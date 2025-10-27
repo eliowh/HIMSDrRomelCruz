@@ -484,6 +484,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/rooms/create', [AdminController::class, 'createRoom'])->name('admin.rooms.create');
     Route::post('/admin/rooms/edit', [AdminController::class, 'editRoom'])->name('admin.rooms.edit');
     Route::put('/admin/rooms/update', [AdminController::class, 'updateRoom'])->name('admin.rooms.update');
+    Route::delete('/admin/rooms/{roomName}/delete', [AdminController::class, 'deleteRoom'])->name('admin.rooms.delete');
+    // Admin Stock (masterlist) management
+    Route::get('/admin/stocks-reference', [AdminController::class, 'stocksReference'])->name('admin.stocks.reference');
+    Route::post('/admin/stocks-reference/create', [AdminController::class, 'createStockReference'])->name('admin.stocks.reference.create');
+    Route::post('/admin/stocks-reference/edit', [AdminController::class, 'editStockReference'])->name('admin.stocks.reference.edit');
+    Route::put('/admin/stocks-reference/update', [AdminController::class, 'updateStockReference'])->name('admin.stocks.reference.update');
+    Route::delete('/admin/stocks-reference/{itemCode}/delete', [AdminController::class, 'deleteStockReference'])->name('admin.stocks.reference.delete');
     
     // Patient Records Management
     Route::get('/admin/patients', [AdminController::class, 'patients'])->name('admin.patients');

@@ -33,6 +33,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ asset('/admin/stocks-reference') }}"
+                   class="sidebar-btn{{ request()->is('admin/stocks-reference') ? ' active' : '' }}">
+                    <span class="icon">💊</span> <span class="text">Stock Management</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ asset('/admin/patients') }}"
                    class="sidebar-btn{{ request()->is('admin/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patient Records</span>

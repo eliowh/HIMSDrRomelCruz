@@ -693,6 +693,161 @@ class AdminController extends Controller
         }
     }
 
+    /**
+     * Delete a room from the legacy roomlist table
+     */
+    public function deleteRoom(Request $request, $roomName)
+    {
+        try {
+            // roomName will be URL encoded when passed; decode for DB lookup
+            $decoded = urldecode($roomName);
+
+            $room = \DB::table('roomlist')->where('COL 1', $decoded)->first();
+            if (!$room) {
+                return response()->json(['success' => false, 'message' => 'Room not found.'], 404);
+            }
+
+            \DB::table('roomlist')->where('COL 1', $decoded)->delete();
+
+            try {
+                Report::log(
+                    'Room Deleted',
+                    Report::TYPE_USER_REPORT,
+                    "Admin deleted room: {$decoded}",
+                    [
+                        'room_name' => $decoded,
+                        'admin_id' => auth()->id()
+                    ],
+                    auth()->id()
+                );
+            } catch (\Throwable $e) { \Log::warning('Report log failed for deleteRoom: ' . $e->getMessage()); }
+
+            return response()->json(['success' => true, 'message' => 'Room deleted successfully.']);
+        } catch (\Exception $e) {
+            \Log::error('Delete room error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error deleting room.'], 500);
+        }
+    }
+
+    /**
+     * List stocksreference (masterlist) for admin management
+     */
+    public function stocksReference(Request $request)
+    {
+        try {
+            $query = \DB::table('stocksreference');
+            $search = $request->get('q', '');
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('COL 1', 'like', "%{$search}%")
+                      ->orWhere('COL 2', 'like', "%{$search}%")
+                      ->orWhere('COL 3', 'like', "%{$search}%");
+                });
+            }
+            $items = $query->orderBy('COL 2')->paginate(15);
+            $items->appends(request()->query());
+            return view('admin.admin_stocksreference', compact('items'));
+        } catch (\Exception $e) {
+            \Log::error('StocksReference list error: ' . $e->getMessage());
+            $items = new \Illuminate\Pagination\LengthAwarePaginator(collect(), 0, 15, 1, ['path' => request()->url()]);
+            return view('admin.admin_stocksreference', compact('items'))->with('error', 'Error loading masterlist.');
+        }
+    }
+
+    public function createStockReference(Request $request)
+    {
+        $data = $request->validate([
+            'item_code' => 'required|string|max:100',
+            'generic_name' => 'nullable|string|max:255',
+            'brand_name' => 'nullable|string|max:255',
+            'price' => 'nullable|string|max:50'
+        ]);
+
+        try {
+            $exists = \DB::table('stocksreference')->where('COL 1', $data['item_code'])->first();
+            if ($exists) return response()->json(['success' => false, 'message' => 'Item code already exists.'], 422);
+
+            \DB::table('stocksreference')->insert([
+                'COL 1' => $data['item_code'],
+                'COL 2' => $data['generic_name'] ?? '',
+                'COL 3' => $data['brand_name'] ?? '',
+                'COL 4' => $data['price'] ?? '',
+                'COL 5' => ''
+            ]);
+
+            Report::log('Masterlist Add', Report::TYPE_USER_REPORT, 'Admin added masterlist item', ['item_code'=>$data['item_code']], auth()->id());
+            return response()->json(['success' => true, 'message' => 'Masterlist item added.']);
+        } catch (\Exception $e) {
+            \Log::error('Create stock ref error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error creating masterlist item.'], 500);
+        }
+    }
+
+    public function editStockReference(Request $request)
+    {
+        $itemCode = $request->input('item_code');
+        if (!$itemCode) return response()->json(['success'=>false,'message'=>'item_code required'], 422);
+        try {
+            $item = \DB::table('stocksreference')->where('COL 1', $itemCode)->first();
+            if (!$item) return response()->json(['success'=>false,'message'=>'Not found'],404);
+            return response()->json(['success'=>true,'item'=>$item]);
+        } catch (\Exception $e) {
+            \Log::error('Edit stock ref error: '.$e->getMessage());
+            return response()->json(['success'=>false,'message'=>'Error loading item'],500);
+        }
+    }
+
+    public function updateStockReference(Request $request)
+    {
+        $data = $request->validate([
+            'item_code' => 'required|string|max:100',
+            'generic_name' => 'nullable|string|max:255',
+            'brand_name' => 'nullable|string|max:255',
+            'price' => 'nullable|string|max:50',
+            'id' => 'required|string' // original item_code
+        ]);
+
+        try {
+            $orig = $data['id'];
+            $exists = \DB::table('stocksreference')->where('COL 1', $orig)->first();
+            if (!$exists) return response()->json(['success'=>false,'message'=>'Original item not found'],404);
+
+            // If changing item_code ensure no duplicate
+            if ($data['item_code'] !== $orig) {
+                $check = \DB::table('stocksreference')->where('COL 1', $data['item_code'])->first();
+                if ($check) return response()->json(['success'=>false,'message'=>'New item_code already exists'],422);
+            }
+
+            \DB::table('stocksreference')->where('COL 1', $orig)->update([
+                'COL 1' => $data['item_code'],
+                'COL 2' => $data['generic_name'] ?? '',
+                'COL 3' => $data['brand_name'] ?? '',
+                'COL 4' => $data['price'] ?? '',
+            ]);
+
+            Report::log('Masterlist Edit', Report::TYPE_USER_REPORT, 'Admin edited masterlist item', ['original'=>$orig,'item_code'=>$data['item_code']], auth()->id());
+            return response()->json(['success'=>true,'message'=>'Masterlist updated.']);
+        } catch (\Exception $e) {
+            \Log::error('Update stock ref error: '.$e->getMessage());
+            return response()->json(['success'=>false,'message'=>'Error updating item'],500);
+        }
+    }
+
+    public function deleteStockReference(Request $request, $itemCode)
+    {
+        try {
+            $decoded = urldecode($itemCode);
+            $item = \DB::table('stocksreference')->where('COL 1', $decoded)->first();
+            if (!$item) return response()->json(['success'=>false,'message'=>'Not found'],404);
+            \DB::table('stocksreference')->where('COL 1', $decoded)->delete();
+            Report::log('Masterlist Delete', Report::TYPE_USER_REPORT, 'Admin deleted masterlist item', ['item_code'=>$decoded], auth()->id());
+            return response()->json(['success'=>true,'message'=>'Masterlist item deleted.']);
+        } catch (\Exception $e) {
+            \Log::error('Delete stock ref error: '.$e->getMessage());
+            return response()->json(['success'=>false,'message'=>'Error deleting item'],500);
+        }
+    }
+
     // Patient Records Management
     public function patients(Request $request)
     {
