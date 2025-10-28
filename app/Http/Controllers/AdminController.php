@@ -839,11 +839,12 @@ class AdminController extends Controller
     {
         try {
             // Select explicit columns including contact_number and sex for consistent view rendering
-            $query = \DB::table('patients')->select('id','patient_no','first_name','last_name','date_of_birth','status','created_at','contact_number','sex');
+            $query = \DB::table('patients')->select('patients.id','patient_no','first_name','last_name','date_of_birth','status','patients.created_at','contact_number','sex');
             
             // Get search and sort parameters
             $search = $request->get('q', '');
             $status = $request->get('status', '');
+            $filter = $request->get('filter', ''); // e.g. 'admitted'
             $sortBy = $request->get('sort', 'created_at');
             $sortDirection = $request->get('direction', 'desc');
             
@@ -868,6 +869,13 @@ class AdminController extends Controller
             if ($status) {
                 $query->where('status', ucfirst($status)); // Convert to match database format
             }
+
+            // Special filter: admitted -> consider patients whose patient.status indicates they are admitted.
+            // The domain uses patient.status = 'Active' to represent currently admitted patients.
+            if (strtolower($filter) === 'admitted') {
+                // For listings, filter patients table by status = 'Active'
+                $query->where('status', 'Active');
+            }
             
             // Apply sorting
             if ($sortBy === 'first_name') {
@@ -877,12 +885,174 @@ class AdminController extends Controller
                 $query->orderBy($sortBy, $sortDirection);
             }
             
+            // If filter=admitted and print parameter is present, render a printable admitted patients list
+            // According to domain rules, a patient with status = 'Active' is considered admitted.
+            if (strtolower($filter) === 'admitted' && $request->get('print')) {
+                // Allow optional filtering by date range or period (year/month/week)
+                $dateFrom = $request->get('date_from');
+                $dateTo = $request->get('date_to');
+                $period = $request->get('period'); // accepted values: year, month, week
+
+                // if period is provided and date_from/to not set, compute range
+                if (!$dateFrom && $period) {
+                    $now = \Carbon\Carbon::now();
+                    $p = strtolower($period);
+                    switch ($p) {
+                        case 'past_year':
+                            $dateFrom = $now->copy()->subYear()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->subYear()->endOfYear()->toDateString();
+                            break;
+                        case 'past_month':
+                            $dateFrom = $now->copy()->subMonth()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->subMonth()->endOfMonth()->toDateString();
+                            break;
+                        case 'past_week':
+                            $dateFrom = $now->copy()->subWeek()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->subWeek()->endOfWeek()->toDateString();
+                            break;
+                        case 'this_year':
+                            $dateFrom = $now->copy()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->endOfYear()->toDateString();
+                            break;
+                        case 'this_month':
+                            $dateFrom = $now->copy()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->endOfMonth()->toDateString();
+                            break;
+                        case 'this_week':
+                            $dateFrom = $now->copy()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->endOfWeek()->toDateString();
+                            break;
+                    }
+                }
+
+                // If a period or explicit date range is provided, base the report on admissions within that range.
+                $admissionsMap = collect();
+                $allAdmissions = collect();
+                $orderedPatientIds = [];
+
+                $isRangeFilter = (!empty($dateFrom) || !empty($dateTo));
+
+                if ($isRangeFilter) {
+                    // Build admissions query filtered by date range
+                    $admissionsQuery = \App\Models\Admission::query();
+                    try {
+                        $from = \Carbon\Carbon::parse($dateFrom)->startOfDay();
+                        $to = \Carbon\Carbon::parse($dateTo)->endOfDay();
+                        $admissionsQuery->whereBetween('admission_date', [$from, $to]);
+                    } catch (\Exception $e) {
+                        // If parsing fails, fall back to no date filtering
+                    }
+
+                    $allAdmissions = $admissionsQuery->orderBy('admission_date', 'desc')->get();
+                    $admissionsMap = $allAdmissions->groupBy('patient_id');
+                    $orderedPatientIds = $allAdmissions->pluck('patient_id')->unique()->values()->all();
+
+                    // Fetch patients who have admissions in the selected range
+                    $patientIds = $orderedPatientIds;
+                    $patients = collect();
+                    if (!empty($patientIds)) {
+                        $patients = \DB::table('patients')
+                            ->select('id','patient_no','first_name','last_name','date_of_birth','status','contact_number','sex','created_at','barangay','city','province','nationality')
+                            ->whereIn('id', $patientIds)
+                            ->get();
+                        // Reorder patients according to admission recency
+                        $patients = $patients->sortBy(function($p) use ($orderedPatientIds) {
+                            $pos = array_search($p->id, $orderedPatientIds);
+                            return $pos === false ? PHP_INT_MAX : $pos;
+                        })->values();
+                    }
+                } else {
+                    // No date range provided: default to listing currently admitted patients and their admissions
+                    $patients = \DB::table('patients')
+                        ->select('id','patient_no','first_name','last_name','date_of_birth','status','contact_number','sex','created_at','barangay','city','province','nationality')
+                        ->where('status', 'Active')
+                        ->get();
+
+                    $patientIds = $patients->pluck('id')->all();
+
+                    if (!empty($patientIds)) {
+                        $admissionsQuery = \App\Models\Admission::whereIn('patient_id', $patientIds)->orderBy('admission_date', 'desc');
+                        $allAdmissions = $admissionsQuery->get();
+                        $admissionsMap = $allAdmissions->groupBy('patient_id');
+                        $orderedPatientIds = $allAdmissions->pluck('patient_id')->unique()->values()->all();
+
+                        // Reorder patients collection so those with recent admissions appear first
+                        if (!empty($orderedPatientIds)) {
+                            $patients = $patients->sortBy(function($p) use ($orderedPatientIds) {
+                                $pos = array_search($p->id, $orderedPatientIds);
+                                return $pos === false ? PHP_INT_MAX : $pos;
+                            })->values();
+                        }
+                    }
+                }
+
+                // Compute totals to display on the printable report (scope to selected admissions)
+                $totalAdmittedPatients = $allAdmissions->pluck('patient_id')->unique()->count();
+                $currentlyAdmitted = $allAdmissions->where('status', 'active')->pluck('patient_id')->unique()->count();
+
+                return view('admin.patients.print_admitted', compact('patients', 'admissionsMap', 'totalAdmittedPatients', 'currentlyAdmitted'));
+            }
+
+            // Before pagination: if user requested a period filter while viewing admitted patients
+            // compute which patients have admissions in that range so we can highlight them in the UI.
+            $highlightPatientIds = [];
+            if (strtolower($filter) === 'admitted' && !$request->get('print')) {
+                $dateFrom = $request->get('date_from');
+                $dateTo = $request->get('date_to');
+                $period = $request->get('period');
+
+                if (!$dateFrom && $period) {
+                    $now = \Carbon\Carbon::now();
+                    $p = strtolower($period);
+                    switch ($p) {
+                        case 'past_year':
+                            $dateFrom = $now->copy()->subYear()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->subYear()->endOfYear()->toDateString();
+                            break;
+                        case 'past_month':
+                            $dateFrom = $now->copy()->subMonth()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->subMonth()->endOfMonth()->toDateString();
+                            break;
+                        case 'past_week':
+                            $dateFrom = $now->copy()->subWeek()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->subWeek()->endOfWeek()->toDateString();
+                            break;
+                        case 'this_year':
+                            $dateFrom = $now->copy()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->endOfYear()->toDateString();
+                            break;
+                        case 'this_month':
+                            $dateFrom = $now->copy()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->endOfMonth()->toDateString();
+                            break;
+                        case 'this_week':
+                            $dateFrom = $now->copy()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->endOfWeek()->toDateString();
+                            break;
+                    }
+                }
+
+                if ($dateFrom || $dateTo) {
+                    try {
+                        $admissionsQuery = \App\Models\Admission::query();
+                        if ($dateFrom && $dateTo) {
+                            $from = \Carbon\Carbon::parse($dateFrom)->startOfDay();
+                            $to = \Carbon\Carbon::parse($dateTo)->endOfDay();
+                            $admissionsQuery->whereBetween('admission_date', [$from, $to]);
+                        }
+                        $highlightPatientIds = $admissionsQuery->pluck('patient_id')->unique()->toArray();
+                    } catch (\Exception $e) {
+                        $highlightPatientIds = [];
+                    }
+                }
+            }
+
             // Apply pagination for all results (with or without search/filter)
             $patients = $query->paginate(10);
-            
+
             // Preserve search and filter parameters in pagination links
             $patients->appends(request()->query());
-            return view('admin.admin_patients', compact('patients'));
+            return view('admin.admin_patients', compact('patients', 'highlightPatientIds'));
             
         } catch (\Exception $e) {
             \Log::error('Patient management error: ' . $e->getMessage());

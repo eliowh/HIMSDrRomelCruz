@@ -17,7 +17,7 @@
     <div class="admin-layout">
         @include('admin.admin_sidebar')
         <div class="main-content">
-            <h2>Reports & Analytics</h2>
+            <h2>Reports & Audits</h2>
             
             <!-- Report Statistics -->
             <div class="report-stats">
@@ -28,74 +28,52 @@
                         <p class="stat-number">{{ $stats['total_reports'] ?? 0 }}</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
-                    <div class="stat-icon">⏳</div>
+                    <div class="stat-icon">🏥</div>
                     <div class="stat-content">
-                        <h3>Pending</h3>
-                        <p class="stat-number">{{ $stats['pending_reports'] ?? 0 }}</p>
+                        <h3>Total Patients Admitted</h3>
+                        <p class="stat-number">{{ $stats['total_admitted_patients'] ?? 0 }}</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
-                    <div class="stat-icon">✅</div>
+                    <div class="stat-icon">🛏️</div>
                     <div class="stat-content">
-                        <h3>Completed</h3>
-                        <p class="stat-number">{{ $stats['completed_reports'] ?? 0 }}</p>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">❌</div>
-                    <div class="stat-content">
-                        <h3>Failed</h3>
-                        <p class="stat-number">{{ $stats['failed_reports'] ?? 0 }}</p>
+                        <h3>Currently Admitted</h3>
+                        <p class="stat-number">{{ $stats['currently_admitted'] ?? 0 }}</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Generate New Report Card -->
+            <!-- View All Admitted Patients Card (replaces Generate New Report) -->
             <div class="admin-card">
-                <h3>Generate New Report</h3>
-                <form id="generateReportForm" class="report-form">
-                    @csrf
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="reportTitle" class="form-label">Report Title</label>
-                            <input type="text" id="reportTitle" name="title" class="form-input" required 
-                                   placeholder="Enter report title">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="reportType" class="form-label">Report Type</label>
-                            <select id="reportType" name="type" class="form-input" required>
-                                <option value="">Select report type</option>
-                                <option value="user_activity">User Activity</option>
-                                <option value="login_report">Login Report</option>
-                                <option value="user_registration">User Registration</option>
-                                <option value="system_log">System Log</option>
-                                <option value="custom">Custom Report</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="dateFrom" class="form-label">From Date</label>
-                            <input type="date" id="dateFrom" name="date_from" class="form-input">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="dateTo" class="form-label">To Date</label>
-                            <input type="date" id="dateTo" name="date_to" class="form-input">
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="generate-btn">
-                        <span class="btn-icon">📊</span>
-                        Generate Report
-                    </button>
-                </form>
+                <h3>Print Admitted Patients</h3>
+                <p>Show all patients who are admitted within Romel Cruz Hospital.</p>
+                <p style="font-size: 1.0rem; font-style: italic;">You can view the list or open a printable report.</p>
+                <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;align-items:center;">
+                    <form id="admittedFilterForm" method="GET" action="{{ route('admin.patients') }}" style="display:flex;gap:8px;align-items:center;">
+                        <input type="hidden" name="filter" value="admitted">
+                        <label for="periodSelect" style="font-weight:600; margin-right:6px;">Period</label>
+                        <select id="periodSelect" name="period" style="padding:6px;border-radius:4px;border:1px solid #ccc;">
+                            <option value="">All time</option>
+                            <optgroup label="Past">
+                                <option value="past_year">Past Year</option>
+                                <option value="past_month">Past Month</option>
+                                <option value="past_week">Past Week</option>
+                            </optgroup>
+                            <optgroup label="This">
+                                <option value="this_year">This Year</option>
+                                <option value="this_month">This Month</option>
+                                <option value="this_week">This Week</option>
+                            </optgroup>
+                        </select>
+
+                        <button type="submit" class="period-btn view" style="width:auto;padding:8px 12px;">View Admitted Patients</button>
+
+                        <button type="button" class="period-btn print" id="printAdmittedBtn" style="width:auto;padding:8px 12px;">Print Admitted Patients</button>
+                    </form>
+                </div>
             </div>
 
             <!-- Recent Reports Card -->
@@ -212,42 +190,52 @@
     </div>
 
     <script>
-    // Form submission for generating reports
-    document.getElementById('generateReportForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const submitBtn = this.querySelector('.generate-btn');
-        const originalText = submitBtn.innerHTML;
-        
-        submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Generating...';
-        submitBtn.disabled = true;
-        
-        try {
-            const response = await fetch('/admin/reports/generate', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                adminSuccess('Report generated successfully!');
-                location.reload(); // Refresh to show new report
-            } else {
-                adminError('Error: ' + result.message);
+    // Form submission for generating reports (guard presence)
+    (function() {
+        const genForm = document.getElementById('generateReportForm');
+        if (!genForm) return;
+
+        genForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const form = genForm;
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('.generate-btn');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+
+            if (submitBtn) {
+                submitBtn.innerHTML = '<span class="btn-icon">⏳</span> Generating...';
+                submitBtn.disabled = true;
             }
-        } catch (error) {
-            adminError('An error occurred while generating the report.');
-            console.error('Error:', error);
-        } finally {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        }
-    });
+
+            try {
+                const response = await fetch('/admin/reports/generate', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    adminSuccess('Report generated successfully!');
+                    location.reload(); // Refresh to show new report
+                } else {
+                    adminError('Error: ' + result.message);
+                }
+            } catch (error) {
+                adminError('An error occurred while generating the report.');
+                console.error('Error:', error);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
+        });
+    })();
 
     // View report function
     async function viewReport(reportId) {
@@ -263,9 +251,9 @@
         }
     }
 
-    // Export report function
+    // Export report function (opens printable view)
     function exportReport(reportId) {
-        window.open(`/admin/reports/${reportId}/export`, '_blank');
+        window.open(`/admin/reports/${reportId}/export?format=print`, '_blank');
     }
 
     // Delete report function
@@ -327,6 +315,18 @@
         
         document.getElementById('dateTo').value = today.toISOString().split('T')[0];
         document.getElementById('dateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
+    });
+
+    // Open printable admitted patients with selected period
+    document.addEventListener('DOMContentLoaded', function() {
+        const printBtn = document.getElementById('printAdmittedBtn');
+        if (!printBtn) return;
+        printBtn.addEventListener('click', function() {
+            const period = document.getElementById('periodSelect')?.value || '';
+            let url = '{{ route('admin.patients') }}?filter=admitted&print=1';
+            if (period) url += '&period=' + encodeURIComponent(period);
+            window.open(url, '_blank');
+        });
     });
 
     // Sorting functionality
@@ -415,6 +415,27 @@
     .report-actions i {
         font-size: 0.75rem;
     }
+    /* Period/action buttons on Reports card */
+    .period-btn {
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .period-btn.view {
+        background: #28a745; /* green */
+        box-shadow: 0 2px 6px 0 rgba(40,167,69,0.10);
+    }
+    .period-btn.view:hover { background: #218838; }
+    .period-btn.print {
+        background: #007bff; /* blue */
+        box-shadow: 0 2px 6px 0 rgba(0,123,255,0.08);
+    }
+    .period-btn.print:hover { background: #0069d9; }
     </style>
 </body>
 </html>

@@ -96,7 +96,8 @@
                     </thead>
                     <tbody>
                         @foreach($patients as $patient)
-                        <tr data-status="{{ strtolower($patient->status ?? 'active') }}" data-name="{{ strtolower(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') . ' ' . ($patient->patient_no ?? '')) }}">
+                        @php $isHighlighted = in_array($patient->id, $highlightPatientIds ?? []) ? true : false; @endphp
+                        <tr class="{{ $isHighlighted ? 'highlight' : '' }}" data-status="{{ strtolower($patient->status ?? 'active') }}" data-name="{{ strtolower(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') . ' ' . ($patient->patient_no ?? '')) }}">
                             <td>{{ $patient->patient_no ?? 'N/A' }}</td>
                             <td>{{ ($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') }}</td>
                             <td>
@@ -389,6 +390,18 @@
             width: 95vw;
             max-height: 95vh;
         }
+    }
+    </style>
+
+    <style>
+    /* Highlight rows that match the selected period filter. Make cell-level rule with !important
+       so it overrides other table/td background rules (striped rows, etc.). */
+    tr.highlight td {
+        background-color: #fff9db !important; /* light yellow */
+    }
+    /* Keep row background transparent to avoid double backgrounds in some themes */
+    tr.highlight {
+        background-color: transparent;
     }
     </style>
 

@@ -149,7 +149,7 @@
                             <span>Add New User</span>
                         </button>
 
-                        <a href="{{ route('admin.patients') }}" class="quick-action-btn patients">
+                        <a href="{{ route('admin.patients', ['filter' => 'admitted']) }}" class="quick-action-btn patients">
                             <i class="fas fa-user-injured"></i>
                             <span>Manage Patients</span>
                         </a>
