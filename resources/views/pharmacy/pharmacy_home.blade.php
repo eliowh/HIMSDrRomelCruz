@@ -7,6 +7,45 @@
     <title>Pharmacy Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Ensure reorder modal overlays correctly even if inventory CSS isn't loaded */
+        #reorderModal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        #reorderModal.show { opacity: 1; }
+        #reorderModal .inventory-modal-content {
+            background-color: #fff;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        #reorderModal.show .inventory-modal-content { transform: scale(1); }
+        #reorderModal .inventory-modal-header { padding: 16px 20px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+        #reorderModal .inventory-modal-body { padding: 18px; }
+        #reorderModal .inventory-modal-close { cursor:pointer; font-size:20px; padding:6px; border-radius:4px; }
+        /* small-reorder-btn removed - card is clickable */
+        #reorderModal table.table { width:100%; border-collapse:collapse; }
+        #reorderModal table.table th, #reorderModal table.table td { padding:8px 10px; text-align:left; border-bottom:1px solid #f0f0f0; }
+        @media (max-width:600px) { #reorderModal .inventory-modal-content { width: 96%; } }
+    </style>
 </head>
 <body>
     @php
@@ -27,133 +66,105 @@
                     <button class="btn btn-outline" onclick="refreshDashboard()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
-                    <a href="{{ route('pharmacy.orders') }}" class="action-btn primary">
-                        <i class="fas fa-plus"></i> New Order
-                    </a>
+                    {{-- New Order removed per request --}}
                 </div>
             </div>
             
-            <!-- Statistics Cards -->
-            <div class="dashboard-grid">
-                <div class="stat-card {{ $pendingOrders > 10 ? 'alert-warning' : ($pendingOrders > 20 ? 'alert-danger' : '') }}">
-                    <div class="stat-icon pending">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-details">
-                        <span class="stat-number">{{ $pendingOrders }}</span>
-                        <span class="stat-label">Pending Orders</span>
-                        <small class="stat-sublabel">Awaiting approval</small>
-                    </div>
-                    <div class="stat-trend">
-                        @if($pendingOrders > 10)
-                            <i class="fas fa-exclamation-triangle text-warning"></i>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon approved">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <div class="stat-details">
-                        <span class="stat-number">{{ $approvedOrders }}</span>
-                        <span class="stat-label">Approved Orders</span>
-                        <small class="stat-sublabel">Ready for processing</small>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon completed">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-details">
-                        <span class="stat-number">{{ $completedOrders }}</span>
-                        <span class="stat-label">Completed Orders</span>
-                        <small class="stat-sublabel">Successfully dispensed</small>
-                    </div>
-                </div>
-                
+            <!-- (Order summary removed — dashboard now focuses on stock metrics) -->
+            
+            <!-- Pharmacy Stocks Summary -->
+            <div class="dashboard-grid" style="margin-top:16px;">
                 <div class="stat-card">
                     <div class="stat-icon total">
-                        <i class="fas fa-clipboard-list"></i>
+                        <i class="fas fa-boxes" style="color:#4e73df"></i>
                     </div>
                     <div class="stat-details">
-                        <span class="stat-number">{{ $totalOrders }}</span>
-                        <span class="stat-label">Total Orders</span>
-                        <small class="stat-sublabel">All time</small>
+                        <span class="stat-number">{{ $totalStocks ?? 0 }}</span>
+                        <span class="stat-label">Total Medicines</span>
+                        <small class="stat-sublabel">All stocked items</small>
                     </div>
                 </div>
-                
+
+                <div id="low-stock-card" class="stat-card {{ ($lowStockCount ?? 0) > 0 ? 'alert-warning' : '' }}" role="button" tabindex="0" style="cursor:pointer;" onclick="window.location.href='{{ route('pharmacy.stockspharmacy') }}?highlight=low'">
+                    <div class="stat-icon low" style="color:#ff8c00">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-number">{{ $lowStockCount ?? 0 }}</span>
+                        <span class="stat-label">Low Stock</span>
+                        <small class="stat-sublabel">At or below reorder level</small>
+                    </div>
+                    {{-- action button removed; card itself is clickable to open reorder modal --}}
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon out" style="color:#e74a3b">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-number">{{ $outOfStockCount ?? 0 }}</span>
+                        <span class="stat-label">Out of Stock</span>
+                        <small class="stat-sublabel">No available units</small>
+                    </div>
+                </div>
+
                 <div class="stat-card">
                     <div class="stat-icon value">
-                        <i class="fas fa-dollar-sign"></i>
+                        <i class="fas fa-peso-sign"></i>
                     </div>
                     <div class="stat-details">
-                        <span class="stat-number">₱{{ number_format($pendingOrdersValue, 2) }}</span>
-                        <span class="stat-label">Pending Value</span>
-                        <small class="stat-sublabel">Total pending worth</small>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon monthly">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-details">
-                        <span class="stat-number">₱{{ number_format($completedOrdersValue, 2) }}</span>
-                        <span class="stat-label">Monthly Sales</span>
-                        <small class="stat-sublabel">{{ now()->format('F Y') }}</small>
+                        <span class="stat-number">₱{{ number_format($totalStockValue ?? 0, 2) }}</span>
+                        <span class="stat-label">Stock Value</span>
+                        <small class="stat-sublabel">Estimated inventory value</small>
                     </div>
                 </div>
             </div>
             
-            <!-- Recent Orders -->
+            <!-- Recent Stocks -->
             <div class="dashboard-section">
                 <div class="section-header">
-                    <h3><i class="fas fa-history"></i> Recent Orders</h3>
-                    <a href="{{ route('pharmacy.orders') }}" class="view-all-link">
-                        View All Orders <i class="fas fa-arrow-right"></i>
+                    <h3><i class="fas fa-box-open"></i> Recent Stocks</h3>
+                    <a href="{{ route('pharmacy.stockspharmacy') }}" class="view-all-link">
+                        View All Stocks <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                
-                @if($recentOrders->count() > 0)
+
+                @if(isset($recentStocks) && $recentStocks->count() > 0)
                     <div class="orders-grid">
-                        @foreach($recentOrders as $order)
+                        @foreach($recentStocks as $stock)
                         <div class="order-card">
                             <div class="order-header">
-                                <span class="order-id">#{{ str_pad($order->id, 4, '0', STR_PAD_LEFT) }}</span>
-                                <span class="status-badge status-{{ $order->status }}">
-                                    {{ ucfirst($order->status) }}
-                                </span>
+                                <span class="order-id">{{ $stock->item_code }}</span>
+                                <span class="status-badge status-info">{{ $stock->quantity }} pcs</span>
                             </div>
                             <div class="order-content">
                                 <div class="medicine-info">
-                                    <strong>{{ $order->generic_name ?: $order->brand_name }}</strong>
-                                    @if($order->generic_name && $order->brand_name)
-                                        <br><small>Brand: {{ $order->brand_name }}</small>
+                                    <strong>{{ $stock->generic_name ?: $stock->brand_name }}</strong>
+                                    @if($stock->generic_name && $stock->brand_name)
+                                        <br><small>Brand: {{ $stock->brand_name }}</small>
                                     @endif
-                                    <br><small>Code: {{ $order->item_code }}</small>
+                                    <br><small>Code: {{ $stock->item_code }}</small>
                                 </div>
                                 <div class="order-details">
                                     <div class="quantity">
-                                        <i class="fas fa-pills"></i>
-                                        {{ $order->quantity }} units
+                                        <i class="fas fa-boxes"></i>
+                                        Reorder: {{ $stock->reorder_level ?? '-' }}
                                     </div>
                                     <div class="total-price">
                                         <i class="fas fa-peso-sign"></i>
-                                        ₱{{ number_format($order->total_price, 2) }}
+                                        ₱{{ number_format($stock->price ?? 0, 2) }}
                                     </div>
                                 </div>
                             </div>
                             <div class="order-footer">
                                 <small class="text-muted">
-                                    <i class="fas fa-clock"></i>
-                                    {{ $order->requested_at->diffForHumans() }}
+                                    <i class="fas fa-calendar-alt"></i>
+                                    {{ $stock->created_at ? $stock->created_at->diffForHumans() : '' }}
                                 </small>
-                                @if($order->notes)
+                                @if($stock->expiry_date)
                                 <small class="order-notes">
-                                    <i class="fas fa-sticky-note"></i>
-                                    {{ \Illuminate\Support\Str::limit($order->notes, 50) }}
+                                    <i class="fas fa-calendar-times"></i>
+                                    Expires: {{ $stock->expiry_date->format('Y-m-d') }}
                                 </small>
                                 @endif
                             </div>
@@ -163,83 +174,63 @@
                 @else
                     <div class="empty-state">
                         <div class="empty-icon">
-                            <i class="fas fa-pills"></i>
+                            <i class="fas fa-box-open"></i>
                         </div>
-                        <h4>No Recent Orders</h4>
-                        <p>You haven't placed any pharmacy orders yet.</p>
-                        <a href="{{ route('pharmacy.orders') }}" class="btn pharmacy-btn-primary">
-                            <i class="fas fa-plus"></i> Place Your First Order
+                        <h4>No Recent Stocks</h4>
+                        <p>No recent stock additions found.</p>
+                        <a href="{{ route('pharmacy.stockspharmacy') }}" class="btn pharmacy-btn-primary">
+                            <i class="fas fa-plus"></i> Add Stock
                         </a>
                     </div>
                 @endif
             </div>
+
             
-            <!-- Status Summary and Quick Actions -->
-            <div class="dashboard-summary">
-                <div class="summary-card">
-                    <h3><i class="fas fa-tachometer-alt"></i> Order Status Overview</h3>
-                    <div class="status-overview">
-                        <div class="status-item">
-                            <span class="status-dot pending"></span>
-                            <span class="status-text">{{ $pendingOrders }} Pending Orders</span>
-                            @if($pendingOrders > 0)
-                                <a href="{{ route('pharmacy.orders', ['status' => 'pending']) }}" class="status-link">View</a>
-                            @endif
-                        </div>
-                        <div class="status-item">
-                            <span class="status-dot approved"></span>
-                            <span class="status-text">{{ $approvedOrders }} Approved Orders</span>
-                            @if($approvedOrders > 0)
-                                <a href="{{ route('pharmacy.orders', ['status' => 'approved']) }}" class="status-link">View</a>
-                            @endif
-                        </div>
-                        <div class="status-item">
-                            <span class="status-dot completed"></span>
-                            <span class="status-text">{{ $completedOrders }} Completed Today</span>
-                        </div>
-                        @if($cancelledOrders > 0)
-                        <div class="status-item">
-                            <span class="status-dot cancelled"></span>
-                            <span class="status-text">{{ $cancelledOrders }} Cancelled Orders</span>
-                        </div>
-                        @endif
-                    </div>
+            <!-- To be expired summary -->
+            <div class="dashboard-section" style="margin-top:16px;">
+                <div class="section-header">
+                    <h3><i class="fas fa-calendar-times"></i> To be expired</h3>
+                    <a href="{{ route('pharmacy.stockspharmacy') }}?highlight=expiry&highlight_codes={{ isset($expiringSoonItems) ? $expiringSoonItems->pluck('item_code')->join(',') : '' }}" class="view-all-link">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
-                
-                <div class="quick-actions-card">
-                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-                    <div class="action-buttons">
-                        <a href="{{ route('pharmacy.orders') }}" class="action-btn primary">
-                            <i class="fas fa-plus"></i>
-                            <div>
-                                <strong>New Order</strong>
-                                <small>Request medications</small>
+
+                @if(isset($expiringSoonItems) && $expiringSoonItems->count() > 0)
+                    <div class="orders-grid">
+                        @foreach($expiringSoonItems->take(6) as $e)
+                        <div class="order-card">
+                            <div class="order-header">
+                                <span class="order-id">{{ $e->item_code }}</span>
+                                <span class="status-badge status-warning">Expires {{ 
+                                    ($e->expiry_date instanceof \Carbon\Carbon) ? $e->expiry_date->diffForHumans() : \Carbon\Carbon::parse($e->expiry_date)->diffForHumans()
+                                }}</span>
                             </div>
-                        </a>
-                        <a href="{{ route('pharmacy.orders', ['status' => 'pending']) }}" class="action-btn secondary">
-                            <i class="fas fa-clock"></i>
-                            <div>
-                                <strong>Pending Orders</strong>
-                                <small>{{ $pendingOrders }} awaiting approval</small>
+                            <div class="order-content">
+                                <div class="medicine-info">
+                                    <strong>{{ $e->generic_name ?: $e->brand_name }}</strong>
+                                    <br><small>Exp: {{ $e->expiry_date ? (\Carbon\Carbon::parse($e->expiry_date)->format('Y-m-d')) : '-' }}</small>
+                                </div>
+                                <div class="order-details">
+                                    <div class="quantity">
+                                        <i class="fas fa-boxes"></i>
+                                        Qty: {{ $e->quantity ?? 0 }}
+                                    </div>
+                                </div>
                             </div>
-                        </a>
-                        <a href="{{ route('pharmacy.orders', ['status' => 'approved']) }}" class="action-btn success">
-                            <i class="fas fa-check"></i>
-                            <div>
-                                <strong>Ready Orders</strong>
-                                <small>{{ $approvedOrders }} ready to process</small>
+                            <div class="order-footer">
+                                <a href="{{ route('pharmacy.stockspharmacy') }}?highlight=expiry&highlight_codes={{ $e->item_code }}" class="pharmacy-btn-primary btn-sm"><i class="fas fa-eye"></i> View</a>
                             </div>
-                        </a>
-                        <a href="/pharmacy/account" class="action-btn info">
-                            <i class="fas fa-user-cog"></i>
-                            <div>
-                                <strong>My Account</strong>
-                                <small>Profile & settings</small>
-                            </div>
-                        </a>
+                        </div>
+                        @endforeach
                     </div>
-                </div>
+                @else
+                    <div class="empty-state">
+                        <p>No expiring medicines in the next 30 days.</p>
+                    </div>
+                @endif
             </div>
+            
+            <!-- Quick actions removed per request -->
         </main>
     </div>
 
@@ -267,13 +258,40 @@
 
         // Add hover effects and animations
         document.addEventListener('DOMContentLoaded', function() {
-            // Add pulse animation to high priority items
-            if ({{ $pendingOrders }} > 10) {
-                document.querySelector('.stat-card.alert-warning').classList.add('pulse');
+            // Pulse when there are low-stock items
+            try {
+                if ({{ $lowStockCount ?? 0 }} > 0) {
+                    const el = document.querySelector('.stat-card.alert-warning');
+                    if (el) el.classList.add('pulse');
+                }
+            } catch (e) {
+                // Graceful fallback if variables are not present
             }
-            
             // Initialize tooltips or other interactive elements here
         });
+
+        function openReorderModal() {
+            const m = document.getElementById('reorderModal');
+            if (!m) return;
+            // Use flex display so CSS centering (align-items/justify-content) works
+            m.style.display = 'flex';
+            // Add show class to trigger opacity/transform animations defined in CSS
+            m.classList.add('show');
+            // Close when clicking outside the content
+            m.addEventListener('click', function onBgClick(e) {
+                if (e.target === m) {
+                    closeReorderModal();
+                }
+            }, { once: true });
+        }
+
+        function closeReorderModal() {
+            const m = document.getElementById('reorderModal');
+            if (!m) return;
+            m.classList.remove('show');
+            // allow CSS transition to play then hide
+            setTimeout(() => { m.style.display = 'none'; }, 250);
+        }
     </script>
 </body>
 </html>

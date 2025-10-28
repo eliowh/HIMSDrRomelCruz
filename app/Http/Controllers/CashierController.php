@@ -107,7 +107,7 @@ class CashierController extends Controller
                 ], 400);
             }
             
-            // Update billing status, payment date, and payment details
+            // Update billing status, payment date and payment details
             $billing->update([
                 'status' => 'paid',
                 'payment_date' => now(),
@@ -150,16 +150,38 @@ class CashierController extends Controller
     public function viewReceipt($id)
     {
         $billing = Billing::with(['patient', 'billingItems', 'createdBy'])->findOrFail($id);
+
+        // Only allow receipt viewing for paid billings
+        if ($billing->status !== 'paid') {
+            return redirect()->back()->with('error', 'Receipt can only be viewed for paid billings.');
+        }
+
+        $logoData = $this->getLogoSafely();
+
+        // Return the compact wrapper (which includes the fragment) and auto-print
+        // so cashier uses the smaller layout rather than the full-page receipt.
+        $autoPrint = true;
+        $isCashier = true;
+        return view('billing.receipt_wrapper', compact('billing', 'logoData', 'autoPrint', 'isCashier'));
+    }
+
+    /**
+     * Return the HTML receipt view for cashier (autoPrint enabled) so cashier can print
+     * without using the PDF stream (avoids layout shifts with DomPDF).
+     */
+    public function viewReceiptHtml($id)
+    {
+        $billing = Billing::with(['patient', 'billingItems', 'createdBy'])->findOrFail($id);
         
         // Only allow receipt viewing for paid billings
         if ($billing->status !== 'paid') {
             return redirect()->back()->with('error', 'Receipt can only be viewed for paid billings.');
         }
-        
+
         $logoData = $this->getLogoSafely();
-        // Audit: Log cashier viewing receipt
+        // Audit: Log cashier viewing HTML receipt
         try {
-            Report::log('Receipt Viewed', Report::TYPE_USER_REPORT, 'Cashier viewed billing receipt', [
+            Report::log('Receipt Viewed (HTML)', Report::TYPE_USER_REPORT, 'Cashier viewed billing receipt (HTML)', [
                 'billing_id' => $billing->id,
                 'billing_number' => $billing->billing_number,
                 'patient_id' => $billing->patient_id ?? null,
@@ -167,13 +189,28 @@ class CashierController extends Controller
                 'viewed_at' => now()->toDateTimeString(),
             ]);
         } catch (\Throwable $e) {
-            \Log::error('Failed to create cashier receipt view audit: ' . $e->getMessage());
+            \Log::error('Failed to create cashier receipt HTML view audit: ' . $e->getMessage());
         }
 
-        $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
-        $pdf->setPaper('A4', 'portrait');
-        
-        return $pdf->stream('billing-receipt-' . $billing->billing_number . '.pdf');
+        $autoPrint = true;
+        return view('billing.receipt', compact('billing', 'logoData', 'autoPrint'));
+    }
+
+    /**
+     * Return a fragment (partial) HTML for the receipt so the cashier UI can fetch it and print in-place.
+     */
+    public function viewReceiptFragment($id)
+    {
+        $billing = Billing::with(['patient', 'billingItems', 'createdBy'])->findOrFail($id);
+
+        if ($billing->status !== 'paid') {
+            return response('Receipt can only be viewed for paid billings.', 403);
+        }
+
+        $logoData = $this->getLogoSafely();
+
+        $isCashier = true;
+        return view('billing.receipt_fragment', compact('billing', 'logoData', 'isCashier'));
     }
 
     public function downloadReceipt($id)
@@ -199,10 +236,14 @@ class CashierController extends Controller
             \Log::error('Failed to create cashier receipt download audit: ' . $e->getMessage());
         }
 
-        $pdf = Pdf::loadView('billing.receipt', compact('billing', 'logoData'));
-        $pdf->setPaper('A4', 'portrait');
-        
-        return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
+    // Use compact receipt fragment wrapper for PDF generation so the cashier
+    // download produces a compact, single-page PDF consistent with printing.
+    $isPdf = true;
+    $isCashier = true;
+    $pdf = Pdf::loadView('billing.receipt_wrapper', compact('billing', 'logoData', 'isPdf', 'isCashier'));
+    $pdf->setPaper('A4', 'portrait');
+
+    return $pdf->download('billing-receipt-' . $billing->billing_number . '.pdf');
     }
     
     private function getPaymentStatistics($startDate, $endDate)

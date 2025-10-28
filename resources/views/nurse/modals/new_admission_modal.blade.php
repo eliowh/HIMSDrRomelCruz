@@ -47,7 +47,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="admission_doctor_type">Doctor Type</label>
+                    <label for="admission_doctor_type">Specialization</label>
                     <select id="admission_doctor_type" name="doctor_type">
                         <option value="" disabled selected>-- Select --</option>
                         <option value="PHYSICIAN">PHYSICIAN</option>
@@ -537,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hiddenInput = document.getElementById('new_admission_doctor_name');
         const container = document.getElementById('new_admission_doctor_suggestions');
         const errorDiv = document.getElementById('new_admission_doctor_validation_error');
+        const typeSelect = document.getElementById('admission_doctor_type');
         if (!visibleInput || !hiddenInput || !container) return;
         
         let timer = null;
@@ -556,8 +557,14 @@ document.addEventListener('DOMContentLoaded', function() {
             lastItems = items || []; 
             if(!lastItems.length){ clearSuggestions(); return; } 
             container.innerHTML = ''; 
-            
-            const itemsToShow = lastItems.slice(0, 10);
+
+            // If a specialization is selected, filter client-side as well
+            const selectedType = typeSelect ? (typeSelect.value || '').toString().trim() : '';
+            let filtered = lastItems;
+            if (selectedType) {
+                filtered = lastItems.filter(d => (d.type || '').toString().trim() === selectedType);
+            }
+            const itemsToShow = filtered.slice(0, 10);
 
             itemsToShow.forEach((it,idx)=>{ 
                 const el=document.createElement('div'); 
@@ -577,10 +584,9 @@ document.addEventListener('DOMContentLoaded', function() {
             visibleInput.value = item.name || ''; 
             hiddenInput.value = item.name || '';
             
-            // Auto-populate doctor type if available
+            // Auto-populate doctor specialization if available
             const doctorTypeSelect = document.getElementById('admission_doctor_type');
             if (doctorTypeSelect && item.type) {
-                // Find the option that matches the doctor's type
                 for (let i = 0; i < doctorTypeSelect.options.length; i++) {
                     if (doctorTypeSelect.options[i].value === item.type) {
                         doctorTypeSelect.selectedIndex = i;
@@ -595,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
         visibleInput.addEventListener('input', ()=>{
             hiddenInput.value = '';
             
-            // Clear doctor type when input is cleared
+            // Clear doctor specialization when input is cleared
             const doctorTypeSelect = document.getElementById('admission_doctor_type');
             if (doctorTypeSelect && !visibleInput.value.trim()) {
                 doctorTypeSelect.selectedIndex = 0; // Reset to default "-- Select --"
@@ -606,7 +612,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!val){ clearSuggestions(); return; }
             
             timer = setTimeout(()=>{
-                fetch('/doctors/search?q='+encodeURIComponent(val))
+                // Include selected specialization in the search if present
+                const typeParam = (typeSelect && typeSelect.value) ? '&type=' + encodeURIComponent(typeSelect.value) : '';
+                fetch('/doctors/search?q='+encodeURIComponent(val) + typeParam)
                     .then(async r=>{
                         const ct=(r.headers.get('content-type')||'').toLowerCase();
                         const text=await r.text();
@@ -619,6 +627,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .catch(e=>console.error('Doctor fetch error',e));
             }, 300);
+        });
+
+        // Show suggestions on focus as well (respect selected specialization)
+        visibleInput.addEventListener('focus', ()=>{
+            window.isModalOpen = true;
+            window.isDropdownOpen = true;
+            const q = visibleInput.value.trim();
+            const typeParam = (typeSelect && typeSelect.value) ? '&type=' + encodeURIComponent(typeSelect.value) : '';
+            // If input is empty, fetch a broad list (server may return a master list)
+            fetch('/doctors/search?q='+encodeURIComponent(q) + typeParam)
+                .then(async r=>{
+                    const ct=(r.headers.get('content-type')||'').toLowerCase();
+                    const text=await r.text();
+                    if(ct.includes('application/json')){
+                        try{
+                            const doctors = JSON.parse(text);
+                            renderSuggestions(doctors);
+                        }catch(e){ console.error('Doctor parse error', e); }
+                    }
+                })
+                .catch(e=>console.error('Doctor fetch error', e));
         });
 
         visibleInput.addEventListener('blur', ()=>{

@@ -321,7 +321,7 @@
 
 <script>
 // Nurse Notification System JavaScript
-let nurseNotifications = [];
+let doctorNotifications = []; // Updated from nurseNotifications
 
 function nurseNotify(type = 'info', title = 'Notification', message = '', options = {}) {
     const modal = document.getElementById('nurseNotificationModal');
@@ -432,7 +432,7 @@ function addToNotificationsList(type, title, message) {
         read: false
     };
     
-    nurseNotifications.unshift(notification);
+    doctorNotifications.unshift(notification);
     updateNotificationUI();
 }
 
@@ -445,7 +445,7 @@ function updateNotificationUI() {
         return;
     }
     
-    const unreadCount = nurseNotifications.filter(n => !n.read).length;
+    const unreadCount = doctorNotifications.filter(n => !n.read).length;
     
     if (unreadCount > 0) {
         badge.style.display = 'flex';
@@ -454,12 +454,12 @@ function updateNotificationUI() {
         badge.style.display = 'none';
     }
     
-    if (nurseNotifications.length === 0) {
+    if (doctorNotifications.length === 0) {
         list.innerHTML = '<div class="no-notifications">No new notifications</div>';
         return;
     }
     
-    list.innerHTML = nurseNotifications.slice(0, 10).map(notification => `
+    list.innerHTML = doctorNotifications.slice(0, 10).map(notification => `
         <div class="notification-item ${!notification.read ? 'unread' : ''}" onclick="markNotificationAsRead(${notification.id})">
             <h5>${notification.title}</h5>
             <p>${notification.message}</p>
@@ -476,14 +476,14 @@ function toggleNotifications() {
 }
 
 function markNotificationAsRead(id) {
-    nurseNotifications = nurseNotifications.map(n => 
+    doctorNotifications = doctorNotifications.map(n => 
         n.id === id ? { ...n, read: true } : n
     );
     updateNotificationUI();
 }
 
 function markAllAsRead() {
-    nurseNotifications = nurseNotifications.map(n => ({ ...n, read: true }));
+    doctorNotifications = doctorNotifications.map(n => ({ ...n, read: true }));
     updateNotificationUI();
 }
 

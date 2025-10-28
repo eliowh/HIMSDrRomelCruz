@@ -364,6 +364,9 @@
 
     @include('cashier.modals.notification_system')
 
+    <!-- Hidden print container used to inject receipt fragment for printing -->
+    <div id="printContainer" style="display:none;"></div>
+
     <!-- Payment Processing Modal -->
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -433,6 +436,14 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Print-only CSS: hide everything except #printContainer when printing */
+        @media print {
+            body * { visibility: hidden !important; }
+            #printContainer, #printContainer * { visibility: visible !important; }
+            #printContainer { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
     
     <script>
     // Payment Processing Functions
@@ -559,7 +570,39 @@
                 
                 showBillingNotification('success', 'Payment Complete', message);
                 
-                // Auto refresh after 2 seconds
+                // Open printable receipt in a new window/tab (BillingController viewReceipt returns an HTML view
+                // with autoPrint enabled) so cashier can print immediately.
+                try {
+                    // Fetch the cashier receipt fragment and inject into #printContainer, then print in-place
+                    const fragmentUrl = `/cashier/billing/${billingId}/receipt/fragment`;
+                    const fragResp = await fetch(fragmentUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (!fragResp.ok) {
+                        throw new Error('Failed to load receipt fragment: ' + fragResp.statusText);
+                    }
+
+                    const html = await fragResp.text();
+                    const printContainer = document.getElementById('printContainer');
+                    printContainer.innerHTML = html;
+                    printContainer.style.display = 'block';
+
+                    // Give the browser a moment to render the injected content
+                    setTimeout(() => {
+                        window.print();
+
+                        // Optional: clear injected content after printing
+                        setTimeout(() => {
+                            printContainer.innerHTML = '';
+                            printContainer.style.display = 'none';
+                        }, 1000);
+                    }, 250);
+                } catch (e) {
+                    console.warn('Failed to print receipt in-place:', e);
+                }
+
+                // Auto refresh after 2 seconds to update UI
                 setTimeout(() => {
                     location.reload();
                 }, 2000);

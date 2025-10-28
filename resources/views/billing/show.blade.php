@@ -12,11 +12,7 @@
                     <a href="{{ route('billing.dashboard') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Billings
                     </a>
-                    @if($billing->status !== 'paid')
-                    <a href="{{ route('billing.edit', $billing) }}" class="btn btn-warning">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
-                    @else
+                    @if($billing->status === 'paid')
                     <span class="btn btn-outline-secondary disabled" title="Cannot edit paid billing">
                         <i class="fas fa-lock"></i> Billing Finalized
                     </span>

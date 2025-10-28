@@ -1,61 +1,128 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# HIMS — Dr Romel Cruz Hospital
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This repository contains the Hospital Information Management System (HIMS) used by Dr Romel Cruz Hospital. It's a Laravel-based application implementing patient records, admissions, billing, lab orders and basic reporting.
 
-## About Laravel
+## Quick overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Framework: Laravel (Blade views, Eloquent, Artisan)
+- Language: PHP (8+)
+- Front-end: Blade + minimal JS, Vite for asset bundling
+- Database: MySQL (or MariaDB)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Prerequisites (Windows / XAMPP)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.0+
+- Composer
+- Node.js (14+)
+- npm (or yarn)
+- MySQL (bundled with XAMPP)
+- Optional: Git, VS Code
 
-## Learning Laravel
+If you're developing on Windows with XAMPP, use the XAMPP Control Panel to start Apache and MySQL. Point your virtual host / DocumentRoot to the project's `public/` folder, or use the built-in PHP server for quick testing.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Quick setup (development)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Open PowerShell and run the following commands from the project root (`d:\xampp\htdocs\DrRomelCruzHP`):
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```powershell
+# Install PHP dependencies
+composer install --no-interaction --prefer-dist
 
-## Laravel Sponsors
+# Install JS dependencies and build assets (development)
+npm install
+npm run dev
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Copy env and generate app key
+copy .env.example .env
+php artisan key:generate
 
-### Premium Partners
+# Configure .env: set DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD to match your MySQL/XAMPP settings
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Run migrations (and seeders if desired)
+php artisan migrate --seed
+
+# Create storage symlink used by the app
+php artisan storage:link
+
+# Clear compiled views/cache when making view/controller changes
+php artisan view:clear; php artisan cache:clear; php artisan config:clear
+
+# Run the development server (optional)
+php artisan serve --host=127.0.0.1 --port=8000
+# Then open http://127.0.0.1:8000 in your browser
+```
+
+If you prefer to use Apache from XAMPP, point your virtual host to the `public/` folder and ensure PHP and Composer are on your PATH or use the XAMPP-provided PHP binary.
+
+## Running tests
+
+Run the application's tests with PHPUnit or the artisan wrapper:
+
+```powershell
+php artisan test
+# or
+vendor\\bin\\phpunit
+```
+
+## Helpful Artisan commands
+
+- `php artisan view:clear` — clear compiled Blade templates
+- `php artisan cache:clear` — clear application cache
+- `php artisan config:clear` — clear config cache
+- `php artisan migrate` — run database migrations
+
+## Admin pages & reporting
+
+- Patients management: `/admin/patients`
+	- Use the filters and search box to find patients.
+	- The `View Admitted Patients` / Reports UI uses the `filter=admitted` parameter.
+
+- Printable admitted patients report:
+	- Open `/admin/patients?filter=admitted&period=this_month` to view the admitted list for the selected period.
+	- To trigger the print-optimized layout automatically, add `&print=1`.
+	- Supported `period` values: `past_year`, `past_month`, `past_week`, `this_year`, `this_month`, `this_week`.
+	- You may also supply `date_from` and `date_to` (format `YYYY-MM-DD`) for a custom range.
+
+Examples:
+
+```
+/admin/patients?filter=admitted&period=past_month
+/admin/patients?filter=admitted&period=this_month&print=1
+/admin/patients?filter=admitted&date_from=2025-01-01&date_to=2025-01-31&print=1
+```
+
+## Notes about recent changes (developer)
+
+- The FHIR transformation service (`app/Services/FHIR/FhirService.php`) contains backward-compatibility wrappers to avoid runtime errors in older code paths.
+- The admin FHIR UI was cleaned to remove hard-coded production URLs.
+- The admissions printable report groups admissions by patient and supports calendar-based `past_*` and `this_*` period filters.
+- The patients list can highlight rows that correspond to admissions in the selected period (server-side computed `highlightPatientIds`).
+
+## Troubleshooting
+
+- If views are not updating after editing Blade files, run:
+
+```powershell
+php artisan view:clear; php artisan cache:clear
+```
+
+- If you encounter database errors during migration, double-check your `.env` DB settings and ensure the MySQL service is running in XAMPP.
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+If you make changes, please:
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- Run `composer install` and `npm install` to update dependencies locally.
+- Run `php artisan migrate` and `php artisan migrate:refresh --seed` when schema changes are introduced (coordinate with the team).
+- Keep migrations and seeders up to date.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project follows the licensing indicated in the repository. See the `composer.json` for package licenses.
+
+---
+
+If you want, I can also:
+- Add a short `CONTRIBUTING.md` with local dev notes and conventions,
+- Add a small `docker-compose` for reproducible development, or
+- Update the README with screenshots for the Reports/Print UI.

@@ -1,4 +1,4 @@
- @extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_addPatients.css') }}">
@@ -48,7 +48,7 @@
 
             <div class="form-group">
                 <label for="date_of_birth">Date of Birth</label>
-                <input id="date_of_birth" type="date" name="date_of_birth" required value="{{ old('date_of_birth') }}">
+                <input id="date_of_birth" type="date" name="date_of_birth" required value="{{ old('date_of_birth') }}" max="{{ date('Y-m-d') }}">
             </div>
 
             <div class="form-group">
@@ -86,8 +86,10 @@
                     const API_BASE = '/api/locations';
                     const provinceSel = document.getElementById('province');
                     const citySel = document.getElementById('city');
-                    const selectedProvince = provinceSel.getAttribute('data-selected') || '';
-                    const selectedCity = citySel.getAttribute('data-selected') || '';
+                    const barangaySel = document.getElementById('barangay');
+                    const selectedProvince = provinceSel ? provinceSel.getAttribute('data-selected') || '' : '';
+                    const selectedCity = citySel ? citySel.getAttribute('data-selected') || '' : '';
+                    const selectedBarangay = barangaySel ? barangaySel.getAttribute('data-selected') || '' : '';
 
                     function clearSelect(sel) {
                         while (sel.firstChild) sel.removeChild(sel.firstChild);
@@ -98,6 +100,17 @@
                         opt.value = value;
                         opt.textContent = text;
                         if (isSelected) opt.selected = true;
+                        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+                        sel.appendChild(opt);
+                    }
+
+                    // Extended addOption that allows creating disabled placeholder options
+                    function addOptionExt(sel, value, text, isSelected, dataCode, isDisabled) {
+                        const opt = document.createElement('option');
+                        opt.value = value;
+                        opt.textContent = text;
+                        if (isSelected) opt.selected = true;
+                        if (isDisabled) opt.disabled = true;
                         if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
                         sel.appendChild(opt);
                     }
@@ -206,6 +219,19 @@
                                     const isSelected = selectedCity && (selectedCity === cname);
                                     addOption(citySel, cname, cname, isSelected, c.code || c.city_code || c.id || '');
                                 });
+
+                                // If there was a previously selected city, trigger its change so barangays load immediately
+                                if (selectedCity) {
+                                    const resolvedOpt = Array.from(citySel.options).find(o => o.value === selectedCity) || Array.from(citySel.options).find(o => o.dataset && o.dataset.code === (matched[0] && (matched[0].code || matched[0].city_code || matched[0].id)));
+                                    if (resolvedOpt) {
+                                        citySel.value = resolvedOpt.value;
+                                        // dispatch change to allow other listeners to react
+                                        citySel.dispatchEvent(new Event('change', { bubbles: true }));
+                                        // attempt to load barangays for the selected city
+                                        const cityCode = resolvedOpt.dataset ? resolvedOpt.dataset.code : '';
+                                        loadBarangaysForCity(selectedCity, cityCode, provinceCode);
+                                    }
+                                }
                             })
                             .catch(err => {
                                 console.warn('Failed to load cities from PSGC API', err);
@@ -214,10 +240,83 @@
                             });
                     }
 
+                    // Load barangays for a given city (uses city_code when available, falls back to city name)
+                    function loadBarangaysForCity(cityName, cityCode, provinceCode) {
+                        if (!barangaySel) return;
+                        // clear and show loading
+                        clearSelect(barangaySel);
+                        addOptionExt(barangaySel, '', '-- Loading barangays... --', false, '', true);
+
+                        // prefer city_code, then city name, and also include province_code if available
+                        let url = API_BASE + '/barangays';
+                        const params = [];
+                        if (cityCode) params.push('city_code=' + encodeURIComponent(cityCode));
+                        else if (cityName) params.push('city=' + encodeURIComponent(cityName));
+                        if (provinceCode) params.push('province_code=' + encodeURIComponent(provinceCode));
+                        if (params.length) url += '?' + params.join('&');
+
+                        fetch(url)
+                            .then(r => {
+                                if (!r.ok) throw new Error('Failed to fetch barangays');
+                                return r.json();
+                            })
+                            .then(list => {
+                                clearSelect(barangaySel);
+                                addOptionExt(barangaySel, '', '-- Select Barangay --', false, '', true);
+                                if (!Array.isArray(list) || !list.length) {
+                                    addOptionExt(barangaySel, '', '-- No barangays found --', false, '', true);
+                                    return;
+                                }
+
+                                list.forEach(b => {
+                                    const bname = b.name || b.barangay || b.brgy || b.barangay_name || '';
+                                    const bcode = b.code || b.barangay_code || b.brgy_code || b.id || '';
+                                    if (!bname) return;
+                                    const isSelected = selectedBarangay && (selectedBarangay === bname || selectedBarangay === bcode);
+                                    addOption(barangaySel, bname, bname, isSelected, bcode);
+                                });
+
+                                // if selectedBarangay was set, ensure it's selected
+                                if (selectedBarangay) {
+                                    const resolved = Array.from(barangaySel.options).find(o => o.value === selectedBarangay) || Array.from(barangaySel.options).find(o => o.dataset && o.dataset.code === selectedBarangay);
+                                    if (resolved) barangaySel.value = resolved.value;
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Failed to load barangays', err);
+                                clearSelect(barangaySel);
+                                addOptionExt(barangaySel, '', '-- Unable to load barangays --', false, '', true);
+                            });
+                    }
+
+                    // When city changes, load barangays for that city
+                    if (citySel) {
+                        citySel.addEventListener('change', function() {
+                            const sel = this.options[this.selectedIndex];
+                            const cityName = sel ? sel.value : '';
+                            const cityCode = sel && sel.dataset ? sel.dataset.code : '';
+                            const provSel = provinceSel && provinceSel.options[provinceSel.selectedIndex];
+                            const provCode = provSel && provSel.dataset ? provSel.dataset.code : '';
+                            if (cityName) {
+                                loadBarangaysForCity(cityName, cityCode, provCode);
+                            } else {
+                                if (barangaySel) {
+                                    clearSelect(barangaySel);
+                                    addOption(barangaySel, '', '-- Select city first --', false, '');
+                                }
+                            }
+                        });
+                    }
+
                     provinceSel.addEventListener('change', function () {
                         const selOpt = this.options[this.selectedIndex];
                         const provName = selOpt ? selOpt.value : '';
                         const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+                        // reset barangay when province changes
+                        if (barangaySel) {
+                            clearSelect(barangaySel);
+                            addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                        }
                         if (provName) loadCitiesForProvince(provName, provCode);
                         else {
                             clearSelect(citySel);
@@ -229,7 +328,11 @@
 
             <div class="form-group">
                 <label for="barangay">Barangay</label>
-                <input id="barangay" type="text" name="barangay" placeholder="Enter barangay" required value="{{ old('barangay') }}">
+                <select id="barangay" name="barangay" class="form-control" data-selected="{{ old('barangay') }}">
+                    <option value="" disabled selected>-- Select Barangay --</option>
+                    <!-- Barangay options will be dynamically populated -->
+                </select>
+                <div id="barangay-suggestions" class="suggestion-list" style="display: none;"></div>
             </div>
 
             <div class="form-group">
@@ -250,22 +353,22 @@
 
             <div class="form-group full-width">
                 <label for="smoking_history">Do you smoke? If yes, how often and how many years?</label>
-                <textarea id="smoking_history" name="smoking_history" rows="2" placeholder="Please specify smoking frequency, duration, and type (cigarettes, cigars, etc.)" value="{{ old('smoking_history') }}"></textarea>
+                <textarea id="smoking_history" name="smoking_history" rows="2" placeholder="Please specify smoking frequency, duration, and type (cigarettes, cigars, etc.)">{{ old('smoking_history') }}</textarea>
             </div>
 
             <div class="form-group full-width">
                 <label for="alcohol_consumption">Do you drink alcohol? If yes, how frequently?</label>
-                <textarea id="alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Please specify frequency and type of alcohol consumption" value="{{ old('alcohol_consumption') }}"></textarea>
+                <textarea id="alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Please specify frequency and type of alcohol consumption">{{ old('alcohol_consumption') }}</textarea>
             </div>
 
             <div class="form-group full-width">
                 <label for="recreational_drugs">Do you use recreational drugs?</label>
-                <textarea id="recreational_drugs" name="recreational_drugs" rows="2" placeholder="Please specify any recreational drug use" value="{{ old('recreational_drugs') }}"></textarea>
+                <textarea id="recreational_drugs" name="recreational_drugs" rows="2" placeholder="Please specify any recreational drug use">{{ old('recreational_drugs') }}</textarea>
             </div>
 
             <div class="form-group full-width">
                 <label for="exercise_activity">How often do you exercise or engage in physical activity?</label>
-                <textarea id="exercise_activity" name="exercise_activity" rows="2" placeholder="Please describe your exercise routine and physical activity level" value="{{ old('exercise_activity') }}"></textarea>
+                <textarea id="exercise_activity" name="exercise_activity" rows="2" placeholder="Please describe your exercise routine and physical activity level">{{ old('exercise_activity') }}</textarea>
             </div>
             <!-- END: Social History -->
 
@@ -380,7 +483,7 @@
             </div>
             
             <div class="form-group">
-                <label for="doctor_type">Doctor Type</label>
+                <label for="doctor_type">Specialization</label>
                 <select id="doctor_type" name="doctor_type" required>
                     <option value="" disabled {{ old('doctor_type')=='' ? 'selected':'' }}>-- Select --</option>
                     <option value="PHYSICIAN" {{ old('doctor_type')=='PHYSICIAN' ? 'selected':'' }}>PHYSICIAN</option>
@@ -430,6 +533,37 @@ document.addEventListener('DOMContentLoaded', function() {
     let icdIsValid = false;
     let roomIsValid = false;
 
+    // Date of Birth validation - prevent future dates
+    const dobInput = document.getElementById('date_of_birth');
+    if (dobInput) {
+        dobInput.addEventListener('change', function() {
+            if (!this.value) return; // Skip validation if no value
+            
+            const selectedDate = this.value; // Get the date string directly
+            const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+            
+            if (selectedDate > today) {
+                nurseError('Invalid Date', 'Date of birth cannot be in the future. Please select a valid date.');
+                this.value = ''; // Clear the invalid date
+                this.focus(); // Focus back on the field
+            }
+        });
+        
+        // Also validate on input (for manual typing)
+        dobInput.addEventListener('input', function() {
+            if (this.value) {
+                const selectedDate = this.value; // Get the date string directly
+                const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+                
+                if (selectedDate > today) {
+                    this.setCustomValidity('Date of birth cannot be in the future');
+                } else {
+                    this.setCustomValidity('');
+                }
+            }
+        });
+    }
+
     // Enhanced ICD-10 autocomplete
     (function(){
         const input = document.getElementById('admission-diagnosis');
@@ -437,7 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('icd10-suggestions');
         const errorDiv = document.getElementById('icd10-validation-error');
         if (!input || !container) return;
-        
         let timer = null; 
         let activeIndex = -1; 
         let lastItems = [];
@@ -458,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearSuggestions(); 
                 return;
             } 
-            container.innerHTML=''; 
+            container.innerHTML='';  
             
             const itemsToShow = showAll ? lastItems : lastItems.slice(0, 10);
             
@@ -473,10 +606,8 @@ document.addEventListener('DOMContentLoaded', function() {
             container.style.display='block'; 
             activeIndex=-1; 
         }
-        
-        function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
-        
-        function selectItem(idx, items = lastItems){ 
+
+        function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }        function selectItem(idx, items = lastItems){ 
             const item=items[idx]; 
             if(!item) return; 
             input.value = item.code || ''; 
@@ -660,9 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.getElementById('room-input');
         const container = document.getElementById('room-suggestions');
         const errorDiv = document.getElementById('room-validation-error');
-        if (!input || !container) return;
-        
-        let timer = null;
+        if (!input || !container) return;        let timer = null;
         let activeIndex = -1;
         let lastItems = [];
         let masterRoomList = []; // This will hold the definitive list of all rooms
@@ -808,7 +937,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     })
                     .catch(e=>console.error('Room fetch error',e));
-            }, 300);
+        }, 300);
         });
 
         input.addEventListener('focus', () => {
@@ -866,9 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('doctor-suggestions');
         const errorDiv = document.getElementById('doctor-validation-error');
         const typeSelect = document.getElementById('doctor_type');
-        if (!input || !container) return;
-
-        let timer = null;
+        if (!input || !container) return;        let timer = null;
         let activeIndex = -1;
         let lastItems = [];
         let masterDoctorList = []; // definitive list cached on first load
@@ -880,7 +1007,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!lastItems.length){ clearSuggestions(); return; }
             container.innerHTML = '';
 
-            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 30);
+            // If a specialization/type is selected, filter suggestions client-side as well
+            const selectedType = typeSelect ? (typeSelect.value || '').toString().trim() : '';
+            let filtered = lastItems;
+            if (selectedType) {
+                filtered = lastItems.filter(d => (d.type || '').toString().trim() === selectedType);
+            }
+
+            const itemsToShow = showAll ? filtered : filtered.slice(0, 30);
             itemsToShow.forEach((it, idx)=>{
                 const el = document.createElement('div');
                 el.className = 'icd-suggestion';
@@ -975,12 +1109,14 @@ document.addEventListener('DOMContentLoaded', function() {
             clearTimeout(timer);
             const q = input.value.trim();
             if(!q){ clearSuggestions(); return; }
-            timer = setTimeout(()=>{
-                fetch('/doctors/search?q='+encodeURIComponent(q))
-                    .then(r => r.json())
-                    .then(data => renderSuggestions(data || []))
-                    .catch(e => console.error('Doctor fetch error', e));
-            }, 250);
+                timer = setTimeout(()=>{
+                    // Include selected specialization in the search if present
+                    const typeParam = (typeSelect && typeSelect.value) ? '&type=' + encodeURIComponent(typeSelect.value) : '';
+                    fetch('/doctors/search?q='+encodeURIComponent(q) + typeParam)
+                        .then(r => r.json())
+                        .then(data => renderSuggestions(data || []))
+                        .catch(e => console.error('Doctor fetch error', e));
+                }, 250);
         });
 
         input.addEventListener('focus', ()=>{
@@ -989,11 +1125,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const q = input.value.trim();
             if (!q) {
                 // show master list (cached) if available, otherwise fetch and show
-                if (masterDoctorList.length > 0) renderSuggestions(masterDoctorList.slice(0,50), true);
-                else loadAllDoctors(true);
+                if (masterDoctorList.length > 0) {
+                    // if a type is selected, filter before showing
+                    const selectedType = typeSelect ? (typeSelect.value || '').toString().trim() : '';
+                    const listToShow = selectedType ? masterDoctorList.filter(d => (d.type||'').toString().trim() === selectedType) : masterDoctorList;
+                    renderSuggestions(listToShow.slice(0,50), true);
+                } else loadAllDoctors(true);
             } else {
-                // perform a quick filtered search to show relevant suggestions
-                fetch('/doctors/search?q='+encodeURIComponent(q))
+                // perform a quick filtered search to show relevant suggestions; include type if selected
+                const typeParam = (typeSelect && typeSelect.value) ? '&type=' + encodeURIComponent(typeSelect.value) : '';
+                fetch('/doctors/search?q='+encodeURIComponent(q) + typeParam)
                     .then(r => r.json())
                     .then(data => renderSuggestions(data || []))
                     .catch(e => console.error('Doctor fetch error', e));
@@ -1372,7 +1513,77 @@ textarea:focus {
     margin: 30px 0 20px 0;
     grid-column: 1 / -1;
 }
+
+/* Auto-capitalize name fields */
+.auto-capitalize {
+    text-transform: capitalize;
+}
 </style>
+
+<script>
+// Auto-capitalize function for text inputs and textareas (skip selects)
+function autoCapitalize(input) {
+    if (!input) return;
+    const tag = input.tagName && input.tagName.toUpperCase();
+    const isTextInput = (tag === 'INPUT' && ['text','search','tel','email'].includes((input.type||'').toLowerCase())) || tag === 'TEXTAREA';
+    if (!isTextInput) return; // don't attempt on SELECT or non-text inputs
+
+    let value = input.value || '';
+    let cursorPosition = typeof input.selectionStart === 'number' ? input.selectionStart : null;
+
+    // Capitalize first letter and letters after spaces
+    let capitalizedValue = value.toLowerCase().replace(/(?:^|\s)\S/g, function(letter) {
+        return letter.toUpperCase();
+    });
+
+    // Update the input value
+    input.value = capitalizedValue;
+
+    // Restore cursor position if available
+    try {
+        if (cursorPosition !== null) input.setSelectionRange(cursorPosition, cursorPosition);
+    } catch (e) {
+        // ignore (some browsers/inputs may not support setSelectionRange)
+    }
+}
+
+// Apply auto-capitalization to name fields when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const nameFields = [
+        'first_name',
+        'middle_name', 
+        'last_name',
+        //'barangay', // barangay is a SELECT now; skip to avoid setSelectionRange errors
+        'nationality',
+        'doctor_name'
+    ];
+
+    nameFields.forEach(function(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        const tag = field.tagName && field.tagName.toUpperCase();
+        const isTextInput = (tag === 'INPUT' && ['text','search','tel','email'].includes((field.type||'').toLowerCase())) || tag === 'TEXTAREA';
+
+        // Add CSS class for visual capitalization for text-like elements only
+        if (isTextInput) {
+            field.classList.add('auto-capitalize');
+
+            // Add event listener for real-time capitalization
+            field.addEventListener('input', function() {
+                autoCapitalize(this);
+            });
+
+            // Also capitalize on blur (when user leaves the field)
+            field.addEventListener('blur', function() {
+                autoCapitalize(this);
+            });
+        }
+    });
+});
+</script>
 @endpush
 
 @include('nurse.modals.notification_system')
+
+<!-- duplicate simple barangay loader removed; the page uses the centralized loadCitiesForProvince/loadBarangaysForCity implementation above -->

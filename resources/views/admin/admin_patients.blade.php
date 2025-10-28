@@ -96,7 +96,8 @@
                     </thead>
                     <tbody>
                         @foreach($patients as $patient)
-                        <tr data-status="{{ strtolower($patient->status ?? 'active') }}" data-name="{{ strtolower(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') . ' ' . ($patient->patient_no ?? '')) }}">
+                        @php $isHighlighted = in_array($patient->id, $highlightPatientIds ?? []) ? true : false; @endphp
+                        <tr class="{{ $isHighlighted ? 'highlight' : '' }}" data-status="{{ strtolower($patient->status ?? 'active') }}" data-name="{{ strtolower(($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') . ' ' . ($patient->patient_no ?? '')) }}">
                             <td>{{ $patient->patient_no ?? 'N/A' }}</td>
                             <td>{{ ($patient->first_name ?? '') . ' ' . ($patient->last_name ?? '') }}</td>
                             <td>
@@ -120,13 +121,19 @@
                             </td>
                             <td>{{ $patient->created_at ? \Carbon\Carbon::parse($patient->created_at)->format('M d, Y') : 'N/A' }}</td>
                             <td>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="toggleDropdown({{ $patient->id ?? $loop->index }})">
-                                        <span>⋯</span>
+                                <div class="action-buttons">
+                                    <button class="view-btn" onclick="viewPatient({{ $patient->id ?? $loop->index }})" title="View Details">
+                                        View
                                     </button>
-                                    <div class="dropdown-content" id="dropdown-{{ $patient->id ?? $loop->index }}">
-                                        <a href="#" onclick="viewPatient({{ $patient->id ?? $loop->index }})">View Details</a>
-                                    </div>
+                                    <button class="edit-btn" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'active')" title="Mark Active">
+                                        Active
+                                    </button>
+                                    <button class="warning-btn" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'discharged')" title="Mark Discharged">
+                                        Discharge
+                                    </button>
+                                    <button class="delete-btn" onclick="updatePatientStatus({{ $patient->id ?? $loop->index }}, 'deceased')" title="Mark Deceased">
+                                        Deceased
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -290,22 +297,8 @@
         });
     });
 
-    // Dropdown Actions
-    function toggleDropdown(patientId) {
-        const dropdown = document.getElementById(`dropdown-${patientId}`);
-        
-        document.querySelectorAll('.dropdown-content').forEach(dd => {
-            if (dd.id !== `dropdown-${patientId}`) {
-                dd.classList.remove('show');
-            }
-        });
-        
-        dropdown.classList.toggle('show');
-    }
-
+    // Patient Actions
     async function viewPatient(patientId) {
-        document.getElementById(`dropdown-${patientId}`).classList.remove('show');
-        
         console.log('Fetching patient details for ID:', patientId);
         
         try {
@@ -337,8 +330,6 @@
     }
 
     async function updatePatientStatus(patientId, newStatus) {
-        document.getElementById(`dropdown-${patientId}`).classList.remove('show');
-        
         const statusText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
         adminConfirm(
             `Are you sure you want to mark this patient as ${statusText}?`,
@@ -374,15 +365,6 @@
             adminError('An error occurred while updating the patient status.');
         }
     }
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.action-btn') && !event.target.matches('.action-btn span')) {
-            document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
     </script>
 
     <style>
@@ -408,6 +390,18 @@
             width: 95vw;
             max-height: 95vh;
         }
+    }
+    </style>
+
+    <style>
+    /* Highlight rows that match the selected period filter. Make cell-level rule with !important
+       so it overrides other table/td background rules (striped rows, etc.). */
+    tr.highlight td {
+        background-color: #fff9db !important; /* light yellow */
+    }
+    /* Keep row background transparent to avoid double backgrounds in some themes */
+    tr.highlight {
+        background-color: transparent;
     }
     </style>
 
@@ -544,6 +538,7 @@
 
             const provinceSel = ensureSelect('province') || ensureSelect('edit_province') || ensureSelectForKeyword('province');
             const citySel = ensureSelect('city') || ensureSelect('edit_city') || ensureSelectForKeyword('city');
+            const barangaySel = ensureSelect('barangay') || ensureSelect('edit_barangay') || ensureSelectForKeyword('barangay');
             if (!provinceSel || !citySel) return; // nothing to do
 
             function clearSelect(sel) { while (sel.firstChild) sel.removeChild(sel.firstChild); }
@@ -554,6 +549,7 @@
 
             const preSelectedProvinceValue = provinceSel.value || provinceSel.getAttribute('data-selected') || '';
             let preSelectedCityValue = citySel.value || citySel.getAttribute('data-selected') || '';
+            let preSelectedBarangayValue = barangaySel ? (barangaySel.value || barangaySel.getAttribute('data-selected') || '') : '';
 
             let provincesList = [];
             fetch(API_BASE + '/provinces')
@@ -620,6 +616,12 @@
                             const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
                             addOption(citySel, cname, cname, isSelected, c.code || c.city_code || c.id || '');
                             if (isSelected) preSelectedCityValue = '';
+                            // if city is preselected, attempt to load barangays for it after options are inserted
+                            if (isSelected && barangaySel) {
+                                const code = c.code || c.city_code || c.id || '';
+                                // small delay to ensure option selection has settled
+                                setTimeout(() => loadBarangaysForCity(cname, code), 40);
+                            }
                         });
                     })
                     .catch(err => { console.warn('Failed to load cities for admin modal', err); clearSelect(citySel); addOption(citySel, '', '-- Unable to load cities --', false, ''); });
@@ -631,6 +633,65 @@
                 const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
                 if (provName) loadCitiesForProvince(provName, provCode);
                 else { clearSelect(citySel); addOption(citySel, '', '-- Select province first --', false, ''); }
+            });
+
+            // Load barangays for a given city (by name or code)
+            function loadBarangaysForCity(cityName, cityCode) {
+                if (!barangaySel) return;
+                clearSelect(barangaySel); addOption(barangaySel, '', '-- Loading barangays... --', false, '');
+                // Always prefer cityCode if available, fallback to cityName
+                let url = API_BASE + '/barangays';
+                if (cityCode && cityCode !== '') {
+                    url += '?city_code=' + encodeURIComponent(cityCode);
+                } else if (cityName && cityName !== '') {
+                    url += '?city=' + encodeURIComponent(cityName);
+                }
+                fetch(url)
+                    .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+                    .then(list => {
+                        clearSelect(barangaySel); addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                        if (!Array.isArray(list) || list.length === 0) {
+                            // Try fallback: if we used code and got nothing, try with city name
+                            if (cityCode && cityName) {
+                                fetch(API_BASE + '/barangays?city=' + encodeURIComponent(cityName))
+                                    .then(r2 => r2.ok ? r2.json() : [])
+                                    .then(list2 => {
+                                        if (Array.isArray(list2) && list2.length > 0) {
+                                            clearSelect(barangaySel); addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                                            list2.forEach(b => {
+                                                const bname = b.name || b.barangayDesc || b.barangay || '';
+                                                if (!bname) return;
+                                                const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                                                addOption(barangaySel, bname, bname, isSelected, b.code || b.id || b.barangay_code || '');
+                                                if (isSelected) preSelectedBarangayValue = '';
+                                            });
+                                        } else {
+                                            clearSelect(barangaySel); addOption(barangaySel, '', '-- No barangays found --', false, '');
+                                        }
+                                    });
+                                return;
+                            }
+                            clearSelect(barangaySel); addOption(barangaySel, '', '-- No barangays found --', false, '');
+                            return;
+                        }
+                        list.forEach(b => {
+                            const bname = b.name || b.barangayDesc || b.barangay || '';
+                            if (!bname) return;
+                            const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                            addOption(barangaySel, bname, bname, isSelected, b.code || b.id || b.barangay_code || '');
+                            if (isSelected) preSelectedBarangayValue = '';
+                        });
+                    })
+                    .catch(err => { console.warn('Failed to load barangays for admin modal', err); clearSelect(barangaySel); addOption(barangaySel, '', '-- Unable to load barangays --', false, ''); });
+            }
+
+            // When city changes, load barangays for that city if barangay select exists
+            citySel?.addEventListener('change', function() {
+                const sel = this.options[this.selectedIndex];
+                const cname = sel ? sel.value : '';
+                const code = sel && sel.dataset ? sel.dataset.code : '';
+                if (cname && barangaySel) loadBarangaysForCity(cname, code);
+                else if (barangaySel) { clearSelect(barangaySel); addOption(barangaySel, '', '-- Select city first --', false, ''); }
             });
 
             // Also attempt to trigger city load if modal is already open and province has value

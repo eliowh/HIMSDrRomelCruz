@@ -129,28 +129,25 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Patient Discount Status</label>
                                         <div class="d-flex flex-column gap-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input" 
-                                                       type="checkbox" 
-                                                       name="is_senior_citizen" 
-                                                       id="is_senior_citizen" 
-                                                       value="1"
-                                                       {{ old('is_senior_citizen', $billing->is_senior_citizen) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_senior_citizen">
-                                                    Senior Citizen (20% Discount)
-                                                </label>
+                                            <label class="form-label">Discount</label>
+                                            <div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" name="discount_type" id="edit_discount_none" value="none" {{ (!$billing->is_senior_citizen && !$billing->is_pwd) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="edit_discount_none">None</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" name="discount_type" id="edit_discount_senior" value="senior" {{ $billing->is_senior_citizen ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="edit_discount_senior">Senior Citizen (20% Discount)</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" name="discount_type" id="edit_discount_pwd" value="pwd" {{ $billing->is_pwd ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="edit_discount_pwd">Person with Disability (20% Discount)</label>
+                                                </div>
                                             </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" 
-                                                       type="checkbox" 
-                                                       name="is_pwd" 
-                                                       id="is_pwd" 
-                                                       value="1"
-                                                       {{ old('is_pwd', $billing->is_pwd) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_pwd">
-                                                    Person with Disability (20% Discount)
-                                                </label>
-                                            </div>
+
+                                            {{-- Hidden fields expected by backend --}}
+                                            <input type="hidden" name="is_senior_citizen" id="is_senior_citizen" value="{{ old('is_senior_citizen', $billing->is_senior_citizen) ? '1' : '0' }}">
+                                            <input type="hidden" name="is_pwd" id="is_pwd" value="{{ old('is_pwd', $billing->is_pwd) ? '1' : '0' }}">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -331,8 +328,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const professionalFeesInput = document.getElementById('professional_fees');
-    const seniorCheckbox = document.getElementById('is_senior_citizen');
-    const pwdCheckbox = document.getElementById('is_pwd');
+    const seniorHidden = document.getElementById('is_senior_citizen');
+    const pwdHidden = document.getElementById('is_pwd');
     
     const originalValues = {
         roomCharges: {{ $billing->room_charges ?? 0 }},
@@ -347,8 +344,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function calculateUpdatedTotals() {
         const newProfessionalFees = parseFloat(professionalFeesInput.value) || 0;
-        const isSenior = seniorCheckbox.checked;
-        const isPwd = pwdCheckbox.checked;
+    const isSenior = seniorHidden && (seniorHidden.value === '1');
+    const isPwd = pwdHidden && (pwdHidden.value === '1');
         
         // Calculate new subtotal - include Case Rate for both PhilHealth and non-PhilHealth members
         @php
@@ -358,8 +355,10 @@ document.addEventListener('DOMContentLoaded', function() {
         @endphp
         const caseRateTotal = {{ $originalCaseRateOnly }};
         
-        // Both member types: Case Rate + Professional Fee included in subtotal
-        const adjustedProfessionalTotal = newProfessionalFees + caseRateTotal;
+    // Both member types: Case Rate + Professional Fee included in subtotal
+    // Compute professional total as sum of case rates + (new professional fee * total professional quantity)
+    const professionalQtyTotal = {{ $billing->billingItems->where('item_type', 'professional')->sum('quantity') }};
+    const adjustedProfessionalTotal = caseRateTotal + (newProfessionalFees * professionalQtyTotal);
         
         const newSubtotal = originalValues.roomCharges + adjustedProfessionalTotal + 
                            originalValues.medicineCharges + originalValues.labCharges + 
@@ -379,14 +378,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             @endphp
             // For professional fee updates, recalculate using new professional fee amount
-            const professionalFeeAdjustment = newProfessionalFees - originalValues.professionalFees;
-            @php
-                $originalCaseRateOnly = $billing->billingItems->where('item_type', 'professional')->sum(function($it) { 
-                    return ($it->case_rate ?: 0) * ($it->quantity ?: 1); 
-                });
-            @endphp
-            // PhilHealth covers Case Rate + Professional Fee
-            newPhilhealthDeduction = {{ $originalCaseRateOnly }} + newProfessionalFees;
+            // PhilHealth covers Case Rate + Professional Fee (for all quantities)
+            newPhilhealthDeduction = caseRateTotal + (newProfessionalFees * professionalQtyTotal);
         }
         
         // Calculate senior/PWD discount
@@ -415,9 +408,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listeners
     professionalFeesInput.addEventListener('input', calculateUpdatedTotals);
-    seniorCheckbox.addEventListener('change', calculateUpdatedTotals);
-    pwdCheckbox.addEventListener('change', calculateUpdatedTotals);
     document.getElementById('is_philhealth_member_edit').addEventListener('change', calculateUpdatedTotals);
+
+    // Discount radios for edit form
+    const editRadios = document.querySelectorAll('input[name="discount_type"]');
+    editRadios.forEach(r => r.addEventListener('change', function() {
+        // map selection to hidden fields
+        if (r.value === 'senior' && r.checked) {
+            if (seniorHidden) seniorHidden.value = '1';
+            if (pwdHidden) pwdHidden.value = '0';
+        } else if (r.value === 'pwd' && r.checked) {
+            if (seniorHidden) seniorHidden.value = '0';
+            if (pwdHidden) pwdHidden.value = '1';
+        } else if (r.value === 'none' && r.checked) {
+            if (seniorHidden) seniorHidden.value = '0';
+            if (pwdHidden) pwdHidden.value = '0';
+        }
+        calculateUpdatedTotals();
+    }));
     
     // Initial calculation
     calculateUpdatedTotals();

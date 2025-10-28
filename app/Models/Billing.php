@@ -83,7 +83,14 @@ class Billing extends Model
     public function calculateSeniorPwdDiscount()
     {
         if ($this->is_senior_citizen || $this->is_pwd) {
-            return $this->total_amount * 0.20; // 20% discount
+            // Senior/PWD discount applies after PhilHealth deduction is applied.
+            // Compute current PhilHealth deduction and apply 20% on the remaining amount.
+            $philhealthDeduction = $this->philhealth_deduction ?? $this->calculatePhilhealthDeduction();
+            $baseAmount = ($this->total_amount ?? 0) - $philhealthDeduction;
+            if ($baseAmount <= 0) {
+                return 0;
+            }
+            return $baseAmount * 0.20; // 20% discount on amount after PhilHealth
         }
         return 0;
     }

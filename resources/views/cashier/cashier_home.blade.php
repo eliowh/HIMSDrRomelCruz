@@ -133,9 +133,9 @@
                                         <a href="/cashier/billing/{{ $billing->id }}/view" class="action-link">
                                             <i class="fas fa-eye"></i> View
                                         </a>
-                                        <a href="{{ route('cashier.billing.receipt', $billing->id) }}" class="action-link" target="_blank">
+                                        <button type="button" class="action-link btn-link" onclick="printReceiptInPlace({{ $billing->id }})">
                                             <i class="fas fa-receipt"></i> Receipt
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -209,6 +209,51 @@
             }
         `;
         document.head.appendChild(style);
+    </script>
+    <style>
+        @media print {
+            body * { visibility: hidden !important; }
+            #printContainer, #printContainer * { visibility: visible !important; }
+            #printContainer { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+    <script>
+        // Make printReceiptInPlace available on the dashboard too
+        function printReceiptInPlace(billingId) {
+            try {
+                const fragmentUrl = `/cashier/billing/${billingId}/receipt/fragment`;
+                fetch(fragmentUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(resp => {
+                        if (!resp.ok) return resp.text().then(t => { throw new Error(t || resp.statusText); });
+                        return resp.text();
+                    })
+                    .then(html => {
+                        let printContainer = document.getElementById('printContainer');
+                        if (!printContainer) {
+                            printContainer = document.createElement('div');
+                            printContainer.id = 'printContainer';
+                            printContainer.style.display = 'none';
+                            document.body.appendChild(printContainer);
+                        }
+                        printContainer.innerHTML = html;
+                        printContainer.style.display = 'block';
+                        setTimeout(() => {
+                            window.print();
+                            setTimeout(() => {
+                                printContainer.innerHTML = '';
+                                printContainer.style.display = 'none';
+                            }, 800);
+                        }, 200);
+                    })
+                    .catch(e => {
+                        console.error('printReceiptInPlace error:', e);
+                        alert('Unable to load receipt for printing: ' + (e.message || e));
+                    });
+            } catch (e) {
+                console.error('printReceiptInPlace error:', e);
+                alert('Unable to print receipt: ' + e.message);
+            }
+        }
     </script>
 </body>
 </html>

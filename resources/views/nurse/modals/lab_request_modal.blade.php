@@ -69,7 +69,6 @@
                     <label for="priority">Priority: *</label>
                     <select id="priority" name="priority" required>
                         <option value="normal">Normal</option>
-                        <option value="urgent">Urgent</option>
                         <option value="stat">STAT</option>
                     </select>
                 </div>

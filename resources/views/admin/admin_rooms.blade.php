@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Room         if (!roomRow) {
-            adminError('Unable to find selected room.');
-            return;
-        }gement</title>
+    <title>Room Management</title>
     <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
     <link rel="stylesheet" href="{{asset('css/pagination.css')}}">
 </head>
@@ -73,13 +70,13 @@
                             <td>{{ $roomName }}</td>
                             <td>₱{{ number_format($cleanPrice, 2) }}</td>
                             <td>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="toggleDropdown('{{ $rowId }}')">
-                                        <span>⋯</span>
+                                <div class="action-buttons">
+                                    <button class="edit-btn" onclick="editRoomByRow('{{ $rowId }}')" title="Edit Room">
+                                        Edit
                                     </button>
-                                    <div class="dropdown-content" id="dropdown-{{ $rowId }}">
-                                        <a href="javascript:void(0);" onclick="editRoomByRow('{{ $rowId }}')">Edit</a>
-                                    </div>
+                                        <button class="delete-btn" onclick="deleteRoomByRow('{{ $rowId }}')" title="Delete Room">
+                                            Delete
+                                        </button>
                                 </div>
                             </td>
                         </tr>
@@ -225,20 +222,7 @@
         }
     });
 
-    // Dropdown Actions
-    function toggleDropdown(rowId) {
-        const dropdown = document.getElementById(`dropdown-${rowId}`);
-        
-        document.querySelectorAll('.dropdown-content').forEach(dd => {
-            if (dd.id !== `dropdown-${rowId}`) {
-                dd.classList.remove('show');
-            }
-        });
-        
-        if (dropdown) dropdown.classList.toggle('show');
-    }
-
-    // wrapper that reads room name from the row's data attribute
+    // Room Actions
     function editRoomByRow(rowId) {
         const row = document.getElementById(rowId);
         if (!row) {
@@ -254,11 +238,8 @@
     }
 
     async function editRoom(roomName, rowId) {
-        // close dropdown if rowId provided
-        if (rowId) {
             const dd = document.getElementById(`dropdown-${rowId}`);
             if (dd) dd.classList.remove('show');
-        }
         
         // Try fetch with one retry for transient errors
         try {
@@ -404,15 +385,6 @@
         }
     }
 
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.action-btn') && !event.target.matches('.action-btn span')) {
-            document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
-
     // Fetch the current page and replace the rooms table tbody to keep DOM fresh
     async function refreshRoomsList() {
         try {
@@ -432,6 +404,42 @@
         } catch (err) {
             console.warn('Error refreshing rooms list:', err);
         }
+    }
+
+    // Delete room by row id (reads data-room-name)
+    async function deleteRoomByRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (!row) return adminError('Unable to find the selected room row.');
+        const roomName = row.getAttribute('data-room-name');
+        if (!roomName) return adminError('Room name missing.');
+
+        adminConfirm(
+            `Are you sure you want to delete room "${roomName}"? This action cannot be undone.`,
+            'Confirm Delete',
+            async function() {
+                try {
+                    const encoded = encodeURIComponent(roomName);
+                    const resp = await fetch(`/admin/rooms/${encoded}/delete`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const j = await resp.json();
+                    if (resp.ok && j.success) {
+                        adminSuccess(j.message || 'Room deleted');
+                        // remove row from DOM
+                        try { row.remove(); } catch(e) { refreshRoomsList(); }
+                    } else {
+                        adminError(j.message || 'Failed to delete room');
+                    }
+                } catch (e) {
+                    console.error('Delete room error', e);
+                    adminError('Error deleting room.');
+                }
+            }
+        );
     }
 
     // Sorting functionality

@@ -134,6 +134,9 @@ Route::middleware(['auth'])->group(function () {
     // Allow doctors to view active admission (read-only access)
     Route::get('/doctor/api/patients/{patientId}/active-admission', [PatientController::class, 'getActiveAdmission'])->name('api.patient.active-admission.doctor');
 
+    // Allow doctors to get patient health history
+    Route::get('/doctor/api/patient/{patientId}/health-history', [PatientController::class, 'getHealthHistory'])->name('api.patient.health-history.doctor');
+
     // Finalize admission (doctor sets final diagnosis)
     Route::post('/doctor/admissions/{admissionId}/finalize', [PatientController::class, 'finalizeAdmission'])->name('doctor.admissions.finalize');
     
@@ -318,6 +321,9 @@ Route::middleware(['auth', 'role:nurse'])->group(function () {
     // Allow nurses to get current admission data for edit modal
     Route::get('/patients/{id}/current-admission', [PatientController::class, 'getCurrentAdmission'])->name('api.patient.current-admission.nurse');
     
+    // Allow nurses to get patient health history
+    Route::get('/api/patient/{patientId}/health-history', [PatientController::class, 'getHealthHistory'])->name('api.patient.health-history.nurse');
+    
     // Allow nurses to create new admissions
     Route::post('/nurse/admissions', [PatientController::class, 'createAdmission'])->name('nurse.admissions.create');
     
@@ -407,6 +413,9 @@ Route::middleware(['auth', 'role:cashier'])->group(function () {
     // Receipt Management
     Route::get('/cashier/billing/{id}/receipt', [App\Http\Controllers\CashierController::class, 'viewReceipt'])->name('cashier.billing.receipt');
     Route::get('/cashier/billing/{id}/receipt/download', [App\Http\Controllers\CashierController::class, 'downloadReceipt'])->name('cashier.billing.receipt.download');
+    // HTML view for cashier printing (opens the billing.receipt blade with autoPrint)
+    Route::get('/cashier/billing/{id}/receipt/view', [App\Http\Controllers\CashierController::class, 'viewReceiptHtml'])->name('cashier.billing.receipt.view');
+    Route::get('/cashier/billing/{id}/receipt/fragment', [App\Http\Controllers\CashierController::class, 'viewReceiptFragment'])->name('cashier.billing.receipt.fragment');
 });
 
 /*
@@ -429,6 +438,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users/{id}/edit', [App\Http\Controllers\AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::delete('/admin/users/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    
+    // Archive Management
+    Route::get('/admin/users/archived', [App\Http\Controllers\AdminController::class, 'archivedUsers'])->name('admin.users.archived');
+    Route::post('/admin/users/{id}/restore', [App\Http\Controllers\AdminController::class, 'restoreUser'])->name('admin.users.restore');
+    Route::delete('/admin/users/{id}/permanent', [App\Http\Controllers\AdminController::class, 'permanentlyDeleteUser'])->name('admin.users.permanent-delete');
 
     // User List with Search and Filtering
     Route::get('/admin/users', function (\Illuminate\Http\Request $request) {
@@ -463,13 +477,20 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         $users->appends(request()->query());
         
         return view('admin.admin_users', compact('users'));
-    });
+    })->name('admin.users');
     
     // Room Management
     Route::get('/admin/rooms', [AdminController::class, 'rooms'])->name('admin.rooms');
     Route::post('/admin/rooms/create', [AdminController::class, 'createRoom'])->name('admin.rooms.create');
     Route::post('/admin/rooms/edit', [AdminController::class, 'editRoom'])->name('admin.rooms.edit');
     Route::put('/admin/rooms/update', [AdminController::class, 'updateRoom'])->name('admin.rooms.update');
+    Route::delete('/admin/rooms/{roomName}/delete', [AdminController::class, 'deleteRoom'])->name('admin.rooms.delete');
+    // Admin Stock (masterlist) management
+    Route::get('/admin/stocks-reference', [AdminController::class, 'stocksReference'])->name('admin.stocks.reference');
+    Route::post('/admin/stocks-reference/create', [AdminController::class, 'createStockReference'])->name('admin.stocks.reference.create');
+    Route::post('/admin/stocks-reference/edit', [AdminController::class, 'editStockReference'])->name('admin.stocks.reference.edit');
+    Route::put('/admin/stocks-reference/update', [AdminController::class, 'updateStockReference'])->name('admin.stocks.reference.update');
+    Route::delete('/admin/stocks-reference/{itemCode}/delete', [AdminController::class, 'deleteStockReference'])->name('admin.stocks.reference.delete');
     
     // Patient Records Management
     Route::get('/admin/patients', [AdminController::class, 'patients'])->name('admin.patients');
@@ -573,6 +594,11 @@ Route::middleware(['auth', 'role:pharmacy'])->group(function () {
     // Stocks management (list stocks reference)
     Route::get('/pharmacy/stocks', [App\Http\Controllers\PharmacyController::class, 'stocks'])->name('pharmacy.stocks');
     Route::get('/pharmacy/stockspharmacy', [App\Http\Controllers\PharmacyController::class, 'stocksPharmacy'])->name('pharmacy.stockspharmacy');
+    
+    // Pharmacy stock CRUD (allow pharmacy role to manage their own pharmacy stocks)
+    Route::post('/pharmacy/stocks/add', [App\Http\Controllers\PharmacyController::class, 'addPharmacyStock'])->name('pharmacy.stocks.add');
+    Route::patch('/pharmacy/stocks/{id}', [App\Http\Controllers\PharmacyController::class, 'updatePharmacyStock'])->name('pharmacy.stocks.update');
+    Route::delete('/pharmacy/stocks/{id}', [App\Http\Controllers\PharmacyController::class, 'deletePharmacyStock'])->name('pharmacy.stocks.delete');
 });
 
 /*
@@ -594,6 +620,8 @@ Route::middleware(['auth', 'role:billing'])->group(function () {
     
     // AJAX endpoints for billing (MUST come before wildcard routes)
     Route::get('/billing/search-patients', [App\Http\Controllers\BillingController::class, 'searchPatients'])->name('billing.search.patients');
+    // Recent patients list for autocomplete when query is empty or on focus
+    Route::get('/billing/recent-patients', [App\Http\Controllers\BillingController::class, 'recentPatients'])->name('billing.recent.patients');
     Route::post('/billing/check-philhealth', [App\Http\Controllers\BillingController::class, 'checkPhilhealth'])->name('billing.check.philhealth');
     // Check patient's last billing philhealth status (auto-check on create)
     Route::post('/billing/last-philhealth-status', [App\Http\Controllers\BillingController::class, 'lastPhilhealthStatus'])->name('billing.last.philhealth');
