@@ -29,15 +29,9 @@ class DoctorAccountSeeder extends Seeder
 
             // Extract first name for email (remove titles like Dr., MD, etc.)
             $firstName = $this->extractFirstName($fullName);
-            
-            // Create email from first name
-            $email = strtolower($firstName) . '@gmail.com';
-            
-            // Check if user already exists
-            if (User::where('email', $email)->exists()) {
-                $this->command->info("Doctor account already exists for: {$fullName} ({$email})");
-                continue;
-            }
+
+            // Generate a unique email. If 'maria' already exists, append an initial from other names.
+            $email = $this->generateUniqueEmail($fullName, $firstName);
 
             // Create the doctor account
             User::create([
@@ -45,6 +39,7 @@ class DoctorAccountSeeder extends Seeder
                 'email' => $email,
                 'password' => Hash::make('Doctor123!'),
                 'role' => 'doctor',
+                'title' => 'MD',
                 'email_verified_at' => now(),
             ]);
 
@@ -70,5 +65,47 @@ class DoctorAccountSeeder extends Seeder
         $firstName = preg_replace('/[^a-zA-Z]/', '', $firstName);
         
         return $firstName ?: 'doctor';
+    }
+
+    /**
+     * Generate a unique email based on first name. If base already exists,
+     * append the first letter of the next name part(s). Falls back to numeric
+     * suffixes if needed.
+     */
+    private function generateUniqueEmail($fullName, $firstName)
+    {
+        $base = strtolower(preg_replace('/[^a-zA-Z]/', '', $firstName));
+        $local = $base;
+
+        // Prepare name parts without titles
+        $name = preg_replace('/^(Dr\.?|Doctor|MD|M\.D\.)\s+/i', '', $fullName);
+        $parts = preg_split('/\s+/', trim($name));
+        $parts = array_values(array_filter(array_map(function ($p) {
+            return preg_replace('/[^a-zA-Z]/', '', $p);
+        }, $parts)));
+
+        // remove the first part (already used)
+        if (count($parts) > 0) {
+            array_shift($parts);
+        }
+
+        // Try appending initials from other name parts
+        foreach ($parts as $part) {
+            if ($part === '') continue;
+            $candidate = $local . strtolower(substr($part, 0, 1)) . '@gmail.com';
+            if (!User::where('email', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        // Fallback: try numeric suffixes
+        $i = 1;
+        while (User::where('email', $local . $i . '@gmail.com')->exists()) {
+            $i++;
+            // safety cap to avoid infinite loop
+            if ($i > 1000) break;
+        }
+
+        return $local . $i . '@gmail.com';
     }
 }

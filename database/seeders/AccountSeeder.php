@@ -17,8 +17,8 @@ class AccountSeeder extends Seeder
         $accounts = [
             [
                 'name' => 'Claire',
-                'email' => 'lab_technician@gmail.com',
-                'password' => 'Lab_technician123!',
+                'email' => 'labtech@gmail.com',
+                'password' => 'Labtech123!',
                 'role' => 'lab_technician',
             ],
             [

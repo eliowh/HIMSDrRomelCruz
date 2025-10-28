@@ -38,15 +38,9 @@ class LabTechAccountSeeder extends Seeder
 
             // Extract first name for email
             $firstName = $this->extractFirstName($fullName);
-            
-            // Create email from first name
-            $email = strtolower($firstName) . '@gmail.com';
-            
-            // Check if user already exists
-            if (User::where('email', $email)->exists()) {
-                $this->command->info("Lab Tech account already exists for: {$fullName} ({$email})");
-                continue;
-            }
+
+            // Generate a unique email. If base already exists, append an initial from other names.
+            $email = $this->generateUniqueEmail($fullName, $firstName);
 
             // Create the lab technician account with license number
             $user = User::create([
@@ -55,6 +49,7 @@ class LabTechAccountSeeder extends Seeder
                 'password' => Hash::make('Labtech123!'),
                 'role' => 'lab_technician',
                 'license_number' => $licenseNumber,
+                'title' => 'RMT',
                 'email_verified_at' => now(),
             ]);
             
@@ -81,5 +76,43 @@ class LabTechAccountSeeder extends Seeder
         $firstName = preg_replace('/[^a-zA-Z]/', '', $firstName);
         
         return $firstName ?: 'labtech';
+    }
+
+    /**
+     * Generate a unique email based on first name. If base already exists,
+     * append the first letter of the next name part(s). Falls back to numeric
+     * suffixes if needed.
+     */
+    private function generateUniqueEmail($fullName, $firstName)
+    {
+        $base = strtolower(preg_replace('/[^a-zA-Z]/', '', $firstName));
+        $local = $base;
+
+        // Remove typical titles and split
+        $name = preg_replace('/^(Mr\.?|Ms\.?|Mrs\.?|MT|RMT|MLT)\s+/i', '', $fullName);
+        $parts = preg_split('/\s+/', trim($name));
+        $parts = array_values(array_filter(array_map(function ($p) {
+            return preg_replace('/[^a-zA-Z]/', '', $p);
+        }, $parts)));
+
+        if (count($parts) > 0) {
+            array_shift($parts);
+        }
+
+        foreach ($parts as $part) {
+            if ($part === '') continue;
+            $candidate = $local . strtolower(substr($part, 0, 1)) . '@gmail.com';
+            if (!User::where('email', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        $i = 1;
+        while (User::where('email', $local . $i . '@gmail.com')->exists()) {
+            $i++;
+            if ($i > 1000) break;
+        }
+
+        return $local . $i . '@gmail.com';
     }
 }
