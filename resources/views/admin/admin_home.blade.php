@@ -164,9 +164,9 @@
                             <span>View Reports</span>
                         </a>
                         
-                        <a href="/admin/stocks" class="quick-action-btn inventory">
+                        <a href="{{ asset('/admin/stocks-reference') }}" class="quick-action-btn inventory">
                             <i class="fas fa-boxes"></i>
-                            <span>Inventory</span>
+                            <span>Stocks</span>
                         </a>
                     </div>
                 </div>
