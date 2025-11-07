@@ -136,4 +136,20 @@ class FhirDiagnosticReport extends AbstractFhirResource
 
         return $map[$status] ?? 'unknown';
     }
+
+    /**
+     * Sanitize a code value for FHIR compliance
+     */
+    private function sanitizeCodeValue(string $value): string
+    {
+        // Remove special characters and normalize for FHIR code requirements
+        $sanitized = preg_replace('/[^a-zA-Z0-9\-._]/', '', $value);
+        
+        // Ensure it starts with a letter or underscore
+        if (!preg_match('/^[a-zA-Z_]/', $sanitized)) {
+            $sanitized = '_' . $sanitized;
+        }
+        
+        return $sanitized ?: 'unknown';
+    }
 }
