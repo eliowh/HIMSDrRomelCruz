@@ -1528,9 +1528,22 @@ class AdminController extends Controller
                     'entry' => []
                 ];
 
+                if ($patients->isEmpty()) {
+                    return response()->json([
+                        'error' => 'No patients found to export'
+                    ], 404);
+                }
+
                 foreach ($patients as $patient) {
-                    $patientBundle = $fhirService->getPatientBundle($patient->id);
-                    $bundle['entry'] = array_merge($bundle['entry'], $patientBundle['entry']);
+                    try {
+                        $patientBundle = $fhirService->getPatientBundle($patient->id);
+                        if (isset($patientBundle['entry'])) {
+                            $bundle['entry'] = array_merge($bundle['entry'], $patientBundle['entry']);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning("Failed to export patient {$patient->id}: " . $e->getMessage());
+                        // Continue with other patients
+                    }
                 }
 
                 $bundle['total'] = count($bundle['entry']);
@@ -1546,8 +1559,15 @@ class AdminController extends Controller
         } catch (\Exception $e) {
             \Log::error('FHIR Export Error', [
                 'patient_id' => $patientId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+            
+            return response()->json([
+                'error' => 'FHIR export failed',
+                'message' => $e->getMessage(),
+                'details' => 'Check server logs for more information'
+            ], 500);
 
             return back()->with('error', 'Error exporting FHIR data: ' . $e->getMessage());
         }

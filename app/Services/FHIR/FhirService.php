@@ -34,7 +34,6 @@ class FhirService
             Patient::class => new FhirPatient(),
             Admission::class => new FhirEncounter(),
             LabOrder::class => new FhirObservation(),
-            \App\Services\FHIR\Resources\FhirDiagnosticReport::class => new \App\Services\FHIR\Resources\FhirDiagnosticReport(),
             PatientMedicine::class => new FhirMedicationStatement(),
             PharmacyRequest::class => new FhirMedicationStatement(),
         ];
