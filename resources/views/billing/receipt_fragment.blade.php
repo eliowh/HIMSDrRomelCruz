@@ -11,6 +11,31 @@
         #receipt-fragment-wrapper .header-content { display: table-cell; vertical-align: middle; text-align:center; }
         #receipt-fragment-wrapper .hospital-name { font-size:24px; font-weight:bold; margin-bottom:5px; }
         #receipt-fragment-wrapper .receipt-title { font-size:18px; font-weight:bold; margin-top:10px; }
+        @media print {
+            #receipt-fragment-wrapper .header { display: table !important; width: 100% !important; }
+            #receipt-fragment-wrapper .header-content { display: table-cell !important; vertical-align: middle !important; text-align: center !important; }
+            #receipt-fragment-wrapper .hospital-name { 
+                font-size:24px !important; 
+                font-weight:bold !important; 
+                display:block !important; 
+                margin-bottom:5px !important;
+                visibility: visible !important;
+                color: #000 !important;
+            }
+            #receipt-fragment-wrapper .hospital-address { 
+                display:block !important; 
+                visibility: visible !important;
+                color: #000 !important;
+            }
+            #receipt-fragment-wrapper .receipt-title { 
+                font-size:18px !important; 
+                font-weight:bold !important; 
+                display:block !important;
+                margin-top:10px !important;
+                visibility: visible !important;
+                color: #000 !important;
+            }
+        }
         #receipt-fragment-wrapper .billing-info { display:table; width:100%; margin-bottom:20px; }
         #receipt-fragment-wrapper .billing-info .left, #receipt-fragment-wrapper .billing-info .right { display:table-cell; width:50%; vertical-align:top; padding:10px; }
         #receipt-fragment-wrapper .items-table { width:100%; border-collapse:collapse; margin-bottom:20px; }
@@ -18,7 +43,17 @@
         #receipt-fragment-wrapper .summary-section { margin-top:20px; border:2px solid #000; padding:15px; }
         @media print {
             /* ensure fragment prints correctly when injected */
-            #receipt-fragment-wrapper { -webkit-print-color-adjust: exact; color-adjust: exact; }
+            #receipt-fragment-wrapper { 
+                -webkit-print-color-adjust: exact; 
+                color-adjust: exact;
+                display: block !important;
+                visibility: visible !important;
+            }
+            /* Force all elements to be visible and properly styled for print */
+            #receipt-fragment-wrapper * {
+                visibility: visible !important;
+                color: #000 !important;
+            }
         }
     </style>
 
@@ -36,7 +71,13 @@
         <div class="header-content">
             <div class="hospital-name">ROMEL CRUZ HOSPITAL</div>
             <div class="hospital-address">702 Matimbo, City of Malolos, Bulacan<br>Tel/Fax No. (044) 791-3025</div>
-            <div class="receipt-title">STATEMENT OF ACCOUNT</div>
+            <div class="receipt-title">
+                @if(isset($isCashier) && $isCashier && $billing->status === 'paid')
+                    STATEMENT OF ACCOUNT
+                @else
+                    BILLING RECEIPT
+                @endif
+            </div>
         </div>
     </div>
 
@@ -48,7 +89,7 @@
                     <strong>{{ $billing->patient->display_name ?? ($billing->patient->first_name . ' ' . $billing->patient->last_name) }}</strong><br>
                     Date of Birth: {{ $billing->patient->date_of_birth ? \Carbon\Carbon::parse($billing->patient->date_of_birth)->format('M d, Y') : 'N/A' }}<br>
                     @if(isset($billing->admission) && $billing->admission->admission_date)
-                        Admission Date: {{ \Carbon\Carbon::parse($billing->admission->admission_date)->format('M d, Y g:i A') }}<br>
+                        Admission Date: {{ \Carbon\Carbon::parse($billing->admission->admission_date)->setTimezone('Asia/Manila')->format('M d, Y g:i A') }}<br>
                     @endif
                     @if(!empty($billing->patient->address))
                         Address: {{ $billing->patient->address }}<br>
@@ -65,10 +106,10 @@
                 <div class="info-label">Billing Details:</div>
                 <div class="info-value">
                     <strong>Receipt #: {{ $billing->billing_number }}</strong><br>
-                    Date: {{ $billing->billing_date->format('M d, Y g:i A') }}<br>
-                    Clearance Date: {{ $billing->payment_date ? \Carbon\Carbon::parse($billing->payment_date)->format('M d, Y g:i A') : 'N/A' }}<br>
+                    Date: {{ $billing->billing_date->setTimezone('Asia/Manila')->format('M d, Y g:i A') }}<br>
+                    Clearance Date: {{ $billing->payment_date ? \Carbon\Carbon::parse($billing->payment_date)->setTimezone('Asia/Manila')->format('M d, Y g:i A') : 'N/A' }}<br>
                     @if(isset($billing->admission) && $billing->admission->admission_date)
-                        Admission: {{ \Carbon\Carbon::parse($billing->admission->admission_date)->format('M d, Y') }}<br>
+                        Admission: {{ \Carbon\Carbon::parse($billing->admission->admission_date)->setTimezone('Asia/Manila')->format('M d, Y') }}<br>
                     @endif
                     Status: {{ ucfirst($billing->status) }}<br>
                     Prepared by: {{ $billing->createdBy->name ?? '' }}
