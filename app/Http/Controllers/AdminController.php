@@ -1491,6 +1491,18 @@ class AdminController extends Controller
         $this->verifyAdminAccess();
 
         try {
+            // Increase memory and execution limits for export
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', 300);
+            
+            // Verify FHIR service can be instantiated
+            if (!class_exists('App\Services\FHIR\FhirService')) {
+                return response()->json([
+                    'error' => 'FHIR service not available',
+                    'message' => 'FHIR export functionality is not properly configured'
+                ], 500);
+            }
+            
             $fhirService = new FhirService();
             
             // Check if patient_no is provided in request (from form)
@@ -1514,7 +1526,7 @@ class AdminController extends Controller
             } else {
                 // Export all patients (limited to avoid memory issues)
                 $patients = Patient::with(['admissions', 'labOrders', 'medicines', 'pharmacyRequests'])
-                    ->limit(50) // Limit to prevent memory issues
+                    ->limit(25) // Reduced limit for better compatibility with hosted servers
                     ->get();
                 
                 $bundle = [
@@ -1550,23 +1562,41 @@ class AdminController extends Controller
                 $filename = "all_patients_fhir_" . date('Y-m-d_H-i-s') . '.json';
             }
 
-            // Return as downloadable JSON file
-            return response()->json($bundle, 200, [
-                'Content-Type' => 'application/fhir+json',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
-            ], JSON_PRETTY_PRINT);
+            // Return as downloadable JSON file with better compatibility
+            $jsonContent = json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            
+            if ($jsonContent === false) {
+                return response()->json([
+                    'error' => 'Failed to encode FHIR data',
+                    'message' => 'Unable to convert patient data to JSON format'
+                ], 500);
+            }
 
-        } catch (\Exception $e) {
+            return response($jsonContent, 200, [
+                'Content-Type' => 'application/json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Length' => strlen($jsonContent),
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+
+        } catch (\Throwable $e) {
             \Log::error('FHIR Export Error', [
                 'patient_id' => $patientId,
+                'patient_no' => $request->get('patient_no'),
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
             
+            // Return JSON error response that's compatible with AJAX
             return response()->json([
                 'error' => 'FHIR export failed',
                 'message' => $e->getMessage(),
-                'details' => 'Check server logs for more information'
+                'details' => 'Server error occurred during export. Check logs for details.',
+                'type' => get_class($e)
             ], 500);
 
             return back()->with('error', 'Error exporting FHIR data: ' . $e->getMessage());
