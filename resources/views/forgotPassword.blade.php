@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="{{ url('css/forgotPass.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
+    <link rel="stylesheet" href="{{ asset('css/forgotPass.css') }}">
     <title>Forgot Password | Romel Cruz Hospital</title>
 </head>
 <body>
@@ -25,7 +27,7 @@
                         <input type="email" placeholder="Enter your email address" name="email" class="eField" required>
                     </div>
                     <button type="submit" class="submitBtn">Send Reset Link</button>
-                    <a href="{{ url('/login') }}" class="back-link">
+                    <a href="/login" class="back-link">
                         ← Back to Login
                     </a>
                 </form>

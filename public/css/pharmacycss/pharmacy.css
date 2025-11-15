@@ -41,6 +41,16 @@ body {
     margin-left: auto;
     margin-right: 100px;
 }
+.hospital-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.hospital-logo {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
 .pharmacy-layout {
     display: flex;
     width: 100%;
@@ -1020,7 +1030,8 @@ th.sortable:hover {
     border-radius: 0 0 4px 4px;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 99999;
+    display: none; /* hidden until JS populates and shows it */
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 

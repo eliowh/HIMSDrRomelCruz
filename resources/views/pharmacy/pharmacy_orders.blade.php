@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Orders</title>
-    <link rel="stylesheet" href="{{ url('css/pharmacycss/pharmacy.css') }}">
-    <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pharmacycss/pharmacy.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
@@ -123,7 +123,7 @@
                                             </button>
                                         @endif
                                         
-                                        <button class="btn pharmacy-btn-info btn-sm" onclick="viewOrder({{ $order->id }})">
+                                        <button class="btn pharmacy-btn-primary btn-sm" onclick="viewOrder({{ $order->id }})">>
                                             <i class="fas fa-eye"></i> View
                                         </button>
                                     </td>
@@ -478,11 +478,21 @@
             });
         }
 
+        // Helper function to parse price values that may contain commas
+        function parsePrice(value) {
+            if (typeof value === 'number') return value;
+            if (typeof value !== 'string') return 0;
+            // Remove commas, currency symbols, and extra spaces, then parse as float
+            const cleaned = value.replace(/[,₱$\s]/g, '');
+            const parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
         function populateFieldsFromStock(stock) {
             document.getElementById('item_code_input').value = stock.item_code || '';
             document.getElementById('generic_name_input').value = stock.generic_name || '';
             document.getElementById('brand_name_input').value = stock.brand_name || '';
-            document.getElementById('unit_price').value = stock.price || '0';
+            document.getElementById('unit_price').value = parsePrice(stock.price).toFixed(2) || '0';
             
             hideAllSuggestions();
             
@@ -492,7 +502,7 @@
 
         function calculateTotalPrice() {
             const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-            const unitPrice = parseFloat(document.getElementById('unit_price').value) || 0;
+            const unitPrice = parsePrice(document.getElementById('unit_price').value);
             const totalPrice = quantity * unitPrice;
             document.getElementById('total_price').value = totalPrice.toFixed(2);
         }

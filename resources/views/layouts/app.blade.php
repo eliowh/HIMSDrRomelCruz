@@ -4,11 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
     <title>@yield('title','HIMS Nurse')</title>
 
     {{-- main styles used by nurse pages --}}
-    <link rel="stylesheet" href="{{ url('css/nursecss/nurse.css') }}">
-    <link rel="stylesheet" href="{{ url('css/nursecss/nurse_addPatients.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/nurse.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nursecss/nurse_addPatients.css') }}">
 </head>
 <body>
     {{-- Add top navigation/header (DR. Romel Cruz Hospital + user info) --}}

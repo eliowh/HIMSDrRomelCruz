@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacy Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/pharmacycss/pharmacy.css')}}">
+    <link rel="stylesheet" href="{{asset('css/pharmacycss/pharmacy.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -15,25 +15,25 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/pharmacy/home') }}"
+                <a href="{{ asset('/pharmacy/home') }}"
                    class="sidebar-btn{{ request()->is('pharmacy/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/pharmacy/orders') }}"
-                   class="sidebar-btn{{ request()->is('pharmacy/orders') ? ' active' : '' }}">
-                    <span class="icon">💊</span> <span class="text">Orders</span>
+                <a href="{{ asset('/pharmacy/requests') }}"
+                   class="sidebar-btn{{ request()->is('pharmacy/requests') ? ' active' : '' }}">
+                    <span class="icon">🧾</span> <span class="text">Requests</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/pharmacy/account') }}"
-                   class="sidebar-btn{{ request()->is('pharmacy/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
+                <a href="{{ asset('/pharmacy/stockspharmacy') }}"
+                   class="sidebar-btn{{ request()->is('pharmacy/stockspharmacy') ? ' active' : '' }}">
+                    <span class="icon">📦</span> <span class="text">Stocks</span>
                 </a>
             </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="pharmacy-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="pharmacy-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn" onclick="confirmLogout('pharmacy-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>

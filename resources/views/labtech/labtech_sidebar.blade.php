@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lab Technician Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/labtechcss/labtech.css')}}">
+    <link rel="stylesheet" href="{{asset('css/labtechcss/labtech.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -15,31 +15,25 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/labtech/home') }}"
+                <a href="{{ asset('/labtech/home') }}"
                    class="sidebar-btn{{ request()->is('labtech/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/labtech/orders') }}"
+                <a href="{{ asset('/labtech/orders') }}"
                    class="sidebar-btn{{ request()->is('labtech/orders') ? ' active' : '' }}">
-                    <span class="icon">🧪</span> <span class="text">Orders</span>
+                    <span class="icon">🧪</span> <span class="text">Requests</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/labtech/patients') }}"
+                <a href="{{ asset('/labtech/patients') }}"
                    class="sidebar-btn{{ request()->is('labtech/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients List</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ url('/labtech/account') }}"
-                   class="sidebar-btn{{ request()->is('labtech/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="labtech-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="labtech-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn" onclick="confirmLogout('labtech-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Logout</span>

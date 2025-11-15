@@ -9,36 +9,38 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/nurse/home') }}"
+                <a href="/nurse/home"
                    class="sidebar-btn{{ request()->is('nurse/home') ? ' active' : '' }}">
-                    <span class="icon">🏠</span> <span class="text">Dashboard</span>
+                    <span class="icon">🏠</span> <span class="text">Home</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/patients') }}"
+                <a href="/nurse/patients"
                    class="sidebar-btn{{ request()->is('nurse/patients') ? ' active' : '' }}">
-                    <span class="icon">👥</span> <span class="text">Patients List</span>
+                    <span class="icon">👥</span> <span class="text">Patients</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/addPatients') }}" 
+                <a href="/nurse/addPatients" 
                    class="sidebar-btn{{ request()->is('nurse/addPatients') ? ' active' : '' }}">
-                    <span class="icon">➕</span> <span class="text">Add Patient</span>
+                    <span class="icon">➕</span> <span class="text">Admit</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/nurse/account') }}"
-                   class="sidebar-btn{{ request()->is('nurse/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
+                <a href="/nurse/medicine-request-history" 
+                   class="sidebar-btn{{ request()->is('nurse/medicine-request-history') ? ' active' : '' }}">
+                    <span class="icon">📋</span> <span class="text">Request History</span>
                 </a>
+            </li>
+            <li>
+                <form action="/logout" method="POST" id="nurse-logout-form" class="logout-form">
+                    @csrf
+                    <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout('nurse-logout-form')">
+                        <span class="icon">🚪</span> <span class="text">Logout</span>
+                    </button>
+                </form>
             </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="nurse-logout-form" class="logout-form">
-            @csrf
-            <button type="button" class="sidebar-btn logout-btn" onclick="confirmLogout('nurse-logout-form')">
-                <span class="icon">🚪</span> <span class="text">Logout</span>
-            </button>
-        </form>
     </nav>
 </div>
 
@@ -49,7 +51,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.querySelector('.main-content');
-        const isCollapsed = localStorage.getItem('nurseSidebarCollapsed') === 'true';
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         
         if (isCollapsed) {
             sidebar.classList.add('collapsed');
@@ -63,13 +65,6 @@
             
             // Don't adjust height during filtering (check if window.isFiltering exists)
             if (window.isFiltering) return;
-            
-            // Don't adjust height during modal interactions
-            if (window.isModalOpen) return;
-            
-            // Check if any modal is currently visible
-            const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
-            if (visibleModals.length > 0) return;
             
             requestAnimationFrame(() => {
                 const contentHeight = mainContent.scrollHeight;
@@ -89,12 +84,6 @@
         function debouncedHeightAdjustment() {
             if (isToggling) return; // Extra check
             if (window.isFiltering) return; // Don't adjust during filtering
-            if (window.isModalOpen) return; // Don't adjust during modal interactions
-            
-            // Check if any modal is currently visible
-            const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
-            if (visibleModals.length > 0) return;
-            
             clearTimeout(heightTimeout);
             heightTimeout = setTimeout(adjustLayoutHeight, 300);
         }
@@ -111,22 +100,7 @@
         const observer = new MutationObserver(function(mutations) {
             let shouldAdjust = false;
             
-            // Don't adjust during modal interactions
-            if (window.isModalOpen) return;
-            
-            // Check if any modal is currently visible
-            const visibleModals = document.querySelectorAll('.modal[style*="display: block"], .modal.show');
-            if (visibleModals.length > 0) return;
-            
             mutations.forEach(function(mutation) {
-                // Skip mutations related to modals or modal content
-                if (mutation.target.closest('.modal') || 
-                    mutation.target.classList.contains('modal') ||
-                    mutation.target.id === 'labRequestModal' ||
-                    mutation.target.closest('#labRequestModal')) {
-                    return;
-                }
-                
                 // Only adjust for actual content additions/removals, not attribute changes
                 if (mutation.type === 'childList') {
                     // Check if nodes were actually added or removed (not just hidden/shown)
@@ -135,17 +109,7 @@
                         const hasElementChanges = Array.from(mutation.addedNodes).some(node => node.nodeType === 1) ||
                                                 Array.from(mutation.removedNodes).some(node => node.nodeType === 1);
                         if (hasElementChanges) {
-                            // Double-check that the changes aren't in modal content
-                            const addedElementsInModal = Array.from(mutation.addedNodes).some(node => 
-                                node.nodeType === 1 && (node.closest('.modal') || node.classList.contains('modal'))
-                            );
-                            const removedElementsInModal = Array.from(mutation.removedNodes).some(node => 
-                                node.nodeType === 1 && (node.closest && node.closest('.modal')) || (node.classList && node.classList.contains('modal'))
-                            );
-                            
-                            if (!addedElementsInModal && !removedElementsInModal) {
-                                shouldAdjust = true;
-                            }
+                            shouldAdjust = true;
                         }
                     }
                 }
@@ -173,8 +137,8 @@
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('expanded');
             
-            // Save state to localStorage with unique key for nurse
-            localStorage.setItem('nurseSidebarCollapsed', sidebar.classList.contains('collapsed'));
+            // Save state to localStorage
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
             
             // Reset toggle flag after animation completes - but DON'T recalculate height
             setTimeout(() => {

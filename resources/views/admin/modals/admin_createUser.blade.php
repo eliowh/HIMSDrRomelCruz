@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
+<link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
 <div id="addUserModal" class="addUserModal">
     <div class="addUserModalContent">
         <button onclick="closeAddUserModal()" class="addUserModalClose">&times;</button>
@@ -24,25 +24,53 @@
             @csrf
             <div class="form-group">
                 <label class="form-label">Full Name</label>
-                <input type="text" 
-                       name="name" 
-                       class="form-input" 
-                       required 
-                       pattern="[a-zA-Z\s]+"
-                       title="Name can only contain letters and spaces"
-                       minlength="3"
-                       maxlength="20">
+          <input type="text" 
+              name="name" 
+              class="form-input" 
+              required 
+              pattern="[a-zA-Z\s]+"
+              title="Name can only contain letters and spaces"
+              minlength="3"
+              maxlength="20"
+              placeholder="e.g. Juan Dela Cruz">
+                <div class="error-text" style="display: none;"></div>
+            </div>
+            
+        <div class="form-group">
+                <label class="form-label">Title / Extension</label>
+          <input type="text" 
+              name="title" 
+              class="form-input" 
+              pattern="[a-zA-Z\s]+"
+              title="Title can only contain letters and spaces"
+              minlength="1"
+              maxlength="20"
+              placeholder="e.g. MD, RN, PhD">
+                <div class="error-text" style="display: none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">License Number</label>
+          <input type="text" 
+              name="license_number" 
+              class="form-input" 
+              pattern="[a-zA-Z0-9\-]+"
+              title="License number can only contain letters, numbers, and hyphens"
+              minlength="3"
+              maxlength="50"
+              placeholder="e.g. LIC-12345">
                 <div class="error-text" style="display: none;"></div>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Email Address</label>
-                <input type="email" 
-                       name="email" 
-                       class="form-input"
-                       required 
-                       pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$"
-                       title="Please enter a valid email address ending with .com">
+          <input type="email" 
+              name="email" 
+              class="form-input"
+              required 
+              pattern="^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$"
+              title="Please enter a valid email address (e.g. name@example.com)"
+              placeholder="e.g. name@example.com">
                 <div class="error-text" style="display: none;"></div>
             </div>
 
@@ -75,6 +103,8 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     
     const form = this;
     const nameField = form.querySelector('input[name="name"]');
+    const titleField = form.querySelector('input[name="title"]');
+    const licenseField = form.querySelector('input[name="license_number"]');
     const emailField = form.querySelector('input[name="email"]');
     const roleField = form.querySelector('select[name="role"]');
     const submitBtn = form.querySelector('.assign-btn');
@@ -96,9 +126,22 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
         isValid = false;
     }
     
+    // Title validation (optional)
+    if (titleField.value && !titleField.value.match(/^[a-zA-Z\s]{1,20}$/)) {
+        showError(titleField, 'Title must be 1-20 letters and can only contain letters and spaces.');
+        isValid = false;
+    }
+
+    // License number validation (optional)
+    if (licenseField.value && !licenseField.value.match(/^[a-zA-Z0-9\-]{3,50}$/)) {
+        showError(licenseField, 'License number must be 3-50 characters (letters, numbers, and hyphens only).');
+        isValid = false;
+    }
+    
     // Email validation
-    if (!emailField.value.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/)) {
-        showError(emailField, 'Please enter a valid email address ending with .com');
+    const emailRegex = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
+    if (!emailField.value.match(emailRegex)) {
+        showError(emailField, 'Please enter a valid email address (e.g. name@example.com)');
         isValid = false;
     }
     
@@ -112,7 +155,7 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
         submitBtn.disabled = true;
         submitBtn.textContent = 'Creating...';
         
-        fetch('{{ route('admin.createUser') }}', {
+        fetch('/admin/users/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -122,6 +165,8 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
             },
             body: JSON.stringify({
                 name: nameField.value,
+                title: titleField.value,
+                license_number: licenseField.value,
                 email: emailField.value,
                 role: roleField.value
             })
@@ -156,13 +201,14 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
             });
         })
         .then(data => {
+            // Show success message and reset the form. Do NOT force a full page reload here —
+            // reloading immediately closes the modal. If you want to refresh the user list,
+            // consider fetching the updated list via AJAX or refreshing manually.
             showSuccessMessage(data.message || 'User created successfully!');
             resetForm(form);
-            // Close modal and refresh so the new user appears in the list
+            // Close the modal after a brief delay so the user can read the success message.
             setTimeout(() => {
-                // Close the modal if it's open
                 try { closeAddUserModal(); } catch (e) {}
-                location.reload();
             }, 1000);
         })
         .catch(error => {

@@ -3,7 +3,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="{{url('css/forgotPass.css')}}">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
+    <link rel="stylesheet" href="{{asset('css/forgotPass.css')}}"
 </head>
 <body>
 <div class="container">
@@ -30,7 +31,7 @@
                 @endif
             </form>
             <br><br>
-            <a href="{{ url('/login') }}" class="back-link">
+            <a href="/login" class="back-link">
                 ← Back to Login
             </a>
         </div>

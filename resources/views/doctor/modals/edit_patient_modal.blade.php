@@ -1,0 +1,1469 @@
+<!-- Edit Patient Modal -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <span class="close modal-close">&times;</span>
+        <h3>Edit Patient</h3>
+        <form id="editPatientForm">
+            <input type="hidden" name="_token" value="{{ csrf_token() }}" />
+                <div class="two-column-form">
+                    <div class="form-group">
+                        <label for="edit_first_name">First Name</label>
+                        <input id="edit_first_name" name="first_name" placeholder="First name" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_last_name">Last Name</label>
+                        <input id="edit_last_name" name="last_name" placeholder="Last name" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_middle_name">Middle Name</label>
+                        <input id="edit_middle_name" name="middle_name" placeholder="Middle name" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_date_of_birth">Date of Birth</label>
+                        <input id="edit_date_of_birth" name="date_of_birth" type="date" required max="{{ date('Y-m-d') }}" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_sex">Sex</label>
+                        <select id="edit_sex" name="sex" required>
+                            <option value="" disabled>-- Select Sex --</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_contact_number">Contact Number</label>
+                        <input id="edit_contact_number" type="number" name="contact_number" placeholder="Enter contact number" min="1000000000" max="99999999999" maxlength="11" oninput="if(this.value.length > 11) this.value = this.value.slice(0, 11);" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_province">Province</label>
+                        <select id="edit_province" name="province" data-selected="">
+                            <option value="" disabled selected>-- Loading provinces... --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_city">City</label>
+                        <select id="edit_city" name="city" data-selected="">
+                            <option value="" disabled selected>-- Select province first --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_barangay">Barangay</label>
+                        <select id="edit_barangay" name="barangay" data-selected="">
+                            <option value="" disabled selected>-- Select city first --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_nationality">Nationality</label>
+                        <input id="edit_nationality" name="nationality" placeholder="Enter nationality" required />
+                    </div>
+
+                    <div class="form-divider full-width"></div>
+
+                    <div class="form-group">
+                        <label for="edit_room_no">Room</label>
+                        <div class="input-validation-container">
+                            <div class="suggestion-container">
+                                <input id="edit_room_no" name="room_no" placeholder="Type room name or price" autocomplete="off" />
+                                <div id="edit_room_suggestions" class="suggestion-list"></div>
+                            </div>
+                            <div id="edit_room_validation_error" class="validation-error"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_admission_diagnosis">Admission Diagnosis (ICD-10)</label>
+                        <div class="input-validation-container">
+                            <div class="suggestion-container">
+                                <input id="edit_admission_diagnosis" name="admission_diagnosis" type="text" autocomplete="off" placeholder="Type ICD-10 code or disease name" />
+                                <div id="edit_icd10_suggestions" class="suggestion-list"></div>
+                            </div>
+                            <div id="edit_icd10_validation_error" class="validation-error"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="edit_admission_diagnosis_description">Admission Diagnosis Description</label>
+                        <input id="edit_admission_diagnosis_description" name="admission_diagnosis_description" type="text" placeholder="Description will appear here" readonly />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_admission_type">Admission Type</label>
+                        <select id="edit_admission_type" name="admission_type" required>
+                            <option value="" disabled selected>-- Select Service --</option>
+                            <option value="Inpatient">Inpatient</option>
+                            <option value="Outpatient">Outpatient</option>
+                            <!-- Surgery option removed per request -->
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_doctor_name">Doctor</label>
+                        <div class="input-validation-container">
+                            <div class="suggestion-container">
+                                <input id="edit_doctor_input" type="text" autocomplete="off" placeholder="Type doctor name or select" />
+                                <div id="edit-doctor-suggestions" class="suggestion-list"></div>
+                            </div>
+                            <div id="edit-doctor-validation-error" class="validation-error"></div>
+                            <input type="hidden" id="edit_doctor_name" name="doctor_name" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_doctor_type">Specialization</label>
+                        <select id="edit_doctor_type" name="doctor_type" required>
+                            <option value="" disabled selected>-- Select --</option>
+                            <option value="PHYSICIAN">PHYSICIAN</option>
+                            <option value="SURGEON / ROD">SURGEON / ROD</option>
+                            <option value="PHYSICIAN / ROD">PHYSICIAN / ROD</option>
+                            <option value="ANESTHESIOLOGIST">ANESTHESIOLOGIST</option>
+                            <option value="GASTROENTEROLOGIST">GASTROENTEROLOGIST</option>
+                            <option value="NEUROLOGIST">NEUROLOGIST</option>
+                            <option value="ONCOLOGIST">ONCOLOGIST</option>
+                            <option value="OPHTHALMOLOGIST">OPHTHALMOLOGIST</option>
+                            <option value="ORTHOPAEDIC">ORTHOPAEDIC</option>
+                            <option value="OB-GYN / SURGEON">OB-GYN / SURGEON</option>
+                            <option value="PEDIATRICIAN">PEDIATRICIAN</option>
+                            <option value="INFECTIOUS MED.">INFECTIOUS MED.</option>
+                            <option value="UROLOGIST">UROLOGIST</option>
+                            <option value="ENT">ENT</option>
+                            <option value="NEPHROLOGIST">NEPHROLOGIST</option>
+                        </select>
+                    </div>
+
+                    <!-- Health History Section -->
+                    <div class="form-divider"></div>
+                    <div class="section-header full-width">
+                        <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">General Health History</h4>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_chronic_illnesses">Chronic Illnesses</label>
+                        <textarea id="edit_chronic_illnesses" name="chronic_illnesses" rows="2" placeholder="Chronic illnesses (diabetes, hypertension, etc.)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_hospitalization_history">Hospitalization History</label>
+                        <textarea id="edit_hospitalization_history" name="hospitalization_history" rows="2" placeholder="Previous hospitalizations (reason and dates)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_surgery_history">Surgery History</label>
+                        <textarea id="edit_surgery_history" name="surgery_history" rows="2" placeholder="Previous surgeries (type and dates)"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_accident_injury_history">Accident/Injury History</label>
+                        <textarea id="edit_accident_injury_history" name="accident_injury_history" rows="2" placeholder="Significant accidents or injuries"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_current_medications">Current Medications</label>
+                        <textarea id="edit_current_medications" name="current_medications" rows="2" placeholder="Current medications, dosages, and frequency"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_long_term_medications">Long-term Medications</label>
+                        <textarea id="edit_long_term_medications" name="long_term_medications" rows="2" placeholder="Previous long-term medications"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_known_allergies">Known Allergies</label>
+                        <textarea id="edit_known_allergies" name="known_allergies" rows="2" placeholder="Allergies and reactions"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_family_history_chronic">Family History of Chronic Diseases</label>
+                        <textarea id="edit_family_history_chronic" name="family_history_chronic" rows="2" placeholder="Family history of chronic diseases"></textarea>
+                    </div>
+
+                    <!-- Social History Section -->
+                    <div class="form-divider"></div>
+                    <div class="section-header full-width">
+                        <h4 style="color: #2c5f2d; margin: 0; font-size: 16px; font-weight: 600;">Social History</h4>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_smoking_history">Smoking History</label>
+                        <textarea id="edit_smoking_history" name="smoking_history" rows="2" placeholder="Smoking frequency, duration, and type"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_alcohol_consumption">Alcohol Consumption</label>
+                        <textarea id="edit_alcohol_consumption" name="alcohol_consumption" rows="2" placeholder="Frequency and type of alcohol consumption"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_recreational_drugs">Recreational Drugs</label>
+                        <textarea id="edit_recreational_drugs" name="recreational_drugs" rows="2" placeholder="Recreational drug use"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="edit_exercise_activity">Exercise/Physical Activity</label>
+                        <textarea id="edit_exercise_activity" name="exercise_activity" rows="2" placeholder="Exercise routine and physical activity level"></textarea>
+                    </div>
+                    
+                    <div class="form-actions full-width">
+                        <button type="button" class="btn cancel-btn modal-close">Cancel</button>
+                        <button id="savePatientBtn" type="button" class="btn submit-btn">Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add ICD-10 and Room suggestion scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize validation state variables
+    let editIcdIsValid = false;
+    let editRoomIsValid = false;
+    
+    // Dynamic height adjustment for modal
+    function adjustModalHeight() {
+        const modal = document.getElementById('editModal');
+        const modalContent = modal.querySelector('.modal-content');
+        const modalForm = modalContent.querySelector('form');
+        const modalHeader = modalContent.querySelector('h3');
+        
+        // Reset any previously set heights
+        modalForm.style.maxHeight = '';
+        
+        // Set a slight delay to ensure DOM is fully rendered
+        setTimeout(() => {
+            const viewportHeight = window.innerHeight;
+            const headerHeight = modalHeader.offsetHeight + 40; // Add padding
+            const maxFormHeight = viewportHeight * 0.9 - headerHeight; // 90% of viewport minus header
+            
+            modalForm.style.maxHeight = maxFormHeight + 'px';
+        }, 50);
+    }
+    
+    // Adjust modal height when shown
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'class') {
+                const modal = document.getElementById('editModal');
+                if (modal.classList.contains('open') || modal.classList.contains('show')) {
+                    adjustModalHeight();
+                }
+            }
+        });
+    });
+    
+    // Date of Birth validation
+    const editDateOfBirthInput = document.getElementById('edit_date_of_birth');
+    if (editDateOfBirthInput) {
+        editDateOfBirthInput.addEventListener('change', function() {
+            if (!this.value) return; // Skip validation if no value
+            
+            const selectedDate = this.value; // Get the date string directly
+            const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+            
+            if (selectedDate > today) {
+                doctorError('Date of Birth cannot be in the future.');
+                this.setCustomValidity('Date of Birth cannot be in the future.');
+                this.value = ''; // Clear the invalid date
+            } else {
+                this.setCustomValidity(''); // Clear any previous custom validity
+            }
+        });
+        
+        editDateOfBirthInput.addEventListener('input', function() {
+            if (this.value) {
+                const selectedDate = this.value; // Get the date string directly
+                const today = new Date().toISOString().split('T')[0]; // Get today in YYYY-MM-DD format
+                
+                if (selectedDate > today) {
+                    this.setCustomValidity('Date of Birth cannot be in the future.');
+                } else {
+                    this.setCustomValidity(''); // Clear any previous custom validity
+                }
+            }
+        });
+    }
+    
+    const modal = document.getElementById('editModal');
+    observer.observe(modal, { attributes: true });
+    
+    // Adjust on window resize
+    window.addEventListener('resize', () => {
+        if (modal.classList.contains('open') || modal.classList.contains('show')) {
+            adjustModalHeight();
+        }
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.classList.remove('open');
+            modal.classList.remove('show');
+        }
+    });
+    
+    // Enhanced ICD-10 autocomplete with validation
+    (function(){
+        const input = document.getElementById('edit_admission_diagnosis');
+        const descField = document.getElementById('edit_admission_diagnosis_description');
+        const container = document.getElementById('edit_icd10_suggestions');
+        const errorDiv = document.getElementById('edit_icd10_validation_error');
+        if (!input || !container) return;
+        
+        let timer = null; 
+        let activeIndex = -1; 
+        let lastItems = [];
+        
+        function clearSuggestions(){ 
+            container.innerHTML=''; 
+            container.style.display='none'; 
+            activeIndex=-1; 
+            lastItems=[];
+            // Reset dropdown state when clearing suggestions
+            window.isDropdownOpen = false;
+        }
+        
+        function renderSuggestions(items, showAll = false){ 
+            lastItems=items; 
+            if(!items||!items.length){ 
+                clearSuggestions(); 
+                return;
+            } 
+            container.innerHTML=''; 
+            
+            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 10);
+            
+            itemsToShow.forEach((it,idx)=>{ 
+                const el=document.createElement('div'); 
+                el.className='icd-suggestion'; 
+                el.dataset.index=idx; 
+                el.innerHTML = '<span class="code">'+escapeHtml(it.code)+'</span> <span class="desc">'+escapeHtml(it.description)+'</span>'; 
+                el.addEventListener('click',()=>selectItem(idx, itemsToShow)); 
+                container.appendChild(el); 
+            }); 
+            container.style.display='block'; 
+            activeIndex=-1; 
+        }
+        
+        function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
+        
+        function selectItem(idx, items = lastItems){ 
+            const item=items[idx]; 
+            if(!item) return; 
+            input.value = item.code || ''; 
+            if(descField) descField.value = item.description || ''; 
+            editIcdIsValid = true;
+            hideError();
+            clearSuggestions(); 
+            window.isModalOpen = false;
+            window.isDropdownOpen = false;
+        }
+        
+        function highlightActive(){ 
+            const nodes = container.querySelectorAll('.icd-suggestion'); 
+            nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+        }
+        
+        function showError(message) {
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                errorDiv.classList.add('visible');
+            }
+        }
+        
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+                errorDiv.classList.remove('visible');
+            }
+        }
+        
+        function validateIcdInput() {
+            const currentValue = input.value.trim();
+            if (!currentValue) {
+                editIcdIsValid = true; // Allow empty
+                hideError();
+                return;
+            }
+            
+            // Validate against full database via server
+            fetch('/icd10/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ code: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                editIcdIsValid = result.valid || false;
+                if (!editIcdIsValid) {
+                    showError('Please select a valid ICD-10 code from the list.');
+                } else {
+                    hideError();
+                }
+            })
+            .catch(e => {
+                console.error('ICD validation error', e);
+                editIcdIsValid = false;
+                showError('Unable to validate ICD-10 code. Please try again.');
+            });
+        }
+        
+        input.addEventListener('input', ()=>{
+            editIcdIsValid = false;
+            if(descField) descField.value = '';
+            clearTimeout(timer);
+            const val = input.value.trim();
+            if(!val){ 
+                clearSuggestions(); 
+                hideError();
+                return; 
+            }
+            
+            timer = setTimeout(()=>{
+                fetch('/icd10/search?q='+encodeURIComponent(val))
+                    .then(async r=>{
+                        const ct=(r.headers.get('content-type')||'').toLowerCase();
+                        const text=await r.text();
+                        if(ct.includes('application/json')){
+                            try{ 
+                                const codes = JSON.parse(text);
+                                renderSuggestions(codes);
+                            }catch(e){ console.error('ICD parse error',e); }
+                        }
+                    })
+                    .catch(e=>console.error('ICD fetch error',e));
+            }, 300);
+        });
+        
+        input.addEventListener('focus', () => {
+            window.isModalOpen = true;
+            window.isDropdownOpen = true;
+        });
+        
+        input.addEventListener('keydown', (e)=>{
+            if(!lastItems.length) return;
+            if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%lastItems.length; highlightActive(); }
+            else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=activeIndex<=0?(lastItems.length-1):(activeIndex-1); highlightActive(); }
+            else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); }
+            else if(e.key==='Escape'){ clearSuggestions(); }
+        });
+        
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                validateIcdInput();
+                clearSuggestions();
+                window.isModalOpen = false;
+                window.isDropdownOpen = false;
+            }, 200);
+        });
+        
+        document.addEventListener('click',(e)=>{ 
+            if(!container.contains(e.target) && e.target !== input) {
+                clearSuggestions();
+                // Reset dropdown state when clicking outside
+                window.isDropdownOpen = false;
+                window.isModalOpen = false;
+            }
+        });
+    })();
+    
+    // Enhanced room autocomplete with validation
+    (function(){
+        const input = document.getElementById('edit_room_no');
+        const container = document.getElementById('edit_room_suggestions');
+        const errorDiv = document.getElementById('edit_room_validation_error');
+        if (!input || !container) return;
+        
+        let timer = null;
+        let activeIndex = -1;
+        let lastItems = [];
+
+        function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        
+        function clearSuggestions(){ 
+            container.innerHTML=''; 
+            container.style.display='none'; 
+            activeIndex=-1; 
+            lastItems=[];
+            // Reset dropdown state when clearing suggestions
+            window.isDropdownOpen = false;
+        }
+        
+        function renderSuggestions(items, showAll = false){ 
+            lastItems = items || []; 
+            if(!lastItems.length){ clearSuggestions(); return; } 
+            container.innerHTML = ''; 
+            
+            const itemsToShow = showAll ? lastItems : lastItems.slice(0, 10);
+
+            itemsToShow.forEach((it,idx)=>{ 
+                const el=document.createElement('div'); 
+                el.className='room-suggestion'; 
+                el.dataset.index=idx; 
+                el.innerHTML = '<span class="code">'+escapeHtml(it.name)+'</span>' + (it.price ? ' <span class="desc">₱'+escapeHtml(it.price)+'</span>' : '');
+                el.addEventListener('click',()=>selectItem(idx, itemsToShow)); 
+                container.appendChild(el); 
+            }); 
+            container.style.display='block'; 
+            activeIndex=-1; 
+        }
+        
+        function selectItem(idx, items = lastItems){ 
+            const item=items[idx]; 
+            if(!item) return; 
+            input.value = item.name || ''; 
+            editRoomIsValid = true;
+            hideError();
+            clearSuggestions(); 
+            window.isModalOpen = false;
+            window.isDropdownOpen = false;
+        }
+        
+        function highlightActive(){ 
+            const nodes = container.querySelectorAll('.room-suggestion'); 
+            nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+        }
+
+        function showError(message) {
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('visible');
+            }
+        }
+        
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.classList.remove('visible');
+            }
+        }
+
+        function validateRoomInput() {
+            const currentValue = input.value.trim();
+            if (!currentValue) {
+                editRoomIsValid = true; // Allow empty
+                hideError();
+                return;
+            }
+            
+            // Validate against full database via server
+            fetch('/rooms/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                editRoomIsValid = result.valid || false;
+                if (!editRoomIsValid) {
+                    showError('Please select a valid room from the list.');
+                } else {
+                    hideError();
+                }
+            })
+            .catch(e => {
+                console.error('Room validation error', e);
+                editRoomIsValid = false;
+                showError('Unable to validate room. Please try again.');
+            });
+        }
+
+        input.addEventListener('input', ()=>{
+            editRoomIsValid = false;
+            clearTimeout(timer);
+            const val = input.value.trim();
+            if(!val){ clearSuggestions(); hideError(); return; }
+            
+            timer = setTimeout(()=>{
+                fetch('/rooms/search?q='+encodeURIComponent(val))
+                    .then(async r=>{
+                        const ct=(r.headers.get('content-type')||'').toLowerCase();
+                        const text=await r.text();
+                        if(ct.includes('application/json')){
+                            try{ 
+                                const rooms = JSON.parse(text);
+                                renderSuggestions(rooms); // Show filtered results
+                            }catch(e){ console.error('Room parse error',e); }
+                        }
+                    })
+                    .catch(e=>console.error('Room fetch error',e));
+            }, 300);
+        });
+
+        input.addEventListener('focus', () => {
+            window.isModalOpen = true;
+            window.isDropdownOpen = true;
+        });
+
+        input.addEventListener('keydown', (e)=>{
+            if(!lastItems.length) return;
+            if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=(activeIndex+1)%lastItems.length; highlightActive(); }
+            else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=activeIndex<=0?(lastItems.length-1):(activeIndex-1); highlightActive(); }
+            else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) selectItem(activeIndex); }
+            else if(e.key==='Escape'){ clearSuggestions(); }
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                validateRoomInput();
+                clearSuggestions();
+                window.isModalOpen = false;
+                window.isDropdownOpen = false;
+            }, 200);
+        });
+
+        document.addEventListener('click',(e)=>{ 
+            if(!container.contains(e.target) && e.target !== input) {
+                clearSuggestions();
+                // Reset dropdown state when clicking outside
+                window.isDropdownOpen = false;
+                window.isModalOpen = false;
+            }
+        });
+    })();
+
+    // Doctor selection mapping for edit modal
+    const editDoctorMap = {
+        "Maria Rhiana R. Uy, MD": "PHYSICIAN / ROD",
+        "Americus Rocina, MD": "PHYSICIAN",
+        "Jaime S. Antonio, MD": "SURGEON / ROD",
+        "Fritzie Ann F. Oaferina, MD": "SURGEON / ROD",
+        "Rex Karl S. Teoxon, MD": "SURGEON / ROD",
+        "Jose Emiliano T. Gatchalian, MD": "SURGEON",
+        "Rafael M. Cruz, MD": "ANESTHESIOLOGIST",
+        "Lord Chris Angelo Bordador, MD": "ANESTHESIOLOGIST",
+        "Moel A. Diaz, MD": "ANESTHESIOLOGIST",
+        "Jonathan Rie Hinojales Jr.,MD": "ANESTHESIOLOGIST",
+        "Maharlika Filipino Oaferina, MD": "ANESTHESIOLOGIST",
+        "Lloyd S. Torres, MD": "GASTROENTEROLOGIST",
+        "Ronnie C. Lao, MD": "NEUROLOGIST",
+        "Ana Lea V. Lava, MD": "ONCOLOGIST",
+        "Ronaldo Mathias A. Noche, MD": "OPHTHALMOLOGIST",
+        "Rotchelle D.Pugh, MD": "OPHTHALMOLOGIST",
+        "Ceasar Anthony S. Bautista, MD": "ORTHOPAEDIC",
+        "Daverie T. De Jesus, MD": "ORTHOPAEDIC",
+        "Mary Rose DL. Matheo, MD": "OB-GYN / SURGEON",
+        "Rebecca Q. Ramos, MD": "PEDIATRICIAN",
+        "Ronald C. Añosa, MD": "PEDIATRICIAN",
+        "Marivie Del Rosario, MD": "PEDIATRICIAN",
+        "Grace P. Retuerma, MD": "INFECTIOUS MED.",
+        "Maewain M. Bautista, MD": "UROLOGIST",
+        "Maria Pamela E. Pahati, MD": "UROLOGIST",
+        "Maria B. Conanan, MD": "ENT",
+        "Serah Kae Laquindanum, MD": "NEPHROLOGIST",
+        "Mara B. Tugade, MD": "NEPHROLOGIST"
+    };
+
+    // Note: edit_doctor_select doesn't exist in this modal, using autocomplete input instead
+    const editDoctorInput = document.getElementById('edit_doctor_input');
+    const editDoctorName = document.getElementById('edit_doctor_name');
+    const editDoctorType = document.getElementById('edit_doctor_type');
+
+    // Enhanced doctor autocomplete with validation
+    (function(){
+        const input = document.getElementById('edit_doctor_input');
+        const container = document.getElementById('edit-doctor-suggestions');
+        const hiddenName = document.getElementById('edit_doctor_name');
+        const typeSelect = document.getElementById('edit_doctor_type');
+        const errorDiv = document.getElementById('edit-doctor-validation-error');
+        if (!input || !container) return;
+
+        let timer = null;
+        let activeIndex = -1;
+        let lastItems = [];
+        let editDoctorIsValid = true;
+
+        function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        
+        function clearSuggestions(){ 
+            container.innerHTML=''; 
+            container.style.display='none'; 
+            container.style.visibility='hidden';
+            activeIndex=-1; 
+            lastItems=[];
+        }
+        
+        function renderSuggestions(items){ 
+            console.log('renderSuggestions called with items:', items);
+            lastItems = items || []; 
+            if(!lastItems.length){ 
+                console.log('No items to show, clearing suggestions');
+                clearSuggestions(); 
+                return; 
+            } 
+            console.log('Showing', lastItems.length, 'suggestions');
+            container.innerHTML = ''; 
+            
+            lastItems.slice(0,20).forEach((it,idx)=>{ 
+                const el=document.createElement('div'); 
+                el.className='icd-suggestion'; 
+                el.dataset.index=idx; 
+                el.textContent = escapeHtml(it.name) + (it.type ? (' — '+escapeHtml(it.type)) : ''); 
+                el.addEventListener('click', ()=> selectItem(idx)); 
+                container.appendChild(el); 
+            }); 
+            
+            // Force show the container when we have suggestions
+            container.style.display='block'; 
+            container.style.visibility='visible';
+            activeIndex=-1; 
+        }
+        
+        function selectItem(idx){ 
+            const it = lastItems[idx]; 
+            if(!it) return; 
+            hiddenName.value = it.name || ''; 
+            if(typeSelect && it.type) typeSelect.value = it.type; 
+            input.value = it.name || ''; 
+            editDoctorIsValid = true;
+            hideError();
+            clearSuggestions(); 
+        }
+
+        function showError(message) {
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('visible');
+            }
+        }
+        
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.classList.remove('visible');
+            }
+        }
+
+        function validateDoctorInput() {
+            const currentValue = input.value.trim();
+            if (!currentValue) {
+                editDoctorIsValid = true; // Allow empty
+                hideError();
+                hiddenName.value = '';
+                return;
+            }
+            
+            // Validate against database via server
+            fetch('/doctors/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name: currentValue })
+            })
+            .then(async r => {
+                const result = await r.json();
+                editDoctorIsValid = result.valid || false;
+                if (!editDoctorIsValid) {
+                    showError('Please select a valid doctor from the list.');
+                    hiddenName.value = '';
+                } else {
+                    hideError();
+                    hiddenName.value = currentValue;
+                    if (result.type && typeSelect) {
+                        typeSelect.value = result.type;
+                    }
+                }
+            })
+            .catch(e => {
+                console.error('Doctor validation error', e);
+                editDoctorIsValid = false;
+                showError('Unable to validate doctor. Please try again.');
+                hiddenName.value = '';
+            });
+        }
+        
+        input.addEventListener('input', ()=>{ 
+            clearTimeout(timer); 
+            const q = input.value.trim(); 
+            hideError(); // Clear errors when typing
+            if(!q){ 
+                clearSuggestions(); 
+                hiddenName.value = '';
+                editDoctorIsValid = true;
+                return;
+            } 
+            timer = setTimeout(()=>{ 
+                console.log('Searching for doctors with query:', q);
+                fetch('/doctors/search?q='+encodeURIComponent(q))
+                    .then(r=>{
+                        console.log('Doctor search response status:', r.status);
+                        return r.json();
+                    })
+                    .then(data=>{
+                        console.log('Doctor search results:', data);
+                        renderSuggestions(data||[]);
+                    })
+                    .catch(e=>{
+                        console.error('Doctor fetch error', e);
+                        showError('Error searching doctors. Please try again.');
+                    }); 
+            }, 250); 
+        });
+        
+        input.addEventListener('keydown', (e)=>{ 
+            const nodes = container.querySelectorAll('.icd-suggestion'); 
+            if(!nodes.length) return; 
+            if(e.key==='ArrowDown'){ 
+                e.preventDefault(); 
+                activeIndex=(activeIndex+1)%nodes.length; 
+                nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+            } else if(e.key==='ArrowUp'){ 
+                e.preventDefault(); 
+                activeIndex=activeIndex<=0?(nodes.length-1):(activeIndex-1); 
+                nodes.forEach((n,i)=> n.classList.toggle('active', i===activeIndex)); 
+            } else if(e.key==='Enter'){ 
+                e.preventDefault(); 
+                if(activeIndex>=0) selectItem(activeIndex); 
+            } else if(e.key==='Escape'){ 
+                clearSuggestions(); 
+            } 
+        });
+        
+        input.addEventListener('blur', ()=> {
+            setTimeout(() => {
+                clearSuggestions();
+                validateDoctorInput(); // Validate when losing focus
+            }, 200);
+        });
+        
+        // Initialize - ensure suggestions are hidden
+        function initializeDoctorField() {
+            clearSuggestions();
+            hideError();
+            input.value = '';
+            hiddenName.value = '';
+            editDoctorIsValid = true;
+        }
+        
+        // Initialize when script loads
+        initializeDoctorField();
+        
+        // Store validation state for form submission
+        window.editDoctorIsValid = () => editDoctorIsValid;
+        window.initializeDoctorField = initializeDoctorField;
+    })();
+
+    // Dynamic dropdown population for province, city, and barangay
+    const provinceDropdown = document.getElementById('edit_province');
+    const cityDropdown = document.getElementById('edit_city');
+    const barangayDropdown = document.getElementById('edit_barangay');
+
+    provinceDropdown.addEventListener('change', function() {
+        const selectedProvince = this.value;
+        cityDropdown.innerHTML = '<option value="" disabled selected>-- Loading cities... --</option>';
+        barangayDropdown.innerHTML = '<option value="" disabled selected>-- Select city first --</option>';
+
+        fetch(`/api/locations/cities?province=${selectedProvince}`)
+            .then(response => response.json())
+            .then(data => {
+                cityDropdown.innerHTML = '<option value="" disabled selected>-- Select city --</option>';
+                data.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name;
+                    option.textContent = city.name;
+                    cityDropdown.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading cities:', error));
+    });
+
+    cityDropdown.addEventListener('change', function() {
+        const selectedCity = this.value;
+        barangayDropdown.innerHTML = '<option value="" disabled selected>-- Loading barangays... --</option>';
+
+        fetch(`/api/locations/barangays?city=${selectedCity}`)
+            .then(response => response.json())
+            .then(data => {
+                barangayDropdown.innerHTML = '<option value="" disabled selected>-- Select barangay --</option>';
+                data.forEach(barangay => {
+                    const option = document.createElement('option');
+                    option.value = barangay.name;
+                    option.textContent = barangay.name;
+                    barangayDropdown.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading barangays:', error));
+    });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE = '/api/locations';
+    const provinceSel = document.getElementById('edit_province');
+    const citySel = document.getElementById('edit_city');
+    const barangaySel = document.getElementById('edit_barangay');
+
+    function clearSelect(sel) {
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+    }
+
+    function addOption(sel, value, text, isSelected, dataCode) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        if (isSelected) opt.selected = true;
+        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+        sel.appendChild(opt);
+    }
+
+    function normalize(s) {
+        if (!s) return '';
+        return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w\s]/g, '').toLowerCase().trim();
+    }
+
+    const preSelectedProvinceValue = provinceSel.value || provinceSel.getAttribute('data-selected') || '';
+    let preSelectedCityValue = citySel.value || citySel.getAttribute('data-selected') || '';
+    let preSelectedBarangayValue = barangaySel ? (barangaySel.value || barangaySel.getAttribute('data-selected') || '') : '';
+
+    let provincesList = [];
+    fetch(API_BASE + '/provinces')
+        .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+        .then(list => {
+            provincesList = Array.isArray(list) ? list : [];
+            clearSelect(provinceSel);
+            addOption(provinceSel, '', '-- Select Province --', false, '');
+            provincesList.forEach(p => {
+                const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
+                const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
+                if (!name) return;
+                addOption(provinceSel, name, name, false, code);
+            });
+
+            const preFromField = preSelectedProvinceValue || '';
+            if (preFromField) {
+                let opt = Array.from(provinceSel.options).find(o => o.value === preFromField);
+                let code = opt ? opt.dataset.code : '';
+                if (!opt && provincesList.length) {
+                    const normTarget = normalize(preFromField);
+                    const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                    if (found) {
+                        opt = Array.from(provinceSel.options).find(o => normalize(o.value) === normalize(found.name || found.province_name || found.provDesc || found.prov_name || found.province || '')) || null;
+                        code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                    }
+                }
+                if (opt) {
+                    opt.selected = true;
+                    setTimeout(() => {
+                        provinceSel.dispatchEvent(new Event('change'));
+                    }, 50);
+                }
+            }
+        })
+        .catch(err => { console.warn('Failed to load provinces for doctor modal', err); clearSelect(provinceSel); addOption(provinceSel, '', '-- Unable to load provinces --', false, ''); });
+
+    function loadCitiesForProvince(provinceName, provinceCode) {
+        clearSelect(citySel);
+        addOption(citySel, '', '-- Loading cities... --', false, '');
+        const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
+        fetch(citiesUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No cities'))
+            .then(list => {
+                clearSelect(citySel);
+                addOption(citySel, '', '-- Select City --', false, '');
+                list.forEach(c => {
+                    const cname = c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '';
+                    const code = c.code || c.city_code || c.id || '';
+                    if (!cname) return;
+                    const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
+                    addOption(citySel, cname, cname, isSelected, code);
+                    if (isSelected) {
+                        preSelectedCityValue = '';
+                        setTimeout(() => {
+                            citySel.dispatchEvent(new Event('change'));
+                        }, 50);
+                    }
+                });
+            })
+            .catch(err => { console.warn('Failed to load cities for doctor modal', err); clearSelect(citySel); addOption(citySel, '', '-- Unable to load cities --', false, ''); });
+    }
+
+    function loadBarangaysForCity(cityName, cityCode) {
+        clearSelect(barangaySel);
+        addOption(barangaySel, '', '-- Loading Barangays... --', false, '');
+        const barangaysUrl = API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName)));
+        fetch(barangaysUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+            .then(list => {
+                clearSelect(barangaySel);
+                addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                list.forEach(b => {
+                    const bname = b.name || b.barangayDesc || b.barangay || '';
+                    const code = b.code || b.id || b.barangay_code || '';
+                    if (!bname) return;
+                    const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                    addOption(barangaySel, bname, bname, isSelected, code);
+                    if (isSelected) preSelectedBarangayValue = '';
+                });
+            })
+            .catch(err => { console.warn('Failed to load barangays for doctor modal', err); clearSelect(barangaySel); addOption(barangaySel, '', '-- Unable to load barangays --', false, ''); });
+    }
+
+    provinceSel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const provName = selOpt ? selOpt.value : '';
+        const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (provName) loadCitiesForProvince(provName, provCode);
+        else { clearSelect(citySel); addOption(citySel, '', '-- Select province first --', false, ''); }
+    });
+
+    citySel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const cityName = selOpt ? selOpt.value : '';
+        const cityCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (cityName) loadBarangaysForCity(cityName, cityCode);
+        else { clearSelect(barangaySel); addOption(barangaySel, '', '-- Select city first --', false, ''); }
+    });
+});
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const API_BASE = '/api/locations';
+
+        function clearSelect(sel) {
+            while (sel.firstChild) sel.removeChild(sel.firstChild);
+        }
+
+        function addOption(sel, value, text, isSelected, dataCode) {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = text;
+            if (isSelected) opt.selected = true;
+            if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+            sel.appendChild(opt);
+        }
+
+        const provinceSel = document.getElementById('edit_province');
+        const citySel = document.getElementById('edit_city');
+        const barangaySel = document.getElementById('edit_barangay');
+
+        fetch(API_BASE + '/provinces')
+            .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+            .then(list => {
+                clearSelect(provinceSel);
+                addOption(provinceSel, '', '-- Select Province --', false, '');
+                list.forEach(p => {
+                    const name = p.name || p.province_name || '';
+                    const code = p.code || p.province_code || '';
+                    addOption(provinceSel, name, name, false, code);
+                });
+            })
+            .catch(err => console.warn('Failed to load provinces', err));
+
+        provinceSel.addEventListener('change', function() {
+            const selOpt = this.options[this.selectedIndex];
+            const provName = selOpt ? selOpt.value : '';
+            const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+            clearSelect(citySel);
+            addOption(citySel, '', '-- Loading cities... --', false, '');
+            fetch(API_BASE + '/cities' + (provCode ? ('?province_code=' + encodeURIComponent(provCode)) : ('?province=' + encodeURIComponent(provName))))
+                .then(r => r.ok ? r.json() : Promise.reject('No cities'))
+                .then(list => {
+                    clearSelect(citySel);
+                    addOption(citySel, '', '-- Select City --', false, '');
+                    list.forEach(c => {
+                        const name = c.name || c.city_name || '';
+                        const code = c.code || c.city_code || '';
+                        addOption(citySel, name, name, false, code);
+                    });
+                })
+                .catch(err => console.warn('Failed to load cities', err));
+        });
+
+        citySel.addEventListener('change', function() {
+            const selOpt = this.options[this.selectedIndex];
+            const cityName = selOpt ? selOpt.value : '';
+            const cityCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+            clearSelect(barangaySel);
+            addOption(barangaySel, '', '-- Loading barangays... --', false, '');
+            fetch(API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName))))
+                .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+                .then(list => {
+                    clearSelect(barangaySel);
+                    addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                    list.forEach(b => {
+                        const name = b.name || b.barangayDesc || '';
+                        const code = b.code || b.barangay_code || '';
+                        addOption(barangaySel, name, name, false, code);
+                    });
+                })
+                .catch(err => console.warn('Failed to load barangays', err));
+        });
+    });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE = '/api/locations';
+    const provinceSel = document.getElementById('edit_province');
+    const citySel = document.getElementById('edit_city');
+    const barangaySel = document.getElementById('edit_barangay');
+
+    function clearSelect(sel) {
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+    }
+
+    function addOption(sel, value, text, isSelected, dataCode) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        if (isSelected) opt.selected = true;
+        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+        sel.appendChild(opt);
+    }
+
+    const preSelectedProvinceValue = provinceSel.value || provinceSel.getAttribute('data-selected') || '';
+    let preSelectedCityValue = citySel.value || citySel.getAttribute('data-selected') || '';
+    let preSelectedBarangayValue = barangaySel ? (barangaySel.value || barangaySel.getAttribute('data-selected') || '') : '';
+
+    let provincesList = [];
+    fetch(API_BASE + '/provinces')
+        .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+        .then(list => {
+            provincesList = Array.isArray(list) ? list : [];
+            clearSelect(provinceSel);
+            addOption(provinceSel, '', '-- Select Province --', false, '');
+            provincesList.forEach(p => {
+                const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
+                const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
+                if (!name) return;
+                addOption(provinceSel, name, name, false, code);
+            });
+
+            const preFromField = preSelectedProvinceValue || '';
+            if (preFromField) {
+                let opt = Array.from(provinceSel.options).find(o => o.value === preFromField);
+                let code = opt ? opt.dataset.code : '';
+                if (!opt && provincesList.length) {
+                    const normTarget = normalize(preFromField);
+                    const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                    if (found) {
+                        opt = Array.from(provinceSel.options).find(o => normalize(o.value) === normalize(found.name || found.province_name || found.provDesc || found.prov_name || found.province || '')) || null;
+                        code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                    }
+                }
+                if (opt) {
+                    opt.selected = true;
+                    setTimeout(() => {
+                        provinceSel.dispatchEvent(new Event('change'));
+                    }, 50);
+                }
+            }
+        })
+        .catch(err => { console.warn('Failed to load provinces for doctor modal', err); clearSelect(provinceSel); addOption(provinceSel, '', '-- Unable to load provinces --', false, ''); });
+
+    function loadCitiesForProvince(provinceName, provinceCode) {
+        clearSelect(citySel);
+        addOption(citySel, '', '-- Loading cities... --', false, '');
+        const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
+        fetch(citiesUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No cities'))
+            .then(list => {
+                clearSelect(citySel);
+                addOption(citySel, '', '-- Select City --', false, '');
+                list.forEach(c => {
+                    const cname = c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '';
+                    const code = c.code || c.city_code || c.id || '';
+                    if (!cname) return;
+                    const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
+                    addOption(citySel, cname, cname, isSelected, code);
+                    if (isSelected) {
+                        preSelectedCityValue = '';
+                        setTimeout(() => {
+                            citySel.dispatchEvent(new Event('change'));
+                        }, 50);
+                    }
+                });
+            })
+            .catch(err => { console.warn('Failed to load cities for doctor modal', err); clearSelect(citySel); addOption(citySel, '', '-- Unable to load cities --', false, ''); });
+    }
+
+    function loadBarangaysForCity(cityName, cityCode) {
+        clearSelect(barangaySel);
+        addOption(barangaySel, '', '-- Loading Barangays... --', false, '');
+        const barangaysUrl = API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName)));
+        fetch(barangaysUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+            .then(list => {
+                clearSelect(barangaySel);
+                addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                list.forEach(b => {
+                    const bname = b.name || b.barangayDesc || b.barangay || '';
+                    const code = b.code || b.id || b.barangay_code || '';
+                    if (!bname) return;
+                    const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                    addOption(barangaySel, bname, bname, isSelected, code);
+                    if (isSelected) preSelectedBarangayValue = '';
+                });
+            })
+            .catch(err => { console.warn('Failed to load barangays for doctor modal', err); clearSelect(barangaySel); addOption(barangaySel, '', '-- Unable to load barangays --', false, ''); });
+    }
+
+    provinceSel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const provName = selOpt ? selOpt.value : '';
+        const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (provName) loadCitiesForProvince(provName, provCode);
+        else { clearSelect(citySel); addOption(citySel, '', '-- Select province first --', false, ''); }
+    });
+
+    citySel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const cityName = selOpt ? selOpt.value : '';
+        const cityCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (cityName) loadBarangaysForCity(cityName, cityCode);
+        else { clearSelect(barangaySel); addOption(barangaySel, '', '-- Select city first --', false, ''); }
+    });
+});
+</script>
+
+<script>
+function initDoctorProvinceCitySelects() {
+    const API_BASE = '/api/locations';
+    const provinceSel = document.getElementById('edit_province');
+    const citySel = document.getElementById('edit_city');
+    const barangaySel = document.getElementById('edit_barangay');
+
+    function clearSelect(sel) {
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+    }
+
+    function addOption(sel, value, text, isSelected, dataCode) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = text;
+        if (isSelected) opt.selected = true;
+        if (dataCode !== undefined && dataCode !== null) opt.dataset.code = dataCode;
+        sel.appendChild(opt);
+    }
+
+    function normalize(s) {
+        if (!s) return '';
+        return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^\w\s]/g, '').toLowerCase().trim();
+    }
+
+    const preSelectedProvinceValue = provinceSel.value || provinceSel.getAttribute('data-selected') || '';
+    let preSelectedCityValue = citySel.value || citySel.getAttribute('data-selected') || '';
+    let preSelectedBarangayValue = barangaySel ? (barangaySel.value || barangaySel.getAttribute('data-selected') || '') : '';
+
+    let provincesList = [];
+    fetch(API_BASE + '/provinces')
+        .then(r => r.ok ? r.json() : Promise.reject('No provinces'))
+        .then(list => {
+            provincesList = Array.isArray(list) ? list : [];
+            clearSelect(provinceSel);
+            addOption(provinceSel, '', '-- Select Province --', false, '');
+            provincesList.forEach(p => {
+                const name = p.name || p.province_name || p.provDesc || p.prov_name || p.province || '';
+                const code = p.code || p.province_code || p.provCode || p.prov_code || p.id || '';
+                if (!name) return;
+                addOption(provinceSel, name, name, false, code);
+            });
+
+            const preFromField = preSelectedProvinceValue || '';
+            if (preFromField) {
+                let opt = Array.from(provinceSel.options).find(o => o.value === preFromField);
+                let code = opt ? opt.dataset.code : '';
+                if (!opt && provincesList.length) {
+                    const normTarget = normalize(preFromField);
+                    const found = provincesList.find(pp => normalize(pp.name || pp.province_name || pp.provDesc || pp.prov_name || pp.province || '') === normTarget);
+                    if (found) {
+                        opt = Array.from(provinceSel.options).find(o => normalize(o.value) === normalize(found.name || found.province_name || found.provDesc || found.prov_name || found.province || '')) || null;
+                        code = found.code || found.provCode || found.province_code || found.prov_code || found.id || '';
+                    }
+                }
+                if (opt) {
+                    opt.selected = true;
+                    setTimeout(() => {
+                        provinceSel.dispatchEvent(new Event('change'));
+                    }, 50);
+                }
+            }
+        })
+        .catch(err => { console.warn('Failed to load provinces for doctor modal', err); clearSelect(provinceSel); addOption(provinceSel, '', '-- Unable to load provinces --', false, ''); });
+
+    function loadCitiesForProvince(provinceName, provinceCode) {
+        clearSelect(citySel);
+        addOption(citySel, '', '-- Loading cities... --', false, '');
+        const citiesUrl = API_BASE + '/cities' + (provinceCode ? ('?province_code=' + encodeURIComponent(provinceCode)) : ('?province=' + encodeURIComponent(provinceName)));
+        fetch(citiesUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No cities'))
+            .then(list => {
+                clearSelect(citySel);
+                addOption(citySel, '', '-- Select City --', false, '');
+                list.forEach(c => {
+                    const cname = c.name || c.city_name || c.citymunDesc || c.municipality || c.city || '';
+                    const code = c.code || c.city_code || c.id || '';
+                    if (!cname) return;
+                    const isSelected = preSelectedCityValue && (preSelectedCityValue === cname);
+                    addOption(citySel, cname, cname, isSelected, code);
+                    if (isSelected) {
+                        preSelectedCityValue = '';
+                        setTimeout(() => {
+                            citySel.dispatchEvent(new Event('change'));
+                        }, 50);
+                    }
+                });
+            })
+            .catch(err => { console.warn('Failed to load cities for doctor modal', err); clearSelect(citySel); addOption(citySel, '', '-- Unable to load cities --', false, ''); });
+    }
+
+    function loadBarangaysForCity(cityName, cityCode) {
+        clearSelect(barangaySel);
+        addOption(barangaySel, '', '-- Loading Barangays... --', false, '');
+        const barangaysUrl = API_BASE + '/barangays' + (cityCode ? ('?city_code=' + encodeURIComponent(cityCode)) : ('?city=' + encodeURIComponent(cityName)));
+        fetch(barangaysUrl)
+            .then(r => r.ok ? r.json() : Promise.reject('No barangays'))
+            .then(list => {
+                clearSelect(barangaySel);
+                addOption(barangaySel, '', '-- Select Barangay --', false, '');
+                list.forEach(b => {
+                    const bname = b.name || b.barangayDesc || b.barangay || '';
+                    const code = b.code || b.id || b.barangay_code || '';
+                    if (!bname) return;
+                    const isSelected = preSelectedBarangayValue && (preSelectedBarangayValue === bname);
+                    addOption(barangaySel, bname, bname, isSelected, code);
+                    if (isSelected) preSelectedBarangayValue = '';
+                });
+            })
+            .catch(err => { console.warn('Failed to load barangays for doctor modal', err); clearSelect(barangaySel); addOption(barangaySel, '', '-- Unable to load barangays --', false, ''); });
+    }
+
+    provinceSel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const provName = selOpt ? selOpt.value : '';
+        const provCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (provName) loadCitiesForProvince(provName, provCode);
+        else { clearSelect(citySel); addOption(citySel, '', '-- Select province first --', false, ''); }
+    });
+
+    citySel?.addEventListener('change', function () {
+        const selOpt = this.options[this.selectedIndex];
+        const cityName = selOpt ? selOpt.value : '';
+        const cityCode = selOpt && selOpt.dataset ? selOpt.dataset.code : '';
+        if (cityName) loadBarangaysForCity(cityName, cityCode);
+        else { clearSelect(barangaySel); addOption(barangaySel, '', '-- Select city first --', false, ''); }
+    });
+}
+
+// Initialize dropdowns when modal is opened
+initDoctorProvinceCitySelects();
+</script>
+
+<style>
+/* Room and ICD suggestions styling */
+.room-suggestion, .icd-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+.room-suggestion:hover, .icd-suggestion:hover,
+.room-suggestion.active, .icd-suggestion.active {
+    background-color: #f0f8ff;
+}
+.room-suggestion .code, .icd-suggestion .code {
+    font-weight: bold;
+    color: #2c5f2d;
+}
+.room-suggestion .desc, .icd-suggestion .desc {
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+/* ICD suggestions styling */
+.icd-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+.icd-suggestion:hover,
+.icd-suggestion.active {
+    background-color: #f0f8ff;
+}
+.icd-suggestion .code {
+    font-weight: bold;
+    color: #0066cc;
+}
+.icd-suggestion .desc {
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+/* Suggestion container styling */
+.suggestion-container {
+    position: relative;
+}
+
+.suggestion-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none; /* Hidden by default */
+}
+
+/* Ensure suggestion dropdowns don't affect layout */
+.icd-suggestions,
+#edit_room_suggestions,
+#edit_icd10_suggestions,
+#edit-doctor-suggestions {
+    position: absolute !important;
+    z-index: 9999 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 4px !important;
+    contain: layout style !important;
+}
+
+/* Prevent suggestion containers from triggering layout recalculations */
+.icd-suggestions *,
+#edit_room_suggestions *,
+#edit_icd10_suggestions *,
+#edit-doctor-suggestions * {
+    contain: layout style !important;
+}
+
+/* Validation error styling */
+.validation-error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+}
+
+.validation-error.visible {
+    display: block;
+}
+
+.input-validation-container {
+    position: relative;
+}
+</style>

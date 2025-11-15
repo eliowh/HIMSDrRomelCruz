@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
     <title>Logout Successful - Dr. Romel Cruz HIMS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -242,7 +243,7 @@
                     <i class="fas fa-sign-in-alt"></i>
                     Login Again
                 </a>
-                <a href="{{ url('/') }}" class="btn btn-secondary">
+                <a href="{{ asset('/') }}" class="btn btn-secondary">
                     <i class="fas fa-home"></i>
                     Home Page
                 </a>

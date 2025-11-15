@@ -16,9 +16,7 @@ class RoomController extends Controller
     public function search(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
-        if ($q === '') {
-            return response()->json([]);
-        }
+        // Don't return empty if q is empty - we want to show all rooms for dropdown
 
         $table = 'roomlist';
         if (!Schema::hasTable($table)) {
@@ -47,20 +45,92 @@ class RoomController extends Controller
         if (!$priceCol) $priceCol = $columns[1] ?? 'price';
 
         try {
-            $like = '%' . $q . '%';
-            $rows = DB::table($table)
-                ->select(DB::raw("`$nameCol` as name"), DB::raw("`$priceCol` as price"))
-                ->where($nameCol, 'like', $like)
-                ->orWhere($priceCol, 'like', $like)
-                ->limit(20)
-                ->get();
+            // If no search query, return all rooms (for dropdown), otherwise filter
+            if ($q === '') {
+                $rows = DB::table($table)
+                    ->select(DB::raw("`$nameCol` as name"), DB::raw("`$priceCol` as price"))
+                    ->limit(21) // Get one extra to account for potential header row
+                    ->get();
+            } else {
+                $like = '%' . $q . '%';
+                $rows = DB::table($table)
+                    ->select(DB::raw("`$nameCol` as name"), DB::raw("`$priceCol` as price"))
+                    ->where($nameCol, 'like', $like)
+                    ->orWhere($priceCol, 'like', $like)
+                    ->limit(21) // Get one extra to account for potential header row
+                    ->get();
+            }
 
-            return response()->json($rows->map(function($r){
+            // Filter out potential header rows (case-insensitive check)
+            $filteredRows = $rows->filter(function($r) {
+                $name = strtolower(trim($r->name ?? ''));
+                $price = strtolower(trim($r->price ?? ''));
+                // Skip rows that look like table headers
+                return !($name === 'room name' || $name === 'name' || $name === 'room' || 
+                        $price === 'room price' || $price === 'price' || 
+                        ($name === 'col 1' && $price === 'col 2'));
+            })->take(20); // Take only 20 after filtering
+
+            return response()->json($filteredRows->map(function($r){
                 return ['name' => $r->name, 'price' => $r->price];
-            })->all());
+            })->values()->all());
         } catch (\Throwable $e) {
             Log::error('RoomController search error: ' . $e->getMessage());
             return response()->json([]);
+        }
+    }
+
+    /**
+     * Validate if a room name exists in the database.
+     * Accepts POST request with 'name' parameter.
+     */
+    public function validate(Request $request)
+    {
+        $name = trim($request->input('name', ''));
+        
+        if (empty($name)) {
+            return response()->json(['valid' => false, 'message' => 'No room name provided']);
+        }
+
+        $table = 'roomlist';
+        
+        try {
+            if (!Schema::hasTable($table)) {
+                return response()->json(['valid' => false, 'message' => 'Room table not found']);
+            }
+
+            // Determine likely column names (same logic as search method)
+            $columns = Schema::getColumnListing($table);
+            $candidatesName = ['room_name', 'Room Name', 'name', 'room', 'roomname'];
+            $nameCol = null;
+            
+            foreach ($candidatesName as $cand) {
+                if (in_array($cand, $columns)) {
+                    $nameCol = $cand;
+                    break;
+                }
+            }
+
+            // Fallback to first column if nothing matched
+            if (!$nameCol) {
+                if (count($columns) >= 1) {
+                    $nameCol = $columns[0];
+                    Log::warning('RoomController validate using fallback column: ' . $nameCol);
+                } else {
+                    return response()->json(['valid' => false, 'message' => 'No name column found']);
+                }
+            }
+
+            // Check if the room name exists in the database
+            $exists = DB::table($table)
+                ->where($nameCol, $name)
+                ->exists();
+
+            return response()->json(['valid' => $exists]);
+
+        } catch (\Throwable $e) {
+            Log::error('RoomController validation error: ' . $e->getMessage());
+            return response()->json(['valid' => false, 'message' => 'Server error'], 500);
         }
     }
 }

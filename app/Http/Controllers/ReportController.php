@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Report;
 use App\Models\User;
+use App\Models\Admission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -51,6 +52,18 @@ class ReportController extends Controller
             'completed_reports' => Report::where('status', Report::STATUS_COMPLETED)->count(),
             'failed_reports' => Report::where('status', Report::STATUS_FAILED)->count(),
         ];
+
+        // Additional simple analytics
+        try {
+            $totalAdmittedPatients = DB::table('admissions')->distinct('patient_id')->count('patient_id');
+            $currentlyAdmitted = DB::table('admissions')->where('status', 'active')->distinct('patient_id')->count('patient_id');
+        } catch (\Exception $e) {
+            $totalAdmittedPatients = 0;
+            $currentlyAdmitted = 0;
+        }
+
+        $stats['total_admitted_patients'] = $totalAdmittedPatients;
+        $stats['currently_admitted'] = $currentlyAdmitted;
 
         return view('admin.admin_reports', compact('reports', 'stats'));
     }
@@ -142,10 +155,53 @@ class ReportController extends Controller
             
             case Report::TYPE_SYSTEM_LOG:
                 return $this->getSystemLogData($from, $to);
+
+            case Report::TYPE_ADMISSIONS:
+                return $this->getAdmissionsData($from, $to);
             
             default:
                 return [];
         }
+    }
+
+    /**
+     * Get admissions / admitted patients data for a given period
+     */
+    private function getAdmissionsData($from, $to)
+    {
+        // Fetch admissions in range with patient data
+        $admissions = Admission::with('patient')
+            ->whereBetween('admission_date', [$from, $to])
+            ->orderBy('admission_date', 'desc')
+            ->get();
+
+        // Unique patient count
+        $uniquePatientCount = $admissions->pluck('patient_id')->unique()->count();
+
+        $items = $admissions->map(function($admission) {
+            return [
+                'admission_id' => $admission->id,
+                'admission_number' => $admission->admission_number,
+                'admission_date' => optional($admission->admission_date)->format('Y-m-d H:i:s'),
+                'discharge_date' => optional($admission->discharge_date)->format('Y-m-d H:i:s'),
+                'room_no' => $admission->room_no,
+                'status' => $admission->status,
+                'patient' => $admission->patient ? [
+                    'id' => $admission->patient->id,
+                    'patient_no' => $admission->patient->patient_no ?? null,
+                    'name' => trim(($admission->patient->first_name ?? '') . ' ' . ($admission->patient->last_name ?? '')),
+                    'date_of_birth' => $admission->patient->date_of_birth ?? null,
+                    'contact_number' => $admission->patient->contact_number ?? null,
+                ] : null
+            ];
+        })->toArray();
+
+        return [
+            'period' => ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')],
+            'admitted_patient_count' => $uniquePatientCount,
+            'admissions_count' => $admissions->count(),
+            'admissions' => $items
+        ];
     }
 
     /**
@@ -235,6 +291,7 @@ class ReportController extends Controller
             Report::TYPE_LOGIN_REPORT => "Login activity report from {$from} to {$to}",
             Report::TYPE_USER_REGISTRATION => "User registration report from {$from} to {$to}",
             Report::TYPE_SYSTEM_LOG => "System log report from {$from} to {$to}",
+            Report::TYPE_ADMISSIONS => "Admissions report (patients admitted) from {$from} to {$to}",
         ];
 
         return $typeMap[$type] ?? "Custom report from {$from} to {$to}";
@@ -245,8 +302,14 @@ class ReportController extends Controller
      */
     public function export(Report $report)
     {
+        $format = request()->get('format', 'json');
+
+        if ($format === 'print') {
+            // Render a simple printable HTML view
+            return view('admin.reports.print', compact('report'));
+        }
+
         $filename = "report_{$report->id}_{$report->type}_" . now()->format('Y_m_d') . ".json";
-        
         return response()->json($report->data)
             ->header('Content-Disposition', "attachment; filename={$filename}");
     }

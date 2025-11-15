@@ -331,6 +331,13 @@ function nurseNotify(type = 'info', title = 'Notification', message = '', option
     const confirmBtn = document.getElementById('notificationConfirm');
     const cancelBtn = document.getElementById('notificationCancel');
     const okBtn = document.getElementById('notificationOk');
+    
+    // Check if required elements exist
+    if (!modal || !icon || !titleEl || !messageEl || !confirmBtn || !cancelBtn || !okBtn) {
+        console.error('Notification system: Required elements not found');
+        return;
+    }
+    
     const iconContainer = icon.parentElement;
 
     // Set icon based on type
@@ -391,8 +398,12 @@ function nurseNotify(type = 'info', title = 'Notification', message = '', option
 
 function hideNurseNotification() {
     const modal = document.getElementById('nurseNotificationModal');
-    modal.classList.remove('show');
-    setTimeout(() => modal.style.display = 'none', 300);
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            if (modal) modal.style.display = 'none';
+        }, 300);
+    }
 }
 
 function nurseSuccess(title, message, onOk) {
@@ -429,6 +440,11 @@ function updateNotificationUI() {
     const badge = document.getElementById('notificationBadge');
     const list = document.getElementById('notificationList');
     
+    // Check if elements exist before manipulating them
+    if (!badge || !list) {
+        return;
+    }
+    
     const unreadCount = nurseNotifications.filter(n => !n.read).length;
     
     if (unreadCount > 0) {
@@ -454,7 +470,9 @@ function updateNotificationUI() {
 
 function toggleNotifications() {
     const dropdown = document.getElementById('notificationDropdown');
-    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    if (dropdown) {
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
 function markNotificationAsRead(id) {

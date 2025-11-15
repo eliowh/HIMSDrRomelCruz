@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
+    <link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -15,43 +15,49 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/admin/home') }}"
+                <a href="{{ asset('/admin/home') }}"
                    class="sidebar-btn{{ request()->is('admin/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/users') }}"
+                <a href="{{ asset('/admin/users') }}"
                    class="sidebar-btn{{ request()->is('admin/users') ? ' active' : '' }}">
                     <span class="icon">👤</span> <span class="text">Users Management</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/rooms') }}"
+                <a href="{{ asset('/admin/rooms') }}"
                    class="sidebar-btn{{ request()->is('admin/rooms') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Room Management</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/patients') }}"
+                <a href="{{ asset('/admin/stocks-reference') }}"
+                   class="sidebar-btn{{ request()->is('admin/stocks-reference') ? ' active' : '' }}">
+                    <span class="icon">💊</span> <span class="text">Stock Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ asset('/admin/patients') }}"
                    class="sidebar-btn{{ request()->is('admin/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patient Records</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/reports') }}"
+                <a href="{{ asset('/admin/reports') }}"
                    class="sidebar-btn{{ request()->is('admin/reports') ? ' active' : '' }}">
                     <span class="icon">📊</span> <span class="text">Reports</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/admin/account') }}"
-                   class="sidebar-btn{{ request()->is('admin/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
+                <a href="{{ asset('/admin/fhir') }}"
+                   class="sidebar-btn{{ request()->is('admin/fhir') ? ' active' : '' }}">
+                    <span class="icon">🔗</span> <span class="text">FHIR Export</span>
                 </a>
             </li>
             <li>
-                <form action="{{ url('/logout') }}" method="POST" id="logout-form" class="logout-form">
+                <form action="/logout" method="POST" id="logout-form" class="logout-form">
                     @csrf
                     <button type="button" class="sidebar-btn" onclick="confirmLogout('logout-form')">
                         <span class="icon">🚪</span> <span class="text">Log Out</span>

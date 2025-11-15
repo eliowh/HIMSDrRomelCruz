@@ -97,7 +97,7 @@ body {
 }
 .patients-header h3 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.45rem;
     font-weight: 600;
     color: #0b1220;
 }
@@ -109,11 +109,12 @@ body {
 .search-input {
     width: 100%;
     height: 60px;
-    padding: 8px;
+    padding: 14px;
     border-radius: 8px;
     border: 1px solid #e6e9ef;
     box-sizing: border-box;
     background: #fff;
+    font-size: 1.1rem;
 }
 
 /* Table container */
@@ -129,16 +130,19 @@ body {
 }
 .patients-table thead th {
     text-align: left;
-    padding: 10px;
+    padding: 14px 10px;
     border-bottom: 1px solid #eee;
     font-weight: 600;
     color: #374151;
+    font-size: 1.15rem !important;
 }
 .patients-table tbody td {
-    padding: 10px;
+    padding: 16px 10px;
     vertical-align: middle;
     border-bottom: 1px solid #fbfbfb;
     color: #0b1220;
+    font-size: 1.1rem !important;
+    font-weight: 400;
 }
 
 /* Column helpers (optional) */
@@ -204,11 +208,6 @@ body {
         display:flex;
         justify-content:space-between;align-items:center;margin-bottom:12px; }
     .search-input { width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ef; }
-
-    /* table */
-    .patients-table { width:100%;border-collapse:collapse;font-size:0.95rem; }
-    .patients-table thead th { text-align:left;padding:10px;border-bottom:1px solid #eee;font-weight:600;color:#374151; }
-    .patients-table tbody td { padding:10px;vertical-align:middle;border-bottom:1px solid #fbfbfb;color:#0b1220; }
     .col-no { width:120px; }
     .col-actions { width:120px; }
 
@@ -241,9 +240,13 @@ body {
 .nurse-card { background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 20px rgba(16,24,40,0.04); }
 
 /* table */
-.patients-table { width:100%; border-collapse:collapse; font-size:0.95rem; }
-.patients-table thead th { text-align:left; padding:10px; border-bottom:1px solid #eee; font-weight:600; color:#374151; }
-.patients-table tbody td { padding:10px; vertical-align:middle; border-bottom:1px solid #fbfbfb; color:#0b1220; }
+.patients-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.1rem !important;
+}
+.patients-table thead th { text-align:left; padding:14px 10px; border-bottom:1px solid #eee; font-weight:600; color:#374151; font-size: 1.25rem; }
+.patients-table tbody td { padding:16px 10px; vertical-align:middle; border-bottom:1px solid #fbfbfb; color:#0b1220; }
 .patient-row.active { background: linear-gradient(90deg, rgba(34,197,94,0.08), rgba(34,197,94,0.03)); }
 
 /* search */
@@ -251,9 +254,9 @@ body {
 .search-input { padding:8px;border-radius:8px;border:1px solid #e6e9ef;width:260px; }
 
 /* details card */
-.details-card .patient-details { display:grid; grid-template-columns: 140px 1fr; gap:8px 12px; margin:0; }
-.details-card .patient-details dt { font-weight:600; color:#374151; padding-top:6px; }
-.details-card .patient-details dd { margin:0; color:#0b1220; padding-top:6px; }
+.details-card .patient-details { display:grid; grid-template-columns: 140px 1fr; gap:8px 12px; margin:0; font-size: 1.05rem; }
+.details-card .patient-details dt { font-weight:700; color:#374151; padding-top:6px; }
+.details-card .patient-details dd { margin:0; color:#0b1220; padding-top:6px; font-weight: 400; }
 
 /* empty state */
 .details-empty { color:#6b7280; padding:10px 4px; }
@@ -360,7 +363,7 @@ body {
     margin-bottom: 6px;
     font-weight: 600;
     color: #374151;
-    font-size: 0.95rem;
+    font-size: 1.25rem;
 }
 
 .patient-info-display {
@@ -377,10 +380,10 @@ body {
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 10px 12px;
+    padding: 16px 18px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
-    font-size: 0.95rem;
+    font-size: 1.3rem;
     transition: all 0.2s ease;
     box-sizing: border-box;
     font-family: inherit;
@@ -461,23 +464,6 @@ body {
     cursor: not-allowed;
     transform: none;
     box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.15);
-}
-
-.request-btn {
-    background: linear-gradient(180deg, #059669 0%, #047857 100%);
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.92rem;
-}
-
-.request-btn:hover {
-    background: linear-gradient(180deg, #047857 0%, #065f46 100%);
-    transform: translateY(-1px);
 }
 
 /* Responsive modal */
@@ -668,4 +654,251 @@ input[type="checkbox"] {
 
 .checkbox-label-group {
     justify-content: flex-start;
+}
+
+/* Patient Details Sections - moved from inline styles */
+.details-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.details-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.section-header {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 10px 0;
+    padding: 5px 0;
+    border-bottom: 2px solid #3498db;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.medicine-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.medicine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.medicine-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.medicine-quantity {
+    background: #28a745;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.medicine-details {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.medicine-price {
+    font-weight: 600;
+    color: #17a2b8;
+    margin-bottom: 2px;
+}
+
+.medicine-meta {
+    color: #888;
+    font-style: italic;
+}
+
+.medicine-notes {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.loading-medicines, .no-medicines, .error-medicines {
+    padding: 12px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.loading-medicines {
+    color: #007bff;
+}
+
+.error-medicines {
+    color: #dc3545;
+    background: #f8d7da;
+}
+
+.no-medicines {
+    color: #6c757d;
+}
+
+.view-more-medicines {
+    padding: 10px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.view-medicine-summary-btn {
+    background: #fff;
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-medicine-summary-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+.lab-result-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border-left: 4px solid #17a2b8;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.lab-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.lab-result-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.lab-result-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.lab-result-status.completed {
+    background: #28a745;
+    color: white;
+}
+
+.lab-result-status.in-progress {
+    background: #ffc107;
+    color: #212529;
+}
+
+.lab-result-status.pending {
+    background: #6c757d;
+    color: white;
+}
+
+.lab-result-details {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.lab-result-meta {
+    color: #888;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.lab-result-priority {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.lab-result-priority.high {
+    color: #dc3545;
+}
+
+.lab-result-priority.medium {
+    color: #ffc107;
+}
+
+.lab-result-priority.low {
+    color: #28a745;
+}
+
+.view-pdf-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.view-pdf-btn:hover {
+    background: #c82333;
+}
+
+.loading-lab-results, .no-lab-results, .error-lab-results {
+    padding: 12px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.loading-lab-results {
+    color: #007bff;
+}
+
+.error-lab-results {
+    color: #dc3545;
+    background: #f8d7da;
+}
+
+.no-lab-results {
+    color: #6c757d;
+}
+
+.patient-details dt {
+    font-weight: 700;
+    color: #555;
+}
+
+.patient-details dd {
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 400;
 }

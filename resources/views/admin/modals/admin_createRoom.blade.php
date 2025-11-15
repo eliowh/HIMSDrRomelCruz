@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="{{url('css/admincss/admin.css')}}">
+<link rel="stylesheet" href="{{asset('css/admincss/admin.css')}}">
 <div id="addRoomModal" class="addUserModal">
     <div class="addUserModalContent">
         <button onclick="closeAddRoomModal()" class="addUserModalClose">&times;</button>
@@ -25,6 +25,7 @@
             <div class="form-group">
                 <label class="form-label">Room Name</label>
                 <input type="text" 
+                       placeholder="Enter room name"
                        name="room_name" 
                        class="form-input" 
                        required 

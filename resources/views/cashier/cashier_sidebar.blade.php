@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cashier Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/cashiercss/cashier.css')}}">
+    <link rel="stylesheet" href="{{asset('css/cashiercss/cashier.css')}}">
 </head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -15,31 +15,19 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/cashier/home') }}"
+                <a href="{{ asset('/cashier/home') }}"
                    class="sidebar-btn{{ request()->is('cashier/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/cashier/billing') }}"
+                <a href="{{ asset('/cashier/billing') }}"
                    class="sidebar-btn{{ request()->is('cashier/billing') ? ' active' : '' }}">
                     <span class="icon">💰</span> <span class="text">Billing</span>
                 </a>
             </li>
-            <li>
-                <a href="{{ url('/cashier/transactions') }}"
-                   class="sidebar-btn{{ request()->is('cashier/transactions') ? ' active' : '' }}">
-                    <span class="icon">📋</span> <span class="text">Transactions</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/cashier/account') }}"
-                   class="sidebar-btn{{ request()->is('cashier/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
-                </a>
-            </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="cashier-logout-form" class="logout-form">
+        <form action="/logout" method="POST" id="cashier-logout-form" class="logout-form">
             @csrf
             <button type="button" class="sidebar-btn" onclick="confirmLogout('cashier-logout-form')">
                 <span class="icon">🚪</span> <span class="text">Log Out</span>

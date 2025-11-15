@@ -10,6 +10,7 @@ class LabOrder extends Model
 
     protected $fillable = [
         'patient_id',
+        'admission_id',
         'requested_by',
         'lab_tech_id',
         'patient_name',
@@ -18,6 +19,7 @@ class LabOrder extends Model
         'notes',
         'status',
         'priority',
+        'price',
         'requested_at',
         'started_at',
         'completed_at',
@@ -47,5 +49,10 @@ class LabOrder extends Model
     public function labTech()
     {
         return $this->belongsTo(User::class, 'lab_tech_id');
+    }
+
+    public function analyses()
+    {
+        return $this->hasMany(LabAnalysis::class);
     }
 }

@@ -17,12 +17,15 @@ class AccountSeeder extends Seeder
         $accounts = [
             [
                 'name' => 'Claire',
+<<<<<<< HEAD
                 'email' => 'labtech@gmail.com',
                 'password' => 'Labtech123!',
                 'role' => 'lab_technician',
             ],                                                                                                                                                                                                                                                                                                                                                                      
             [
                 'name' => 'Rogelio',
+=======
+>>>>>>> master
                 'email' => 'cashier@gmail.com',
                 'password' => 'Cashier123!',
                 'role' => 'cashier',
@@ -34,7 +37,11 @@ class AccountSeeder extends Seeder
                 'role' => 'inventory',
             ],
             [
+<<<<<<< HEAD
                 'name' => 'Carl',
+=======
+                'name' => 'Kobie',
+>>>>>>> master
                 'email' => 'pharmacy@gmail.com',
                 'password' => 'Pharmacy123!',
                 'role' => 'pharmacy',

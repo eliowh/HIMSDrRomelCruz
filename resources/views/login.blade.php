@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="{{ url('css/app.css') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/hospital_logo.png') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <title>Login | Romel Cruz Hospital</title>
 </head>
 <body>
@@ -76,7 +77,7 @@
                 </form>
                 <div class="social-login">
                     <p>
-                        <a href="{{ url('/forgot-password') }}">Forgot Password?</a>
+                        <a href="/forgot-password">Forgot Password?</a>
                     </p>
                 </div>
                 <p style="margin-top: 15px; font-size: 0.9em; color: #555; font-style: italic;">

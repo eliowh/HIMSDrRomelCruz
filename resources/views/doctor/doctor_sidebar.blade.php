@@ -1,12 +1,6 @@
 @php
     $doctorName = auth()->user()->name ?? 'Doctor';
 @endphp
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard</title>
-    <link rel="stylesheet" href="{{url('css/doctorcss/doctor.css')}}">
-</head>
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <span class="toggle-btn" id="sidebarToggle">☰</span>
@@ -15,42 +9,39 @@
     <nav>
         <ul>
             <li>
-                <a href="{{ url('/doctor/home') }}"
+                <a href="/doctor/home"
                    class="sidebar-btn{{ request()->is('doctor/home') ? ' active' : '' }}">
                     <span class="icon">🏠</span> <span class="text">Dashboard</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/appointments') }}"
-                   class="sidebar-btn{{ request()->is('doctor/appointments') ? ' active' : '' }}">
-                    <span class="icon">📅</span> <span class="text">Appointments</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/doctor/patients') }}"
+                <a href="/doctor/patients"
                    class="sidebar-btn{{ request()->is('doctor/patients') ? ' active' : '' }}">
                     <span class="icon">👥</span> <span class="text">Patients</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/schedule') }}"
-                   class="sidebar-btn{{ request()->is('doctor/schedule') ? ' active' : '' }}">
-                    <span class="icon">⏰</span> <span class="text">Schedule</span>
+                <a href="/doctor/chat"
+                   class="sidebar-btn{{ request()->is('doctor/chat*') ? ' active' : '' }}">
+                    <span class="icon">💬</span> <span class="text">Messages</span>
                 </a>
             </li>
             <li>
-                <a href="{{ url('/doctor/account') }}"
-                   class="sidebar-btn{{ request()->is('doctor/account') ? ' active' : '' }}">
-                    <span class="icon">⚙️</span> <span class="text">Account</span>
+                <a href="/doctor/results"
+                   class="sidebar-btn{{ request()->is('doctor/results*') ? ' active' : '' }}">
+                    <span class="icon">🧪</span> <span class="text">Lab Requests</span>
                 </a>
             </li>
+         
+            <li>
+                <form action="/logout" method="POST" id="doctor-logout-form" class="logout-form">
+                    @csrf
+                    <button type="button" class="sidebar-btn" onclick="confirmLogout('doctor-logout-form')">
+                        <span class="icon">🚪</span> <span class="text">Log Out</span>
+                    </button>
+                </form>
+            </li>
         </ul>
-        <form action="{{ url('/logout') }}" method="POST" id="doctor-logout-form" class="logout-form">
-            @csrf
-            <button type="button" class="sidebar-btn" onclick="confirmLogout('doctor-logout-form')">
-                <span class="icon">🚪</span> <span class="text">Log Out</span>
-            </button>
-        </form>
     </nav>
 </div>
 

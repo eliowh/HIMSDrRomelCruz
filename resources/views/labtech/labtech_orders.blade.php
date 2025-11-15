@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Orders</title>
-    <link rel="stylesheet" href="{{ url('css/labtechcss/labtech.css') }}">
-    <link rel="stylesheet" href="{{ url('css/pagination.css') }}">
+    <title>Lab Requests</title>
+    <link rel="stylesheet" href="{{ asset('css/labtechcss/labtech.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Modal styles moved to labtech.css -->
@@ -20,23 +20,23 @@
         @include('labtech.labtech_sidebar')
 
         <main class="main-content">
-            <h2>Lab Orders</h2>
+            <div class="page-header">
+                <h2><i class="fas fa-flask"></i> Lab Requests</h2>
+                <div class="page-subtitle">Manage laboratory test orders and results</div>
+            </div>
             <!-- Filter Tabs -->
             <div class="filter-tabs">
-                <button class="tab-btn {{ $status === 'all' ? 'active' : '' }}" data-status="all">
-                    All Orders <span class="count-badge">{{ $statusCounts['all'] }}</span>
-                </button>
                 <button class="tab-btn {{ $status === 'pending' ? 'active' : '' }}" data-status="pending">
-                    Pending <span class="count-badge">{{ $statusCounts['pending'] }}</span>
+                    <i class="fas fa-clock"></i> Pending <span class="count-badge">{{ $statusCounts['pending'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'in_progress' ? 'active' : '' }}" data-status="in_progress">
-                    In Progress <span class="count-badge">{{ $statusCounts['in_progress'] }}</span>
+                    <i class="fas fa-spinner"></i> In Progress <span class="count-badge">{{ $statusCounts['in_progress'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'completed' ? 'active' : '' }}" data-status="completed">
-                    Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
+                    <i class="fas fa-check-circle"></i> Completed <span class="count-badge">{{ $statusCounts['completed'] }}</span>
                 </button>
                 <button class="tab-btn {{ $status === 'cancelled' ? 'active' : '' }}" data-status="cancelled">
-                    Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
+                    <i class="fas fa-times-circle"></i> Cancelled <span class="count-badge">{{ $statusCounts['cancelled'] }}</span>
                 </button>
             </div>
 
@@ -98,11 +98,11 @@
                                     <td class="actions">
                                         @if($order->status === 'pending')
                                             <button class="btn start-btn" onclick="updateStatus({{ $order->id }}, 'in_progress')">
-                                                Start
+                                                Confirm
                                             </button>
                                         @elseif($order->status === 'in_progress')
                                             <button class="btn complete-btn" onclick="showCompleteModal({{ $order->id }})">
-                                                Complete
+                                                Proceed
                                             </button>
                                             <button class="btn cancel-btn" onclick="cancelOrder({{ $order->id }})">
                                                 Cancel
@@ -152,7 +152,7 @@
                 @else
                     <div class="no-orders">
                         <i class="fas fa-flask"></i>
-                        <h3>No Lab Orders</h3>
+                        <h3>No Lab Requests</h3>
                         <p>No laboratory orders have been requested yet.</p>
                     </div>
                 @endif
@@ -170,6 +170,9 @@
     <!-- Complete Order Modal -->
     @include('labtech.modals.complete_order_modal')
 
+    <!-- Template Selection & Generation Modal -->
+    @include('labtech.modals.template_select_modal')
+
     <!-- PDF Viewer Modal -->
     @include('labtech.modals.pdf_viewer_modal')
 
@@ -185,7 +188,7 @@
     <script>
         let currentOrderId = null;
         let currentSort = { column: null, direction: 'asc' };
-        let currentStatus = 'all';
+        let currentStatus = 'pending';
 
         // Initialize on document ready
         document.addEventListener('DOMContentLoaded', function() {
@@ -215,11 +218,11 @@
         // Function to initialize the view based on the URL parameters
         function initializeFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            let statusParam = urlParams.has('status') ? urlParams.get('status') : 'all';
+            let statusParam = urlParams.has('status') ? urlParams.get('status') : 'pending';
             
             // Validate status parameter
-            if(!['pending', 'in_progress', 'completed', 'cancelled', 'all'].includes(statusParam)) {
-                statusParam = 'all';
+            if(!['pending', 'in_progress', 'completed', 'cancelled'].includes(statusParam)) {
+                statusParam = 'pending';
             }
             
             currentStatus = statusParam;
@@ -246,10 +249,8 @@
                 if (link.href) {
                     const linkUrl = new URL(link.href);
                     
-                    // If we have a status filter and it's not already in the link
-                    if (currentStatus !== 'all') {
-                        linkUrl.searchParams.set('status', currentStatus);
-                    }
+                    // Add status parameter to pagination links
+                    linkUrl.searchParams.set('status', currentStatus);
                     
                     link.href = linkUrl.toString();
                 }
@@ -278,9 +279,7 @@
                         
                         // Set the page and maintain current status
                         currentUrl.searchParams.set('page', page);
-                        if (currentStatus !== 'all') {
-                            currentUrl.searchParams.set('status', currentStatus);
-                        }
+                        currentUrl.searchParams.set('status', currentStatus);
                         
                         window.location.href = currentUrl.toString();
                     };
@@ -302,12 +301,7 @@
                     // Build the new URL - reset to page 1 when changing tabs
                     const currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.delete('page'); // Reset to page 1
-                    
-                    if(status === 'all') {
-                        currentUrl.searchParams.delete('status');
-                    } else {
-                        currentUrl.searchParams.set('status', status);
-                    }
+                    currentUrl.searchParams.set('status', status);
                     
                     // Navigate to the new URL
                     window.location.href = currentUrl.toString();
@@ -340,6 +334,8 @@
 
         function showCompleteModal(orderId) {
             currentOrderId = orderId;
+            // Expose globally for template modal button
+            window.__activeLabOrderId = orderId;
             document.getElementById('completeModal').classList.add('show');
         }
 
@@ -693,7 +689,7 @@
             
             // Filter the rows
             rows.forEach(row => {
-                if(status === 'all' || row.dataset.status === status) {
+                if(row.dataset.status === status) {
                     row.style.display = '';
                     visibleCount++;
                 } else {
@@ -702,7 +698,7 @@
             });
             
             // Show empty state placeholder if needed
-            if(visibleCount === 0 && status !== 'all') {
+            if(visibleCount === 0) {
                 const emptyStateId = `empty-${status.replace('_', '-')}`;
                 const emptyState = document.getElementById(emptyStateId);
                 
@@ -732,15 +728,8 @@
         
         // Function to check if we need to display empty states
         function checkEmptyStates() {
-            // If we have a status filter active, run filterByStatus to show/hide appropriate content
-            if(currentStatus !== 'all') {
-                filterByStatus(currentStatus);
-            } else {
-                // For 'all' status, just make sure we hide empty state placeholders
-                document.querySelectorAll('.empty-state-placeholder').forEach(placeholder => {
-                    placeholder.style.display = 'none';
-                });
-            }
+            // Run filterByStatus to show/hide appropriate content based on current status
+            filterByStatus(currentStatus);
         }
 
         // Check for highlight parameter on page load

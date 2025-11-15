@@ -39,19 +39,18 @@ class NewUserCredentials extends Notification
 
     public function toMail($notifiable)
     {
-        // Use just the token in the URL
-        $resetUrl = url('/reset-password/'.$this->token);
+        // Use secure URL for reset password
+        $resetUrl = secure_url('/reset-password/'.$this->token);
 
         $mail = (new MailMessage)
-            ->subject('Welcome to Dr. Romel Cruz Hospital')
+            ->from(config('mail.from.address'), config('mail.from.name'))
+            ->subject('Welcome to ' . config('app.name'))
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('An account has been created for you with the role of ' . $this->formatRole($this->role) . '.')
             ->line('Before you can access your account, please set your password by clicking the button below.')
             ->line('This link will expire in 24 hours.')
             ->action('Set Your Password', $resetUrl)
-            ->line('Thank you for joining us!')
-            ->line('Best regards,')
-            ->line('Dr. Romel Cruz Hospital');
+            ->line('Thank you for joining us!');
 
         // Add BCC to admin email for testing (only if configured)
         if (env('ADMIN_TEST_EMAIL')) {

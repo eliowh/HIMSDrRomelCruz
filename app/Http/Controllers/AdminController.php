@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\Icd10Import;
+use App\Services\FHIR\FhirService;
 
 class AdminController extends Controller
 {
@@ -88,18 +89,39 @@ class AdminController extends Controller
                 'max:20',
                 'regex:/^[a-zA-Z\s]+$/', // Only letters and spaces
             ],
+            'title' => [
+                'nullable',
+                'min:1',
+                'max:20',
+                'regex:/^[a-zA-Z\s]+$/'/* Only letters and spaces */
+            ],
+            'license_number' => [
+                'nullable',
+                'min:3',
+                'max:50',
+                'regex:/^[a-zA-Z0-9\-]+$/'/* Letters, numbers, and hyphens */,
+                'unique:users,license_number'
+            ],
             'email' => [
                 'required',
                 'email',
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/', // Only .com domains allowed
                 'unique:users,email'
             ],
+            // (no duplicate validation rules here)
             'role' => ['required', 'in:doctor,nurse,lab_technician,cashier,admin,inventory,pharmacy,billing']
         ], [
             'name.required' => 'Please enter a name.',
             'name.min' => 'Name must be 3-20 letters.',
             'name.max' => 'Name must be 3-20 letters.',
             'name.regex' => 'Name can only contain letters and spaces.',
+            'title.min' => 'Title must be at least 1 character.',
+            'title.max' => 'Title must be 20 characters or less.',
+            'title.regex' => 'Title can only contain letters and spaces.',
+            'license_number.min' => 'License number must be at least 3 characters.',
+            'license_number.max' => 'License number must be 50 characters or less.',
+            'license_number.regex' => 'License number can only contain letters, numbers, and hyphens.',
+            'license_number.unique' => 'This license number is already registered.',
             'email.required' => 'Please enter an email address.',
             'email.email' => 'Please enter a valid email address.',
             'email.regex' => 'Email must end with .com and be valid.',
@@ -140,17 +162,23 @@ class AdminController extends Controller
         // Generate password reset token
         $token = \Illuminate\Support\Str::random(60);
         
+        // Generate temporary password
+        $tempPassword = \Illuminate\Support\Str::random(16);
+        
         // Log token for debugging
         \Log::info('Generated token for new user', [
             'email' => $request->email,
-            'token' => $token
+            'token' => $token,
+            'temp_password' => $tempPassword
         ]);
         
         // Create user with a temporary password
         $user = User::create([
             'name' => $request->name,
+            'title' => $request->title,
+            'license_number' => $request->license_number,
             'email' => $request->email,
-            'password' => Hash::make(\Illuminate\Support\Str::random(16)), // Random temporary password
+            'password' => Hash::make($tempPassword), // Use the stored temporary password
             'role' => $request->role
         ]);
         
@@ -236,6 +264,8 @@ class AdminController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'title' => $user->title,
+                    'license_number' => $user->license_number,
                     'created_at' => $user->created_at->format('M d, Y')
                 ]
             ]);
@@ -311,6 +341,13 @@ class AdminController extends Controller
             $user->name = $request->name;
             $user->email = $request->email;
             $user->role = $request->role;
+            // Save optional fields if provided
+            if ($request->has('title')) {
+                $user->title = $request->title;
+            }
+            if ($request->has('license_number')) {
+                $user->license_number = $request->license_number;
+            }
             $user->save();
 
             // Log user update
@@ -356,22 +393,22 @@ class AdminController extends Controller
     }
 
     /**
-     * Delete a user
+     * Archive a user (soft delete)
      */
     public function deleteUser($id)
     {
         try {
             $user = User::findOrFail($id);
 
-            // Prevent deletion of the current admin user
+            // Prevent archiving of the current admin user
             if ($user->id === auth()->id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'You cannot delete your own account.'
+                    'message' => 'You cannot archive your own account.'
                 ], 403);
             }
 
-            // Store user data for logging before deletion
+            // Store user data for logging before archiving
             $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -380,34 +417,35 @@ class AdminController extends Controller
                 'created_at' => $user->created_at->toISOString()
             ];
 
-            // Delete the user
+            // Archive the user (soft delete)
             $user->delete();
 
-            // Log user deletion
+            // Log user archiving
             Report::log(
-                'User Deleted',
+                'User Archived',
                 Report::TYPE_USER_ACTIVITY,
-                "Admin deleted user: {$userData['name']}",
+                "Admin archived user: {$userData['name']}",
                 [
-                    'deleted_user' => $userData,
-                    'deleted_by' => auth()->user()->name,
-                    'deleted_by_id' => auth()->id(),
-                    'deletion_time' => now()->toISOString()
+                    'archived_user' => $userData,
+                    'archived_by' => auth()->user()->name,
+                    'archived_by_id' => auth()->id(),
+                    'archive_time' => now()->toISOString(),
+                    'note' => 'User account archived to preserve data integrity'
                 ],
                 auth()->id()
             );
 
             return response()->json([
                 'success' => true,
-                'message' => 'User deleted successfully!'
+                'message' => 'User archived successfully! Account data has been preserved.'
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('User deletion error: ' . $e->getMessage());
+            \Log::error('User archiving error: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting user: ' . $e->getMessage()
+                'message' => 'Error archiving user: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -641,20 +679,177 @@ class AdminController extends Controller
         }
     }
 
+    /**
+     * Delete a room from the legacy roomlist table
+     */
+    public function deleteRoom(Request $request, $roomName)
+    {
+        try {
+            // roomName will be URL encoded when passed; decode for DB lookup
+            $decoded = urldecode($roomName);
+
+            $room = \DB::table('roomlist')->where('COL 1', $decoded)->first();
+            if (!$room) {
+                return response()->json(['success' => false, 'message' => 'Room not found.'], 404);
+            }
+
+            \DB::table('roomlist')->where('COL 1', $decoded)->delete();
+
+            try {
+                Report::log(
+                    'Room Deleted',
+                    Report::TYPE_USER_REPORT,
+                    "Admin deleted room: {$decoded}",
+                    [
+                        'room_name' => $decoded,
+                        'admin_id' => auth()->id()
+                    ],
+                    auth()->id()
+                );
+            } catch (\Throwable $e) { \Log::warning('Report log failed for deleteRoom: ' . $e->getMessage()); }
+
+            return response()->json(['success' => true, 'message' => 'Room deleted successfully.']);
+        } catch (\Exception $e) {
+            \Log::error('Delete room error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error deleting room.'], 500);
+        }
+    }
+
+    /**
+     * List stocksreference (masterlist) for admin management
+     */
+    public function stocksReference(Request $request)
+    {
+        try {
+            $query = \DB::table('stocksreference');
+            $search = $request->get('q', '');
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('COL 1', 'like', "%{$search}%")
+                      ->orWhere('COL 2', 'like', "%{$search}%")
+                      ->orWhere('COL 3', 'like', "%{$search}%");
+                });
+            }
+            $items = $query->orderBy('COL 2')->paginate(15);
+            $items->appends(request()->query());
+            return view('admin.admin_stocksreference', compact('items'));
+        } catch (\Exception $e) {
+            \Log::error('StocksReference list error: ' . $e->getMessage());
+            $items = new \Illuminate\Pagination\LengthAwarePaginator(collect(), 0, 15, 1, ['path' => request()->url()]);
+            return view('admin.admin_stocksreference', compact('items'))->with('error', 'Error loading masterlist.');
+        }
+    }
+
+    public function createStockReference(Request $request)
+    {
+        $data = $request->validate([
+            'item_code' => 'required|string|max:100',
+            'generic_name' => 'nullable|string|max:255',
+            'brand_name' => 'nullable|string|max:255',
+            'price' => 'nullable|string|max:50'
+        ]);
+
+        try {
+            $exists = \DB::table('stocksreference')->where('COL 1', $data['item_code'])->first();
+            if ($exists) return response()->json(['success' => false, 'message' => 'Item code already exists.'], 422);
+
+            \DB::table('stocksreference')->insert([
+                'COL 1' => $data['item_code'],
+                'COL 2' => $data['generic_name'] ?? '',
+                'COL 3' => $data['brand_name'] ?? '',
+                'COL 4' => $data['price'] ?? '',
+                'COL 5' => ''
+            ]);
+
+            Report::log('Masterlist Add', Report::TYPE_USER_REPORT, 'Admin added masterlist item', ['item_code'=>$data['item_code']], auth()->id());
+            return response()->json(['success' => true, 'message' => 'Masterlist item added.']);
+        } catch (\Exception $e) {
+            \Log::error('Create stock ref error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error creating masterlist item.'], 500);
+        }
+    }
+
+    public function editStockReference(Request $request)
+    {
+        $itemCode = $request->input('item_code');
+        if (!$itemCode) return response()->json(['success'=>false,'message'=>'item_code required'], 422);
+        try {
+            $item = \DB::table('stocksreference')->where('COL 1', $itemCode)->first();
+            if (!$item) return response()->json(['success'=>false,'message'=>'Not found'],404);
+            return response()->json(['success'=>true,'item'=>$item]);
+        } catch (\Exception $e) {
+            \Log::error('Edit stock ref error: '.$e->getMessage());
+            return response()->json(['success'=>false,'message'=>'Error loading item'],500);
+        }
+    }
+
+    public function updateStockReference(Request $request)
+    {
+        $data = $request->validate([
+            'item_code' => 'required|string|max:100',
+            'generic_name' => 'nullable|string|max:255',
+            'brand_name' => 'nullable|string|max:255',
+            'price' => 'nullable|string|max:50',
+            'id' => 'required|string' // original item_code
+        ]);
+
+        try {
+            $orig = $data['id'];
+            $exists = \DB::table('stocksreference')->where('COL 1', $orig)->first();
+            if (!$exists) return response()->json(['success'=>false,'message'=>'Original item not found'],404);
+
+            // If changing item_code ensure no duplicate
+            if ($data['item_code'] !== $orig) {
+                $check = \DB::table('stocksreference')->where('COL 1', $data['item_code'])->first();
+                if ($check) return response()->json(['success'=>false,'message'=>'New item_code already exists'],422);
+            }
+
+            \DB::table('stocksreference')->where('COL 1', $orig)->update([
+                'COL 1' => $data['item_code'],
+                'COL 2' => $data['generic_name'] ?? '',
+                'COL 3' => $data['brand_name'] ?? '',
+                'COL 4' => $data['price'] ?? '',
+            ]);
+
+            Report::log('Masterlist Edit', Report::TYPE_USER_REPORT, 'Admin edited masterlist item', ['original'=>$orig,'item_code'=>$data['item_code']], auth()->id());
+            return response()->json(['success'=>true,'message'=>'Masterlist updated.']);
+        } catch (\Exception $e) {
+            \Log::error('Update stock ref error: '.$e->getMessage());
+            return response()->json(['success'=>false,'message'=>'Error updating item'],500);
+        }
+    }
+
+    public function deleteStockReference(Request $request, $itemCode)
+    {
+        try {
+            $decoded = urldecode($itemCode);
+            $item = \DB::table('stocksreference')->where('COL 1', $decoded)->first();
+            if (!$item) return response()->json(['success'=>false,'message'=>'Not found'],404);
+            \DB::table('stocksreference')->where('COL 1', $decoded)->delete();
+            Report::log('Masterlist Delete', Report::TYPE_USER_REPORT, 'Admin deleted masterlist item', ['item_code'=>$decoded], auth()->id());
+            return response()->json(['success'=>true,'message'=>'Masterlist item deleted.']);
+        } catch (\Exception $e) {
+            \Log::error('Delete stock ref error: '.$e->getMessage());
+            return response()->json(['success'=>false,'message'=>'Error deleting item'],500);
+        }
+    }
+
     // Patient Records Management
     public function patients(Request $request)
     {
         try {
-            $query = \DB::table('patients');
+            // Select explicit columns including contact_number and sex for consistent view rendering
+            $query = \DB::table('patients')->select('patients.id','patient_no','first_name','last_name','date_of_birth','status','patients.created_at','contact_number','sex');
             
             // Get search and sort parameters
             $search = $request->get('q', '');
             $status = $request->get('status', '');
+            $filter = $request->get('filter', ''); // e.g. 'admitted'
             $sortBy = $request->get('sort', 'created_at');
             $sortDirection = $request->get('direction', 'desc');
             
             // Validate sort column to prevent SQL injection
-            $allowedSortColumns = ['patient_no', 'first_name', 'last_name', 'status', 'room_no', 'created_at'];
+            $allowedSortColumns = ['patient_no', 'first_name', 'last_name', 'status', 'room_no', 'created_at', 'contact_number'];
             if (!in_array($sortBy, $allowedSortColumns)) {
                 $sortBy = 'created_at';
             }
@@ -674,6 +869,13 @@ class AdminController extends Controller
             if ($status) {
                 $query->where('status', ucfirst($status)); // Convert to match database format
             }
+
+            // Special filter: admitted -> consider patients whose patient.status indicates they are admitted.
+            // The domain uses patient.status = 'Active' to represent currently admitted patients.
+            if (strtolower($filter) === 'admitted') {
+                // For listings, filter patients table by status = 'Active'
+                $query->where('status', 'Active');
+            }
             
             // Apply sorting
             if ($sortBy === 'first_name') {
@@ -683,12 +885,174 @@ class AdminController extends Controller
                 $query->orderBy($sortBy, $sortDirection);
             }
             
+            // If filter=admitted and print parameter is present, render a printable admitted patients list
+            // According to domain rules, a patient with status = 'Active' is considered admitted.
+            if (strtolower($filter) === 'admitted' && $request->get('print')) {
+                // Allow optional filtering by date range or period (year/month/week)
+                $dateFrom = $request->get('date_from');
+                $dateTo = $request->get('date_to');
+                $period = $request->get('period'); // accepted values: year, month, week
+
+                // if period is provided and date_from/to not set, compute range
+                if (!$dateFrom && $period) {
+                    $now = \Carbon\Carbon::now();
+                    $p = strtolower($period);
+                    switch ($p) {
+                        case 'past_year':
+                            $dateFrom = $now->copy()->subYear()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->subYear()->endOfYear()->toDateString();
+                            break;
+                        case 'past_month':
+                            $dateFrom = $now->copy()->subMonth()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->subMonth()->endOfMonth()->toDateString();
+                            break;
+                        case 'past_week':
+                            $dateFrom = $now->copy()->subWeek()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->subWeek()->endOfWeek()->toDateString();
+                            break;
+                        case 'this_year':
+                            $dateFrom = $now->copy()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->endOfYear()->toDateString();
+                            break;
+                        case 'this_month':
+                            $dateFrom = $now->copy()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->endOfMonth()->toDateString();
+                            break;
+                        case 'this_week':
+                            $dateFrom = $now->copy()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->endOfWeek()->toDateString();
+                            break;
+                    }
+                }
+
+                // If a period or explicit date range is provided, base the report on admissions within that range.
+                $admissionsMap = collect();
+                $allAdmissions = collect();
+                $orderedPatientIds = [];
+
+                $isRangeFilter = (!empty($dateFrom) || !empty($dateTo));
+
+                if ($isRangeFilter) {
+                    // Build admissions query filtered by date range
+                    $admissionsQuery = \App\Models\Admission::query();
+                    try {
+                        $from = \Carbon\Carbon::parse($dateFrom)->startOfDay();
+                        $to = \Carbon\Carbon::parse($dateTo)->endOfDay();
+                        $admissionsQuery->whereBetween('admission_date', [$from, $to]);
+                    } catch (\Exception $e) {
+                        // If parsing fails, fall back to no date filtering
+                    }
+
+                    $allAdmissions = $admissionsQuery->orderBy('admission_date', 'desc')->get();
+                    $admissionsMap = $allAdmissions->groupBy('patient_id');
+                    $orderedPatientIds = $allAdmissions->pluck('patient_id')->unique()->values()->all();
+
+                    // Fetch patients who have admissions in the selected range
+                    $patientIds = $orderedPatientIds;
+                    $patients = collect();
+                    if (!empty($patientIds)) {
+                        $patients = \DB::table('patients')
+                            ->select('id','patient_no','first_name','last_name','date_of_birth','status','contact_number','sex','created_at','barangay','city','province','nationality')
+                            ->whereIn('id', $patientIds)
+                            ->get();
+                        // Reorder patients according to admission recency
+                        $patients = $patients->sortBy(function($p) use ($orderedPatientIds) {
+                            $pos = array_search($p->id, $orderedPatientIds);
+                            return $pos === false ? PHP_INT_MAX : $pos;
+                        })->values();
+                    }
+                } else {
+                    // No date range provided: default to listing currently admitted patients and their admissions
+                    $patients = \DB::table('patients')
+                        ->select('id','patient_no','first_name','last_name','date_of_birth','status','contact_number','sex','created_at','barangay','city','province','nationality')
+                        ->where('status', 'Active')
+                        ->get();
+
+                    $patientIds = $patients->pluck('id')->all();
+
+                    if (!empty($patientIds)) {
+                        $admissionsQuery = \App\Models\Admission::whereIn('patient_id', $patientIds)->orderBy('admission_date', 'desc');
+                        $allAdmissions = $admissionsQuery->get();
+                        $admissionsMap = $allAdmissions->groupBy('patient_id');
+                        $orderedPatientIds = $allAdmissions->pluck('patient_id')->unique()->values()->all();
+
+                        // Reorder patients collection so those with recent admissions appear first
+                        if (!empty($orderedPatientIds)) {
+                            $patients = $patients->sortBy(function($p) use ($orderedPatientIds) {
+                                $pos = array_search($p->id, $orderedPatientIds);
+                                return $pos === false ? PHP_INT_MAX : $pos;
+                            })->values();
+                        }
+                    }
+                }
+
+                // Compute totals to display on the printable report (scope to selected admissions)
+                $totalAdmittedPatients = $allAdmissions->pluck('patient_id')->unique()->count();
+                $currentlyAdmitted = $allAdmissions->where('status', 'active')->pluck('patient_id')->unique()->count();
+
+                return view('admin.patients.print_admitted', compact('patients', 'admissionsMap', 'totalAdmittedPatients', 'currentlyAdmitted'));
+            }
+
+            // Before pagination: if user requested a period filter while viewing admitted patients
+            // compute which patients have admissions in that range so we can highlight them in the UI.
+            $highlightPatientIds = [];
+            if (strtolower($filter) === 'admitted' && !$request->get('print')) {
+                $dateFrom = $request->get('date_from');
+                $dateTo = $request->get('date_to');
+                $period = $request->get('period');
+
+                if (!$dateFrom && $period) {
+                    $now = \Carbon\Carbon::now();
+                    $p = strtolower($period);
+                    switch ($p) {
+                        case 'past_year':
+                            $dateFrom = $now->copy()->subYear()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->subYear()->endOfYear()->toDateString();
+                            break;
+                        case 'past_month':
+                            $dateFrom = $now->copy()->subMonth()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->subMonth()->endOfMonth()->toDateString();
+                            break;
+                        case 'past_week':
+                            $dateFrom = $now->copy()->subWeek()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->subWeek()->endOfWeek()->toDateString();
+                            break;
+                        case 'this_year':
+                            $dateFrom = $now->copy()->startOfYear()->toDateString();
+                            $dateTo = $now->copy()->endOfYear()->toDateString();
+                            break;
+                        case 'this_month':
+                            $dateFrom = $now->copy()->startOfMonth()->toDateString();
+                            $dateTo = $now->copy()->endOfMonth()->toDateString();
+                            break;
+                        case 'this_week':
+                            $dateFrom = $now->copy()->startOfWeek()->toDateString();
+                            $dateTo = $now->copy()->endOfWeek()->toDateString();
+                            break;
+                    }
+                }
+
+                if ($dateFrom || $dateTo) {
+                    try {
+                        $admissionsQuery = \App\Models\Admission::query();
+                        if ($dateFrom && $dateTo) {
+                            $from = \Carbon\Carbon::parse($dateFrom)->startOfDay();
+                            $to = \Carbon\Carbon::parse($dateTo)->endOfDay();
+                            $admissionsQuery->whereBetween('admission_date', [$from, $to]);
+                        }
+                        $highlightPatientIds = $admissionsQuery->pluck('patient_id')->unique()->toArray();
+                    } catch (\Exception $e) {
+                        $highlightPatientIds = [];
+                    }
+                }
+            }
+
             // Apply pagination for all results (with or without search/filter)
             $patients = $query->paginate(10);
-            
+
             // Preserve search and filter parameters in pagination links
             $patients->appends(request()->query());
-            return view('admin.admin_patients', compact('patients'));
+            return view('admin.admin_patients', compact('patients', 'highlightPatientIds'));
             
         } catch (\Exception $e) {
             \Log::error('Patient management error: ' . $e->getMessage());
@@ -714,17 +1078,35 @@ class AdminController extends Controller
                 'first_name' => 'required|string|max:255',
                 'middle_name' => 'nullable|string|max:255',
                 'last_name' => 'required|string|max:255',
+                'date_of_birth' => 'nullable|date|before_or_equal:today',
                 'nationality' => 'nullable|string|max:255',
                 'province' => 'nullable|string|max:255',
                 'city' => 'nullable|string|max:255',
                 'barangay' => 'nullable|string|max:255',
-                'status' => 'nullable|in:Active,Discharged,Deceased'
+                'status' => 'nullable|in:Active,Discharged,Deceased',
+                // Support both new and legacy field names
+                'phone_number' => 'nullable|string|max:50',
+                'contact_number' => 'nullable|string|max:50',
+                'gender' => 'nullable|in:male,female,other',
+                'sex' => 'nullable|in:male,female,other'
             ]);
 
             // Update the patient record
+            // Normalize field names: prefer contact_number and sex as DB columns
+            $updateData = $validated;
+            if (isset($validated['phone_number']) && !isset($validated['contact_number'])) {
+                $updateData['contact_number'] = $validated['phone_number'];
+            }
+            if (isset($validated['gender']) && !isset($validated['sex'])) {
+                $updateData['sex'] = $validated['gender'];
+            }
+
+            // Keep only columns that actually exist in the patients table to avoid SQL errors
+            $permitted = array_intersect_key($updateData, array_flip(['first_name','middle_name','last_name','date_of_birth','nationality','province','city','barangay','status','contact_number','sex']));
+
             $updated = \DB::table('patients')
                 ->where('id', $id)
-                ->update(array_merge($validated, [
+                ->update(array_merge($permitted, [
                     'updated_at' => now()
                 ]));
 
@@ -885,7 +1267,7 @@ class AdminController extends Controller
                     
                     <div class="form-field">
                         <label>Date of Birth</label>
-                        <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '" readonly>
+                        <input type="date" name="date_of_birth" value="' . htmlspecialchars($patient->date_of_birth ?? '') . '" max="' . date('Y-m-d') . '">
                     </div>
                     
                     <div class="form-field">
@@ -897,20 +1279,35 @@ class AdminController extends Controller
                         <label>Nationality</label>
                         <input type="text" name="nationality" value="' . htmlspecialchars($patient->nationality ?? '') . '">
                     </div>
+
+                    <div class="form-field">
+                        <label>Contact Number</label>
+                        <input id="edit_contact_number" type="number" name="contact_number" placeholder="Enter contact number" min="1000000000" max="99999999999" maxlength="11" oninput="if(this.value.length > 11) this.value = this.value.slice(0, 11);" value="' . htmlspecialchars($patient->contact_number ?? '') . '">
+                    </div>
+
+                    <div class="form-field">
+                        <label>Sex</label>
+                        <select name="sex">
+                            <option value="">Select</option>
+                            <option value="male"' . (strtolower($patient->sex ?? '') === 'male' ? ' selected' : '') . '>Male</option>
+                            <option value="female"' . (strtolower($patient->sex ?? '') === 'female' ? ' selected' : '') . '>Female</option>
+                            <option value="other"' . (strtolower($patient->sex ?? '') === 'other' ? ' selected' : '') . '>Other</option>
+                        </select>
+                    </div>
                     
                     <div class="form-field">
                         <label>Province</label>
-                        <input type="text" name="province" value="' . htmlspecialchars($patient->province ?? '') . '">
+                        <input id="province" type="text" name="province" value="' . htmlspecialchars($patient->province ?? '') . '">
                     </div>
                     
                     <div class="form-field">
                         <label>City</label>
-                        <input type="text" name="city" value="' . htmlspecialchars($patient->city ?? '') . '">
+                        <input id="city" type="text" name="city" value="' . htmlspecialchars($patient->city ?? '') . '">
                     </div>
                     
                     <div class="form-field">
                         <label>Barangay</label>
-                        <input type="text" name="barangay" value="' . htmlspecialchars($patient->barangay ?? '') . '">
+                        <input id="barangay" type="text" name="barangay" value="' . htmlspecialchars($patient->barangay ?? '') . '">
                     </div>
                 </div>
                 
@@ -1008,8 +1405,683 @@ class AdminController extends Controller
         }
         </style>
 
+        <script>
+        // Auto-calculate age when date of birth changes
+        document.addEventListener("DOMContentLoaded", function() {
+            const dobInput = document.querySelector("input[name=\"date_of_birth\"]");
+            const ageDisplay = dobInput?.closest(".form-grid")?.querySelector("input[readonly]");
+            
+            if (dobInput && ageDisplay) {
+                dobInput.addEventListener("change", function() {
+                    if (this.value) {
+                        const selectedDate = this.value; // Get the date string directly
+                        const today = new Date().toISOString().split(\"T\")[0]; // Get today in YYYY-MM-DD format
+                        
+                        // Check if date is in the future
+                        if (selectedDate > today) {
+                            alert(\"Date of Birth cannot be in the future.\");
+                            this.setCustomValidity(\"Date of Birth cannot be in the future.\");
+                            this.value = \"\"; // Clear the invalid date
+                            ageDisplay.value = \"N/A\";
+                            return;
+                        } else {
+                            this.setCustomValidity(\"\"); // Clear any previous custom validity
+                        }
+                        
+                        const birthDate = new Date(this.value);
+                        const todayForAge = new Date();
+                        let age = todayForAge.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = todayForAge.getMonth() - birthDate.getMonth();
+                        
+                        if (monthDiff < 0 || (monthDiff === 0 && todayForAge.getDate() < birthDate.getDate())) {
+                            age--;
+                        }
+                        
+                        ageDisplay.value = age >= 0 ? age + " years" : "N/A";
+                    } else {
+                        ageDisplay.value = "N/A";
+                    }
+                });
+                
+                dobInput.addEventListener(\"input\", function() {
+                    if (this.value) {
+                        const selectedDate = this.value; // Get the date string directly
+                        const today = new Date().toISOString().split(\"T\")[0]; // Get today in YYYY-MM-DD format
+                        
+                        if (selectedDate > today) {
+                            this.setCustomValidity(\"Date of Birth cannot be in the future.\");
+                        } else {
+                            this.setCustomValidity(\"\"); // Clear any previous custom validity
+                        }
+                    }
+                });
+            }
+        });
+        </script>
+
 ';
         
         return $html;
+    }
+
+    /**
+     * Show FHIR export interface
+     */
+    public function fhir()
+    {
+        // Verify admin access
+        $this->verifyAdminAccess();
+
+        // Get counts for the interface
+        $stats = [
+            'total_patients' => Patient::count(),
+            'total_admissions' => \App\Models\Admission::count(),
+            'total_lab_orders' => \App\Models\LabOrder::count(),
+            'total_medications' => \App\Models\PatientMedicine::count() + \App\Models\PharmacyRequest::count(),
+        ];
+
+        return view('admin.admin_fhir', compact('stats'));
+    }
+
+    /**
+     * Export patient data as FHIR JSON
+     */
+    public function exportPatientFhir(Request $request, $patientId = null)
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            // Increase memory and execution limits for export
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', 300);
+            
+            // Verify FHIR service can be instantiated
+            if (!class_exists('App\Services\FHIR\FhirService')) {
+                return response()->json([
+                    'error' => 'FHIR service not available',
+                    'message' => 'FHIR export functionality is not properly configured'
+                ], 500);
+            }
+            
+            $fhirService = new FhirService();
+            
+            // Check if patient_no is provided in request (from form)
+            $patientNo = $request->get('patient_no');
+            
+            if ($patientNo) {
+                // Find patient by patient number
+                $patient = Patient::where('patient_no', $patientNo)->first();
+                
+                if (!$patient) {
+                    return back()->with('error', "Patient with number {$patientNo} not found.");
+                }
+                
+                // Export specific patient by their database ID
+                $bundle = $fhirService->getPatientBundle($patient->id);
+                $filename = "patient_{$patientNo}_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            } elseif ($patientId) {
+                // Export specific patient by ID (from route parameter)
+                $bundle = $fhirService->getPatientBundle($patientId);
+                $filename = "patient_{$patientId}_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            } else {
+                // Export all patients (limited to avoid memory issues)
+                $patients = Patient::with(['admissions', 'labOrders', 'medicines', 'pharmacyRequests'])
+                    ->limit(25) // Reduced limit for better compatibility with hosted servers
+                    ->get();
+                
+                $bundle = [
+                    'resourceType' => 'Bundle',
+                    'id' => 'bulk-export-' . uniqid(),
+                    'meta' => [
+                        'lastUpdated' => now()->toISOString()
+                    ],
+                    'type' => 'collection',
+                    'total' => 0,
+                    'entry' => []
+                ];
+
+                if ($patients->isEmpty()) {
+                    return response()->json([
+                        'error' => 'No patients found to export'
+                    ], 404);
+                }
+
+                foreach ($patients as $patient) {
+                    try {
+                        $patientBundle = $fhirService->getPatientBundle($patient->id);
+                        if (isset($patientBundle['entry'])) {
+                            $bundle['entry'] = array_merge($bundle['entry'], $patientBundle['entry']);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning("Failed to export patient {$patient->id}: " . $e->getMessage());
+                        // Continue with other patients
+                    }
+                }
+
+                $bundle['total'] = count($bundle['entry']);
+                $filename = "all_patients_fhir_" . date('Y-m-d_H-i-s') . '.json';
+            }
+
+            // Return as downloadable JSON file with better compatibility
+            $jsonContent = json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            
+            if ($jsonContent === false) {
+                return response()->json([
+                    'error' => 'Failed to encode FHIR data',
+                    'message' => 'Unable to convert patient data to JSON format'
+                ], 500);
+            }
+
+            return response($jsonContent, 200, [
+                'Content-Type' => 'application/json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Length' => strlen($jsonContent),
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+
+        } catch (\Throwable $e) {
+            \Log::error('FHIR Export Error', [
+                'patient_id' => $patientId,
+                'patient_no' => $request->get('patient_no'),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return JSON error response that's compatible with AJAX
+            return response()->json([
+                'error' => 'FHIR export failed',
+                'message' => $e->getMessage(),
+                'details' => 'Server error occurred during export. Check logs for details.',
+                'type' => get_class($e)
+            ], 500);
+
+            return back()->with('error', 'Error exporting FHIR data: ' . $e->getMessage());
+        }
+    }
+
+    
+    /**
+     * Export patient data as CSV (for capstone demo)
+     */
+    public function exportPatientCsv(Request $request, $patientId = null)
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            // If patient_no provided from form, resolve to ID
+            $patientNo = $request->get('patient_no');
+
+            if ($patientNo) {
+                $patient = Patient::where('patient_no', $patientNo)->first();
+                if (!$patient) {
+                    return back()->with('error', "Patient with number {$patientNo} not found.");
+                }
+                $patients = collect([$patient]);
+                $filename = "patient_{$patientNo}_csv_" . date('Y-m-d_H-i-s') . '.csv';
+            } elseif ($patientId) {
+                $patient = Patient::find($patientId);
+                if (!$patient) {
+                    return back()->with('error', "Patient with id {$patientId} not found.");
+                }
+                $patients = collect([$patient]);
+                $filename = "patient_{$patientId}_csv_" . date('Y-m-d_H-i-s') . '.csv';
+            } else {
+                // Bulk: export a small set to avoid memory issues
+                $patients = Patient::with(['admissions', 'labOrders', 'medicines'])
+                    ->limit(500)->get();
+                $filename = "all_patients_csv_" . date('Y-m-d_H-i-s') . '.csv';
+            }
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ];
+
+            $callback = function() use ($patients) {
+                $out = fopen('php://output', 'w');
+
+                // CSV header row
+                fputcsv($out, [
+                    'patient_id', // formatted patient id (Pxxxxx)
+                    'patient_no',
+                    'display_name',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'sex',
+                    'date_of_birth',
+                    'age',
+                    'contact_number',
+                    'barangay',
+                    'city',
+                    'province',
+                    'nationality',
+                    'address',
+                    'room_no',
+                    'admission_diagnosis',
+                    'status',
+                    'general_health_history',
+                    'social_history',
+                    'admissions_count',
+                    'lab_orders_count',
+                    'medicines_count',
+                    'created_at'
+                ]);
+
+                foreach ($patients as $p) {
+                    $age = '';
+                    $dob = '';
+                    $created = '';
+                    try {
+                        if (!empty($p->date_of_birth)) {
+                            $dob = \Carbon\Carbon::parse($p->date_of_birth)->format('Y-m-d');
+                            $age = is_object($p->date_of_birth) ? $p->age : (\Carbon\Carbon::parse($p->date_of_birth)->age ?? '');
+                        }
+                    } catch (\Throwable $e) {
+                        $dob = $p->date_of_birth ?? '';
+                        $age = '';
+                    }
+
+                    try {
+                        if (!empty($p->created_at)) {
+                            $created = \Carbon\Carbon::parse($p->created_at)->toDateTimeString();
+                        }
+                    } catch (\Throwable $e) {
+                        $created = $p->created_at ?? '';
+                    }
+
+                    // Force Excel to treat long numeric strings (like phone numbers) as text by using Excel formula wrapper
+                    $contact = $p->contact_number ?? '';
+                    if ($contact !== '' && is_numeric($contact)) {
+                        $contact = '="' . $contact . '"';
+                    }
+
+                    // Build a human address from components (barangay, city, province)
+                    $addressParts = [];
+                    if (!empty($p->barangay)) $addressParts[] = $p->barangay;
+                    if (!empty($p->city)) $addressParts[] = $p->city;
+                    if (!empty($p->province)) $addressParts[] = $p->province;
+                    $addressStr = !empty($addressParts) ? implode(', ', $addressParts) : '';
+
+                    // Histories as JSON strings
+                    $generalHistory = is_array($p->general_health_history) ? json_encode($p->general_health_history) : ($p->general_health_history ?? '');
+                    $socialHistory = is_array($p->social_history) ? json_encode($p->social_history) : ($p->social_history ?? '');
+
+                    fputcsv($out, [
+                        $p->patient_id ?? $p->id,
+                        $p->patient_no ?? '',
+                        $p->display_name ?? ($p->first_name . ' ' . $p->last_name),
+                        $p->first_name ?? '',
+                        $p->middle_name ?? '',
+                        $p->last_name ?? '',
+                        $p->sex ?? '',
+                        $dob,
+                        $age,
+                        $contact,
+                        $p->barangay ?? '',
+                        $p->city ?? '',
+                        $p->province ?? '',
+                        $p->nationality ?? '',
+                        $addressStr,
+                        $p->room_no ?? '',
+                        $p->admission_diagnosis ?? '',
+                        $p->status ?? '',
+                        $generalHistory,
+                        $socialHistory,
+                        isset($p->admissions) ? $p->admissions->count() : \App\Models\Admission::where('patient_id', $p->id)->count(),
+                        isset($p->labOrders) ? $p->labOrders->count() : \App\Models\LabOrder::where('patient_id', $p->id)->count(),
+                        isset($p->medicines) ? $p->medicines->count() : \App\Models\PatientMedicine::where('patient_id', $p->id)->count(),
+                        $created,
+                    ]);
+                }
+
+                fclose($out);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            \Log::error('CSV Export Error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Error exporting CSV: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export all encounters as FHIR JSON
+     */
+    public function exportEncountersFhir()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            $admissions = \App\Models\Admission::with('patient')->limit(100)->get();
+            
+            $bundle = [
+                'resourceType' => 'Bundle',
+                'id' => 'encounters-export-' . uniqid(),
+                'meta' => [
+                    'lastUpdated' => now()->toISOString()
+                ],
+                'type' => 'collection',
+                'total' => $admissions->count(),
+                'entry' => []
+            ];
+
+            foreach ($admissions as $admission) {
+                $encounter = $fhirService->transformToFhir($admission);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/Encounter/{$admission->id}",
+                    'resource' => $encounter
+                ];
+            }
+
+            $filename = "encounters_fhir_" . date('Y-m-d_H-i-s') . '.json';
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Encounters Export Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting encounters: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export lab observations as FHIR JSON
+     */
+    public function exportObservationsFhir()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            $labOrders = \App\Models\LabOrder::with(['patient', 'labTech'])->limit(100)->get();
+            
+            $bundle = [
+                'resourceType' => 'Bundle',
+                'id' => 'observations-export-' . uniqid(),
+                'meta' => [
+                    'lastUpdated' => now()->toISOString()
+                ],
+                'type' => 'collection',
+                'total' => $labOrders->count(),
+                'entry' => []
+            ];
+
+            foreach ($labOrders as $labOrder) {
+                $observation = $fhirService->transformToFhir($labOrder);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/Observation/{$labOrder->id}",
+                    'resource' => $observation
+                ];
+            }
+
+            $filename = "observations_fhir_" . date('Y-m-d_H-i-s') . '.json';
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Observations Export Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting observations: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export medication statements as FHIR JSON
+     */
+    public function exportMedicationsFhir()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            
+            // Get both patient medicines and pharmacy requests
+            $patientMedicines = \App\Models\PatientMedicine::with('patient')->limit(50)->get();
+            $pharmacyRequests = \App\Models\PharmacyRequest::with('patient')->limit(50)->get();
+            
+            $bundle = [
+                'resourceType' => 'Bundle',
+                'id' => 'medications-export-' . uniqid(),
+                'meta' => [
+                    'lastUpdated' => now()->toISOString()
+                ],
+                'type' => 'collection',
+                'total' => $patientMedicines->count() + $pharmacyRequests->count(),
+                'entry' => []
+            ];
+
+            // Add patient medicines
+            foreach ($patientMedicines as $medicine) {
+                $medicationStatement = $fhirService->transformToFhir($medicine);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/MedicationStatement/pm-{$medicine->id}",
+                    'resource' => $medicationStatement
+                ];
+            }
+
+            // Add pharmacy requests
+            foreach ($pharmacyRequests as $pharmacy) {
+                $medicationStatement = $fhirService->transformToFhir($pharmacy);
+                $bundle['entry'][] = [
+                    'fullUrl' => config('app.url') . "/api/fhir/MedicationStatement/pr-{$pharmacy->id}",
+                    'resource' => $medicationStatement
+                ];
+            }
+
+            $filename = "medications_fhir_" . date('Y-m-d_H-i-s') . '.json';
+
+            return response()->json($bundle, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            \Log::error('FHIR Medications Export Error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Error exporting medications: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get FHIR capability statement
+     */
+    public function getFhirCapability()
+    {
+        $this->verifyAdminAccess();
+
+        try {
+            $fhirService = new FhirService();
+            $capability = $fhirService->getCapabilityStatement();
+
+            return response()->json($capability, 200, [
+                'Content-Type' => 'application/fhir+json',
+                'Content-Disposition' => 'attachment; filename="fhir_capability_' . date('Y-m-d_H-i-s') . '.json"'
+            ], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error getting FHIR capability: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get archived users
+     */
+    public function archivedUsers(Request $request)
+    {
+        try {
+            // Get only archived users (soft deleted)
+            $query = User::onlyTrashed();
+            
+            // Get search and sort parameters
+            $search = $request->get('search', '');
+            $sortBy = $request->get('sort', 'deleted_at');
+            $sortDirection = $request->get('direction', 'desc');
+            
+            // Validate sort column
+            $allowedSortColumns = ['name', 'email', 'role', 'deleted_at', 'created_at'];
+            if (!in_array($sortBy, $allowedSortColumns)) {
+                $sortBy = 'deleted_at';
+            }
+            
+            // Validate sort direction
+            $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'desc';
+            
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('role', 'like', "%{$search}%");
+                });
+            }
+            
+            // Apply sorting and pagination
+            $query->orderBy($sortBy, $sortDirection);
+            $archivedUsers = $query->paginate(10);
+            
+            // Preserve search parameters in pagination links
+            $archivedUsers->appends(request()->query());
+            
+            return view('admin.archived_users', compact('archivedUsers'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Archived users error: ' . $e->getMessage());
+            $emptyCollection = collect();
+            $archivedUsers = new \Illuminate\Pagination\LengthAwarePaginator(
+                $emptyCollection,
+                0,
+                10,
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+            return view('admin.archived_users', compact('archivedUsers'))->with('error', 'Error loading archived users.');
+        }
+    }
+
+    /**
+     * Restore an archived user
+     */
+    public function restoreUser($id)
+    {
+        try {
+            $user = User::onlyTrashed()->findOrFail($id);
+
+            // Store user data for logging
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'archived_at' => $user->deleted_at->toISOString()
+            ];
+
+            // Restore the user
+            $user->restore();
+
+            // Log user restoration
+            Report::log(
+                'User Restored',
+                Report::TYPE_USER_ACTIVITY,
+                "Admin restored archived user: {$userData['name']}",
+                [
+                    'restored_user' => $userData,
+                    'restored_by' => auth()->user()->name,
+                    'restored_by_id' => auth()->id(),
+                    'restore_time' => now()->toISOString(),
+                    'note' => 'User account restored from archived status'
+                ],
+                auth()->id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User account restored successfully! The user can now log in again.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('User restoration error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error restoring user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Permanently delete an archived user (use with extreme caution)
+     */
+    public function permanentlyDeleteUser($id)
+    {
+        try {
+            $user = User::onlyTrashed()->findOrFail($id);
+
+            // Prevent permanent deletion of the current admin user
+            if ($user->id === auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot permanently delete your own account.'
+                ], 403);
+            }
+
+            // Store user data for logging before permanent deletion
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'created_at' => $user->created_at->toISOString(),
+                'archived_at' => $user->deleted_at->toISOString()
+            ];
+
+            // Permanently delete the user
+            $user->forceDelete();
+
+            // Log permanent deletion
+            Report::log(
+                'User Permanently Deleted',
+                Report::TYPE_USER_ACTIVITY,
+                "Admin permanently deleted user: {$userData['name']}",
+                [
+                    'permanently_deleted_user' => $userData,
+                    'deleted_by' => auth()->user()->name,
+                    'deleted_by_id' => auth()->id(),
+                    'permanent_deletion_time' => now()->toISOString(),
+                    'warning' => 'User data permanently removed - cannot be recovered'
+                ],
+                auth()->id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User permanently deleted. This action cannot be undone.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Permanent user deletion error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error permanently deleting user: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
