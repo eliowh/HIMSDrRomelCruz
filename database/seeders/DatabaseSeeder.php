@@ -20,9 +20,14 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
-        // Add stocks reference data
-        $this->call([
-            StocksReferenceSeeder::class,
-        ]);
+    // Add stocks reference data
+    $this->call([
+        // keep stocks reference seeder and account-related seeders
+        StocksReferenceSeeder::class,
+        AdminSeeder::class,
+        AccountSeeder::class,
+        DoctorAccountSeeder::class,
+        LabTechAccountSeeder::class,
+    ]);
     }
 }
